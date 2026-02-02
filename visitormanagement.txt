@@ -1,0 +1,50 @@
+1. Visitor Entry & Experience
+Touchless QR Code Check-In/Out: Enables visitors to scan a code using their own smartphones for a contactless experience.
+
+Self-Service Kiosk: A tablet-based interface (iPad/Android) for automated visitor registration.
+
+Pre-Registration: Allows hosts to send digital invites with QR codes to scheduled visitors for faster entry.
+
+Returning Visitor Recognition: Auto-populates data for frequent visitors to reduce check-in time.
+
+Bulk Invites: Supports uploading large groups of visitors via CSV for event or group management.
+
+Digital Signatures for NDAs: Captures digital signatures on legal documents and Non-Disclosure Agreements during check-in.
+
+2. Security & Verification
+ID Scanning & Photo Capture: Uses the device camera to scan government IDs and take visitor photos for verification.
+
+OTP Verification: Sends a One-Time Password to the visitor's mobile number for identity authentication.
+
+Host Approval Workflow: Provides an "Accept/Reject" feature where hosts must approve a visitor's entry via their mobile app.
+
+Watchlist/Blocklist: Flags restricted individuals by name, email, or company to prevent unauthorized access.
+
+Overstay Alerts: Notifies security if a visitor remains on the premises past their scheduled duration.
+
+Health Questionnaires: Digital forms for health declarations and COVID-19 protocol screening.
+
+3. Communication & Notifications
+Instant Host Notifications: Alerts employees of visitor arrivals via SMS, email, or push notifications.
+
+Customizable Email/SMS Alerts: Admins can configure automated messaging based on specific triggers.
+
+Two-Way Communication: Allows hosts to communicate with the front desk or visitors before they enter the lobby.
+
+4. Administration & Compliance
+Centralized Web Dashboard: A unified interface to manage multiple locations, floors, and kiosks.
+
+Digital Visitor Logs: Real-time searchable records of all visitor movements, replacing manual paper registers.
+
+Analytics & Reporting: Provides graphical insights into visitor trends, peak times, and occupancy.
+
+Multi-Location Management: Standardizes visitor workflows and data access across various office branches.
+
+Data Security & Privacy: Features encrypted data storage and role-based access controls to meet GDPR and HIPAA standards.
+
+5. Customization & Integration
+White-Labeling/Branding: Allows companies to customize the kiosk UI with their own logos, colors, and themes.
+
+Custom Visitor Types: Create unique workflows for different categories like contractors, vendors, or interviewees.
+
+Third-Party Integrations: Connects with workplace tools like Slack, Google Workspace (Directory/Calendar), and Active Directory.
