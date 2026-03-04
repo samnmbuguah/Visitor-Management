@@ -12,6 +12,7 @@ from .base_serializers import (
     PreRegistrationSerializer,
     VisitorSearchSerializer,
     WatchlistSerializer,
+    CustomTokenObtainPairSerializer,
 )
 
 __all__ = [
@@ -27,4 +28,5 @@ __all__ = [
     'NotificationLogSerializer',
     'PreRegistrationSerializer',
     'VisitorSearchSerializer',
+    'CustomTokenObtainPairSerializer',
 ]

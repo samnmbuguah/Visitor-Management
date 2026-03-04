@@ -1,6 +1,6 @@
 from .visitor_views import VisitorViewSet, HostViewSet, WatchlistViewSet
 from .location_views import LocationViewSet, KioskViewSet
-from .auth_views import RegisterView, UserProfileView, UserListView, LogoutView
+from .auth_views import RegisterView, UserProfileView, UserListView, LogoutView, CustomTokenObtainPairView
 from .notification_views import NotificationTemplateViewSet, NotificationLogViewSet
 from .pre_registration_views import PreRegistrationViewSet
 from .analytics_views import (

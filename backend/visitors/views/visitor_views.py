@@ -13,32 +13,40 @@ class HostViewSet(viewsets.ModelViewSet):
     """ViewSet for managing hosts."""
     queryset = Host.objects.all()
     serializer_class = HostSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny] # Allow visitors to see host list
 
     def get_queryset(self):
         user = self.request.user
         queryset = Host.objects.filter(is_active=True)
         
-        # Super Admin sees all
-        if user.profile.role == 'SUPER_ADMIN':
-            pass
-        # Admin sees hosts in their location
-        elif user.profile.role == 'ADMIN':
-            queryset = queryset.filter(location=user.profile.location)
-        # Standard hosts/others can only see hosts in their location (for directory purposes)
-        else:
-            queryset = queryset.filter(location=user.profile.location)
-
+        # If user is logged in, apply RBAC
+        if user.is_authenticated:
+            # Super Admin sees all
+            if user.profile.role == 'SUPER_ADMIN':
+                pass
+            # Admin sees hosts in their location
+            elif user.profile.role == 'ADMIN':
+                queryset = queryset.filter(location=user.profile.location)
+            # Standard hosts/others can only see hosts in their location
+            else:
+                queryset = queryset.filter(location=user.profile.location)
+        
+        # Filter by location if provided in query params (useful for Kiosk)
         location_id = self.request.query_params.get('location')
         if location_id:
             queryset = queryset.filter(location_id=location_id)
+            
         return queryset
 
 
 class VisitorViewSet(viewsets.ModelViewSet):
     """ViewSet for managing visitors."""
     queryset = Visitor.objects.all().order_by('-checkin_time')
-    permission_classes = [IsAuthenticated]
+    
+    def get_permissions(self):
+        if self.action in ['create', 'list', 'checkout']:
+            return [AllowAny()]
+        return [IsAuthenticated()]
 
     def get_serializer_class(self):
         if self.action == 'create':
@@ -47,6 +55,10 @@ class VisitorViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
+        if not user.is_authenticated:
+            # Allow unauthenticated access for kiosk (list only active visitors)
+            return Visitor.objects.filter(status='CHECKED_IN').order_by('-checkin_time')
+            
         queryset = Visitor.objects.all().order_by('-checkin_time')
 
         # RBAC Filtering

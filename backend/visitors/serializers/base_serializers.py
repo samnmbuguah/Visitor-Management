@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from django.contrib.auth.models import User
 from ..models import (
     Visitor,
@@ -13,6 +14,23 @@ from ..models import (
 )
 from ..services.qrcode_service import QRCodeService
 
+
+class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
+    @classmethod
+    def get_token(cls, user):
+        token = super().get_token(user)
+
+        # Add custom claims
+        token['username'] = user.username
+        token['email'] = user.email
+        
+        # Get role from profile if it exists
+        try:
+            token['role'] = user.profile.role
+        except Exception:
+            token['role'] = 'HOST'  # Default fallback 
+
+        return token
 
 class UserSerializer(serializers.ModelSerializer):
     """Serializer for Django User model."""

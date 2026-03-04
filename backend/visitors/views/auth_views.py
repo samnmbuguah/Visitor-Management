@@ -6,9 +6,10 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth.models import User
 from ..models import UserProfile
-from ..serializers import UserSerializer, UserProfileSerializer, UserRegistrationSerializer
+from ..serializers import UserSerializer, UserProfileSerializer, UserRegistrationSerializer, CustomTokenObtainPairSerializer
 
-
+class CustomTokenObtainPairView(TokenObtainPairView):
+    serializer_class = CustomTokenObtainPairSerializer
 class RegisterView(generics.CreateAPIView):
     """View for user registration."""
     queryset = User.objects.all()

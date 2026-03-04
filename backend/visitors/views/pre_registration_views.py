@@ -5,10 +5,16 @@ from django.shortcuts import get_object_or_404
 from ..models import PreRegistration, Visitor, Host
 from ..serializers.base_serializers import PreRegistrationSerializer, VisitorSerializer
 from ..services.notifications import NotificationService
+from rest_framework.permissions import IsAuthenticated, AllowAny
 
 class PreRegistrationViewSet(viewsets.ModelViewSet):
     queryset = PreRegistration.objects.all().order_by('-expected_arrival')
     serializer_class = PreRegistrationSerializer
+    
+    def get_permissions(self):
+        if self.action in ['scan', 'checkin']:
+            return [AllowAny()]
+        return [IsAuthenticated()]
     
     def get_queryset(self):
         queryset = super().get_queryset()
