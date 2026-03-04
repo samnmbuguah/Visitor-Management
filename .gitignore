@@ -55,3 +55,4 @@ Thumbs.db
 # Project specific
 backend/db.sqlite3
 Vizmo Visitors.pdf
+.antigravityignore
