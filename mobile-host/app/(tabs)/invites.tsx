@@ -6,6 +6,7 @@ import { UserPlus, Calendar, Clock } from 'lucide-react-native';
 export default function InvitesScreen() {
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
+    const [phone, setPhone] = useState('');
     const [company, setCompany] = useState('');
     const [date, setDate] = useState('');
     const [loading, setLoading] = useState(false);
@@ -22,12 +23,14 @@ export default function InvitesScreen() {
             await createInvite({
                 visitor_name: name,
                 visitor_email: email,
+                visitor_phone: phone,
                 visitor_company: company,
                 expected_arrival: new Date(date).toISOString(),
             });
             Alert.alert('Success', 'Invite sent successfully');
             setName('');
             setEmail('');
+            setPhone('');
             setCompany('');
             setDate('');
         } catch (error: any) {
@@ -64,6 +67,16 @@ export default function InvitesScreen() {
                     onChangeText={setEmail}
                     autoCapitalize="none"
                     keyboardType="email-address"
+                />
+
+                <Text style={styles.label}>Visitor Phone (Optional)</Text>
+                <TextInput
+                    style={styles.input}
+                    placeholder="e.g. +1234567890"
+                    placeholderTextColor="#64748b"
+                    value={phone}
+                    onChangeText={setPhone}
+                    keyboardType="phone-pad"
                 />
 
                 <Text style={styles.label}>Company (Optional)</Text>

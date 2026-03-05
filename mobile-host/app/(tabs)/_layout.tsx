@@ -1,5 +1,5 @@
 import { Tabs } from 'expo-router';
-import { Bell, UserPlus, History } from 'lucide-react-native';
+import { Bell, UserPlus, History, Package } from 'lucide-react-native';
 
 export default function TabsLayout() {
     return (

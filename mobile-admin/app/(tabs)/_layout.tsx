@@ -1,5 +1,5 @@
 import { Tabs } from 'expo-router';
-import { LayoutDashboard, Users, Settings } from 'lucide-react-native';
+import { LayoutDashboard, Users, Settings, Package } from 'lucide-react-native';
 
 export default function TabsLayout() {
     return (
