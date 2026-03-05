@@ -3,6 +3,7 @@ from .location_views import LocationViewSet, KioskViewSet
 from .auth_views import RegisterView, UserProfileView, UserListView, LogoutView, CustomTokenObtainPairView
 from .notification_views import NotificationTemplateViewSet, NotificationLogViewSet
 from .pre_registration_views import PreRegistrationViewSet
+from .parcel_views import ParcelViewSet
 from .analytics_views import (
     DashboardStatsView,
     VisitorTrendsView,
@@ -29,4 +30,5 @@ __all__ = [
     'HostStatsView',
     'LocationStatsView',
     'PreRegistrationViewSet',
+    'ParcelViewSet',
 ]

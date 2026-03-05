@@ -14,3 +14,8 @@ export const rejectVisitor = async (id: number) => {
     const response = await client.post(`/visitors/${id}/reject/`);
     return response.data;
 };
+
+export const getHosts = async (locationId?: number) => {
+    const response = await client.get('/hosts/', { params: { location: locationId } });
+    return response.data;
+};

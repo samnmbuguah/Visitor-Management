@@ -31,6 +31,13 @@ export default function TabsLayout() {
                     tabBarIcon: ({ color }) => <UserPlus color={color} size={24} />,
                 }}
             />
+            <Tabs.Screen
+                name="parcels"
+                options={{
+                    title: 'My Parcels',
+                    tabBarIcon: ({ color }) => <Package color={color} size={24} />,
+                }}
+            />
         </Tabs>
     );
 }

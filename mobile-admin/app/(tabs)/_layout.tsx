@@ -31,6 +31,13 @@ export default function TabsLayout() {
                     tabBarIcon: ({ color }) => <Users color={color} size={24} />,
                 }}
             />
+            <Tabs.Screen
+                name="parcels"
+                options={{
+                    title: 'Parcels',
+                    tabBarIcon: ({ color }) => <Package color={color} size={24} />,
+                }}
+            />
         </Tabs>
     );
 }

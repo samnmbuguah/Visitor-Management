@@ -2,7 +2,11 @@
   "expo": {
     "name": "mobile-kiosk",
     "slug": "mobile-kiosk",
+    "scheme": "visitormanagement-kiosk",
     "version": "1.0.0",
+    "runtimeVersion": {
+      "policy": "sdkVersion"
+    },
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",

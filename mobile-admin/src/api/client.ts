@@ -1,7 +1,7 @@
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 
-const API_URL = 'http://10.0.2.2:8001/api'; // Standard Android Emulator IP for localhost
+const API_URL = 'http://213.199.50.129:8001/api';
 
 const client = axios.create({
   baseURL: API_URL,

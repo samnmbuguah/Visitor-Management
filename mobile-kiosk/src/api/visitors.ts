@@ -5,13 +5,14 @@ export const checkInVisitor = async (data: any) => {
     return response.data;
 };
 
-export const checkOutVisitor = async (idOrEmail: string) => {
-    // If it's a numeric ID, we can use the detail endpoint
-    // But usually kiosks work by email or phone search for checkout
-    const response = await client.post(`/visitors/search/?query=${idOrEmail}`);
-    const visitor = response.data;
-    const checkoutResponse = await client.post(`/visitors/${visitor.id}/checkout/`);
-    return checkoutResponse.data;
+export const checkOutVisitor = async (id: number) => {
+    const response = await client.post(`/visitors/${id}/checkout/`);
+    return response.data;
+};
+
+export const getActiveVisitors = async () => {
+    const response = await client.get('/visitors/active/');
+    return response.data;
 };
 
 export const searchVisitor = async (query: string) => {

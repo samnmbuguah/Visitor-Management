@@ -2,7 +2,11 @@
   "expo": {
     "name": "mobile-host",
     "slug": "mobile-host",
+    "scheme": "visitormanagement-host",
     "version": "1.0.0",
+    "runtimeVersion": {
+      "policy": "sdkVersion"
+    },
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",

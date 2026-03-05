@@ -20,6 +20,7 @@ from .views import (
     LocationStatsView,
     PreRegistrationViewSet,
     WatchlistViewSet,
+    ParcelViewSet,
 )
 
 router = DefaultRouter()
@@ -31,6 +32,7 @@ router.register(r'notification-templates', NotificationTemplateViewSet)
 router.register(r'notification-logs', NotificationLogViewSet)
 router.register(r'pre-registrations', PreRegistrationViewSet)
 router.register(r'watchlist', WatchlistViewSet)
+router.register(r'parcels', ParcelViewSet)
 
 urlpatterns = [
     path('', include(router.urls)),

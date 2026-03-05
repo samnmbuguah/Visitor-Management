@@ -2,11 +2,12 @@ import React, { useState } from 'react';
 import { StyleSheet, View, Text, TextInput, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { login } from '../../src/api/auth';
-import { UserCheck } from 'lucide-react-native';
+import { UserCheck, Eye, EyeOff } from 'lucide-react-native';
 
 export default function LoginScreen() {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
     const router = useRouter();
 
@@ -43,13 +44,25 @@ export default function LoginScreen() {
                     onChangeText={setUsername}
                     autoCapitalize="none"
                 />
-                <TextInput
-                    style={styles.input}
-                    placeholder="Password"
-                    value={password}
-                    onChangeText={setPassword}
-                    secureTextEntry
-                />
+                <View style={styles.passwordContainer}>
+                    <TextInput
+                        style={styles.passwordInput}
+                        placeholder="Password"
+                        value={password}
+                        onChangeText={setPassword}
+                        secureTextEntry={!showPassword}
+                    />
+                    <TouchableOpacity
+                        style={styles.eyeIcon}
+                        onPress={() => setShowPassword(!showPassword)}
+                    >
+                        {showPassword ? (
+                            <EyeOff color="#a7f3d0" size={20} />
+                        ) : (
+                            <Eye color="#a7f3d0" size={20} />
+                        )}
+                    </TouchableOpacity>
+                </View>
 
                 <TouchableOpacity
                     style={[styles.button, loading && styles.buttonDisabled]}
@@ -114,6 +127,26 @@ const styles = StyleSheet.create({
         color: '#fff',
         marginBottom: 15,
         fontSize: 16,
+    },
+    passwordContainer: {
+        width: '100%',
+        height: 55,
+        backgroundColor: '#047857',
+        borderRadius: 12,
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 15,
+        paddingRight: 5,
+    },
+    passwordInput: {
+        flex: 1,
+        height: '100%',
+        paddingHorizontal: 15,
+        color: '#fff',
+        fontSize: 16,
+    },
+    eyeIcon: {
+        padding: 10,
     },
     button: {
         width: '100%',

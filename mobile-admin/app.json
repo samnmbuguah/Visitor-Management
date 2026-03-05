@@ -2,7 +2,11 @@
   "expo": {
     "name": "mobile-admin",
     "slug": "mobile-admin",
+    "scheme": "visitormanagement-admin",
     "version": "1.0.0",
+    "runtimeVersion": {
+      "policy": "sdkVersion"
+    },
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",

@@ -223,3 +223,30 @@ class WatchlistEntry(models.Model):
 
     def __str__(self):
         return f"Watchlist: {self.email or self.name}"
+
+class Parcel(models.Model):
+    """Represents an incoming parcel/delivery."""
+    STATUS_CHOICES = [
+        ('RECEIVED', 'Received'),
+        ('NOTIFIED', 'Notified'),
+        ('COLLECTED', 'Collected'),
+    ]
+
+    recipient = models.ForeignKey(Host, on_delete=models.CASCADE, related_name='parcels')
+    location = models.ForeignKey(Location, on_delete=models.CASCADE, related_name='parcels', null=True)
+    courier = models.CharField(max_length=100)
+    tracking_number = models.CharField(max_length=100, blank=True)
+    received_at = models.DateTimeField(auto_now_add=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='RECEIVED')
+    photo = models.TextField(blank=True, help_text="Base64 encoded image of the parcel")
+    signature_required = models.BooleanField(default=False)
+    collected_at = models.DateTimeField(null=True, blank=True)
+    collection_signature = models.TextField(blank=True, help_text="Base64 encoded signature")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Parcel for {self.recipient.name} ({self.status})"
+
+    class Meta:
+        ordering = ['-received_at']

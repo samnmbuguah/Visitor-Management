@@ -1,32 +1,72 @@
-import React, { useState } from 'react';
-import { StyleSheet, View, Text, TextInput, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { StyleSheet, View, Text, TouchableOpacity, Alert, ActivityIndicator, FlatList } from 'react-native';
 import { useRouter } from 'expo-router';
-import { checkOutVisitor } from '../../src/api/visitors';
-import { ArrowLeft, LogOut } from 'lucide-react-native';
+import { getActiveVisitors, checkOutVisitor } from '../../src/api/visitors';
+import { ArrowLeft, LogOut, User, Check } from 'lucide-react-native';
 
 export default function CheckoutScreen() {
-    const [query, setQuery] = useState('');
-    const [loading, setLoading] = useState(false);
+    const [visitors, setVisitors] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [actionLoading, setActionLoading] = useState(false);
     const router = useRouter();
 
-    const handleCheckout = async () => {
-        if (!query) {
-            Alert.alert('Error', 'Please enter your email or phone number used for check-in');
-            return;
-        }
+    useEffect(() => {
+        fetchActiveVisitors();
+    }, []);
 
-        setLoading(true);
+    const fetchActiveVisitors = async () => {
         try {
-            await checkOutVisitor(query);
-            Alert.alert('Goodbye!', 'You have been successfully checked out. Have a safe journey!', [
-                { text: 'OK', onPress: () => router.replace('/') }
-            ]);
-        } catch (error: any) {
-            Alert.alert('Check-Out Failed', 'No active visit found for this information.');
+            const data = await getActiveVisitors();
+            setVisitors(data.results || data);
+        } catch (error) {
+            Alert.alert('Error', 'Failed to fetch active visitors');
         } finally {
             setLoading(false);
         }
     };
+
+    const handleCheckout = (visitor: any) => {
+        Alert.alert(
+            'Check-Out',
+            `Are you sure you want to check out ${visitor.name}?`,
+            [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                    text: 'Confirm',
+                    onPress: async () => {
+                        setActionLoading(true);
+                        try {
+                            await checkOutVisitor(visitor.id);
+                            Alert.alert('Goodbye!', `${visitor.name} has been successfully checked out.`, [
+                                { text: 'OK', onPress: () => router.replace('/') }
+                            ]);
+                        } catch (error) {
+                            Alert.alert('Error', 'Check-out failed. Please try again.');
+                        } finally {
+                            setActionLoading(false);
+                        }
+                    }
+                }
+            ]
+        );
+    };
+
+    const renderVisitor = ({ item }: { item: any }) => (
+        <TouchableOpacity
+            style={styles.visitorCard}
+            onPress={() => handleCheckout(item)}
+            disabled={actionLoading}
+        >
+            <View style={styles.visitorIcon}>
+                <User color="#6366f1" size={24} />
+            </View>
+            <View style={styles.visitorInfo}>
+                <Text style={styles.visitorName}>{item.name}</Text>
+                <Text style={styles.visitorTime}>Checked in: {new Date(item.checkin_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</Text>
+            </View>
+            <LogOut color="#94a3b8" size={20} />
+        </TouchableOpacity>
+    );
 
     return (
         <View style={styles.container}>
@@ -38,33 +78,35 @@ export default function CheckoutScreen() {
             </View>
 
             <View style={styles.content}>
-                <View style={styles.formCard}>
-                    <LogOut color="#f43f5e" size={60} style={styles.icon} />
+                <View style={styles.infoBox}>
+                    <LogOut color="#f43f5e" size={40} style={styles.icon} />
                     <Text style={styles.title}>Leaving us?</Text>
-                    <Text style={styles.subtitle}>Enter your email or phone to check out</Text>
-
-                    <TextInput
-                        style={styles.input}
-                        placeholder="Email or Phone Number"
-                        placeholderTextColor="#64748b"
-                        value={query}
-                        onChangeText={setQuery}
-                        autoCapitalize="none"
-                    />
-
-                    <TouchableOpacity
-                        style={[styles.button, loading && styles.buttonDisabled]}
-                        onPress={handleCheckout}
-                        disabled={loading}
-                    >
-                        {loading ? (
-                            <ActivityIndicator color="#fff" />
-                        ) : (
-                            <Text style={styles.buttonText}>Confirm Check-Out</Text>
-                        )}
-                    </TouchableOpacity>
+                    <Text style={styles.subtitle}>Select your name from the list to check out</Text>
                 </View>
+
+                {loading ? (
+                    <ActivityIndicator color="#6366f1" size="large" style={{ marginTop: 50 }} />
+                ) : (
+                    <FlatList
+                        data={visitors}
+                        renderItem={renderVisitor}
+                        keyExtractor={(item) => item.id.toString()}
+                        contentContainerStyle={styles.listContainer}
+                        ListEmptyComponent={
+                            <View style={styles.emptyContainer}>
+                                <Check color="#10b981" size={48} />
+                                <Text style={styles.emptyText}>No visitors currently checked in.</Text>
+                            </View>
+                        }
+                    />
+                )}
             </View>
+
+            {actionLoading && (
+                <View style={styles.overlay}>
+                    <ActivityIndicator color="#fff" size="large" />
+                </View>
+            )}
         </View>
     );
 }
@@ -91,57 +133,76 @@ const styles = StyleSheet.create({
     },
     content: {
         flex: 1,
-        padding: 30,
-        justifyContent: 'center',
+        padding: 20,
     },
-    formCard: {
-        backgroundColor: '#1e293b',
-        borderRadius: 30,
-        padding: 40,
+    infoBox: {
         alignItems: 'center',
+        marginBottom: 30,
+        marginTop: 20,
+    },
+    icon: {
+        marginBottom: 10,
+    },
+    title: {
+        fontSize: 32,
+        fontWeight: 'bold',
+        color: '#fff',
+        marginBottom: 8,
+    },
+    subtitle: {
+        fontSize: 18,
+        color: '#94a3b8',
+        textAlign: 'center',
+    },
+    listContainer: {
+        paddingBottom: 40,
+    },
+    visitorCard: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#1e293b',
+        borderRadius: 20,
+        padding: 20,
+        marginBottom: 15,
         borderWidth: 1,
         borderColor: '#334155',
     },
-    icon: {
-        marginBottom: 20,
-    },
-    title: {
-        fontSize: 28,
-        fontWeight: 'bold',
-        color: '#fff',
-        marginBottom: 10,
-    },
-    subtitle: {
-        fontSize: 16,
-        color: '#94a3b8',
-        textAlign: 'center',
-        marginBottom: 30,
-    },
-    input: {
-        width: '100%',
-        height: 60,
+    visitorIcon: {
+        width: 48,
+        height: 48,
+        borderRadius: 14,
         backgroundColor: '#334155',
-        borderRadius: 16,
-        paddingHorizontal: 20,
-        color: '#fff',
-        fontSize: 18,
-        marginBottom: 20,
-    },
-    button: {
-        width: '100%',
-        height: 60,
-        backgroundColor: '#f43f5e',
-        borderRadius: 16,
         justifyContent: 'center',
         alignItems: 'center',
-        marginTop: 10,
+        marginRight: 15,
     },
-    buttonDisabled: {
-        opacity: 0.7,
+    visitorInfo: {
+        flex: 1,
     },
-    buttonText: {
-        color: '#fff',
-        fontSize: 18,
+    visitorName: {
+        fontSize: 20,
         fontWeight: 'bold',
+        color: '#fff',
     },
+    visitorTime: {
+        fontSize: 14,
+        color: '#94a3b8',
+        marginTop: 4,
+    },
+    emptyContainer: {
+        alignItems: 'center',
+        marginTop: 100,
+    },
+    emptyText: {
+        color: '#94a3b8',
+        fontSize: 18,
+        marginTop: 20,
+        textAlign: 'center',
+    },
+    overlay: {
+        ...StyleSheet.absoluteFillObject,
+        backgroundColor: 'rgba(0,0,0,0.7)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    }
 });
