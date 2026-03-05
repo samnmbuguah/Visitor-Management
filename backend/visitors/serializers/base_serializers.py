@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from django.utils import timezone
 from django.contrib.auth.models import User
 from ..models import (
     Visitor,
@@ -153,6 +154,33 @@ class VisitorCreateSerializer(serializers.ModelSerializer):
         fields = ['id', 'name', 'email', 'phone', 'company', 'host', 'purpose', 'photo',
                   'location', 'kiosk', 'expected_duration', 'status', 'nda_accepted', 'signature']
         read_only_fields = ['id', 'status']
+
+    def validate(self, attrs):
+        attrs = super().validate(attrs)
+
+        location = attrs.get('location')
+        nda_accepted = attrs.get('nda_accepted')
+        signature = attrs.get('signature')
+
+        if location and getattr(location, 'require_nda', False):
+            if not nda_accepted:
+                raise serializers.ValidationError({'nda_accepted': 'NDA acceptance is required for this location'})
+            if not signature:
+                raise serializers.ValidationError({'signature': 'Signature is required when NDA is required'})
+
+        if signature and not nda_accepted:
+            raise serializers.ValidationError({'nda_accepted': 'Must accept NDA when providing a signature'})
+
+        return attrs
+
+    def create(self, validated_data):
+        nda_accepted = validated_data.get('nda_accepted')
+        signature = validated_data.get('signature')
+
+        if nda_accepted and signature:
+            validated_data['nda_signed_at'] = timezone.now()
+
+        return super().create(validated_data)
 
 
 class VisitorSearchSerializer(serializers.ModelSerializer):

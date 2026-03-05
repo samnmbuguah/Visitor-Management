@@ -26,6 +26,44 @@ class VisitorTests(BaseTestCase):
         self.assertEqual(Visitor.objects.count(), 1)
         self.assertEqual(Visitor.objects.first().status, "CHECKED_IN")
 
+    def test_create_visitor_requires_nda_when_location_requires_it(self):
+        self.location.require_nda = True
+        self.location.save()
+
+        data = {
+            "name": "NDA Required",
+            "email": "nda-required@example.com",
+            "phone": "0000000000",
+            "host": self.host.id,
+            "purpose": "Visit",
+            "location": self.location.id,
+        }
+        response = self.client.post('/api/visitors/', data)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('nda_accepted', response.data)
+
+    def test_create_visitor_sets_nda_signed_at_when_signature_provided(self):
+        self.location.require_nda = True
+        self.location.save()
+
+        data = {
+            "name": "Signed NDA",
+            "email": "signed@example.com",
+            "phone": "1111111111",
+            "host": self.host.id,
+            "purpose": "Visit",
+            "location": self.location.id,
+            "nda_accepted": True,
+            "signature": "data:image/png;base64,AAAA",
+        }
+        response = self.client.post('/api/visitors/', data)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        visitor = Visitor.objects.get(id=response.data['id'])
+        self.assertTrue(visitor.nda_accepted)
+        self.assertEqual(visitor.signature, "data:image/png;base64,AAAA")
+        self.assertIsNotNone(visitor.nda_signed_at)
+
     def test_checkout_visitor(self):
         visitor = Visitor.objects.create(
             name="Charlie Visitor",

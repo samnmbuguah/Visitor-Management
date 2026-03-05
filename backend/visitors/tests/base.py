@@ -19,6 +19,24 @@ class BaseTestCase(TestCase):
         self.profile = UserProfile.objects.create(user=self.user, role="SUPER_ADMIN", location=self.location)
         
         # Authenticate client
-        response = self.client.post('/api/auth/login/', {'username': 'admin', 'password': 'password123'})
-        self.token = response.data['access']
-        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {self.token}')
+        self.login_admin()
+
+    def create_user(self, username, email, password, role, location=None):
+        user = User.objects.create_user(username=username, email=email, password=password)
+        UserProfile.objects.create(user=user, role=role, location=location or self.location)
+        return user
+
+    def login_admin(self):
+        self.client.force_authenticate(user=self.user)
+
+    def login_host(self):
+        # Find a user with a host profile or the default host created in setUp
+        if hasattr(self.host, 'user') and self.host.user:
+            self.client.force_authenticate(user=self.host.user)
+        else:
+            # Create a user for the host if none exists
+            host_user = User.objects.create_user(username="host_user", password="password123")
+            self.host.user = host_user
+            self.host.save()
+            UserProfile.objects.create(user=host_user, role="HOST", location=self.location)
+            self.client.force_authenticate(user=host_user)
