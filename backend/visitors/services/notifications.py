@@ -1,4 +1,4 @@
-from django.core.mail import send_mail
+from django.core.mail import EmailMultiAlternatives
 from django.template import Template, Context
 from django.conf import settings
 from ..models import NotificationTemplate, NotificationLog, Visitor, Host
@@ -63,22 +63,29 @@ class NotificationService:
         recipient_email: str,
         subject: str,
         body: str,
+        html_body: str = None,
+        attachments: list = None,
         template: NotificationTemplate = None,
         visitor: Visitor = None,
         host: Host = None
     ) -> bool:
-        """Send an email and log the notification."""
+        """Send an email (plain text and optional HTML/attachments) and log the notification."""
         status = 'PENDING'
         error_message = ''
 
         try:
-            send_mail(
+            msg = EmailMultiAlternatives(
                 subject=subject,
-                message=body,
+                body=body,
                 from_email=settings.DEFAULT_FROM_EMAIL,
-                recipient_list=[recipient_email],
-                fail_silently=False,
+                to=[recipient_email],
             )
+            if html_body:
+                msg.attach_alternative(html_body, "text/html")
+            if attachments:
+                for filename, content, mimetype in attachments:
+                    msg.attach(filename, content, mimetype)
+            msg.send()
             status = 'SENT'
         except Exception as e:
             status = 'FAILED'
@@ -266,10 +273,18 @@ Visitor Management System"""
 
     @classmethod
     def send_invite(cls, pre_reg) -> bool:
-        """Send invitation email with QR code to the visitor."""
+        """Send invitation email with QR code and plain token to the visitor."""
         from .qrcode_service import QRCodeService
+        import base64
+        from io import BytesIO
 
         template = cls._get_template('PRE_REGISTRATION', pre_reg.location_id)
+        
+        # Generate QR code as PNG bytes
+        qr_data = str(pre_reg.token)
+        qr_image_data_uri = QRCodeService.generate_qr_code(qr_data)
+        # Extract raw PNG bytes from data URI
+        qr_png_bytes = base64.b64decode(qr_image_data_uri.split(',')[-1])
         
         context = {
             'visitor_name': pre_reg.visitor_name,
@@ -278,12 +293,13 @@ Visitor Management System"""
             'host_email': pre_reg.host.email,
             'location_name': pre_reg.location.name,
             'expected_arrival': pre_reg.expected_arrival.strftime('%Y-%m-%d %H:%M'),
-            'qr_code': 'QR Code Attached', # Placeholder for text body
+            'token': pre_reg.token,
         }
         
         if template:
             subject = cls._render_template(template.subject, context)
             body = cls._render_template(template.body, context)
+            html_body = cls._render_template(template.html_body if hasattr(template, 'html_body') else '', context)
         else:
             subject = f"Invitation to Visit {pre_reg.location.name}"
             body = f"""Hello {pre_reg.visitor_name},
@@ -292,20 +308,37 @@ You have been invited by {pre_reg.host.name} to visit our office at {pre_reg.loc
 
 Expected Arrival: {pre_reg.expected_arrival.strftime('%Y-%m-%d %H:%M')}
 
-Please show the attached QR code (or use the code below) at the kiosk to check in.
+Please show the QR code or use the code below at the kiosk to check in.
 
 Token: {pre_reg.token}
 
 Best regards,
 Visitor Management System"""
-
-        # Note: Ideally we would attach the QR code image here.
-        # For now, we rely on the token text or future HTML implementation.
+            html_body = f"""<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>Invitation to Visit {pre_reg.location.name}</title></head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
+  <h2 style="color: #333;">Invitation to Visit {pre_reg.location.name}</h2>
+  <p>Hello {pre_reg.visitor_name},</p>
+  <p>You have been invited by <strong>{pre_reg.host.name}</strong> to visit our office at <strong>{pre_reg.location.name}</strong>.</p>
+  <p><strong>Expected Arrival:</strong> {pre_reg.expected_arrival.strftime('%Y-%m-%d %H:%M')}</p>
+  <p>Please show the QR code or use the code below at the kiosk to check in.</p>
+  <div style="text-align: center; margin: 20px 0;">
+    <img src="cid:qr_code" alt="QR Code" style="width: 200px; height: auto; border: 1px solid #ccc; padding: 8px; background: white;" />
+  </div>
+  <div style="background: #f5f5f5; padding: 12px; border-radius: 4px; text-align: center; font-family: monospace; font-size: 16px; margin: 20px 0;">
+    <strong>Token:</strong> {pre_reg.token}
+  </div>
+  <p>Best regards,<br>Visitor Management System</p>
+</body>
+</html>"""
         
         return cls._send_email(
             recipient_email=pre_reg.visitor_email,
             subject=subject,
             body=body,
+            html_body=html_body,
+            attachments=[('qr_code.png', qr_png_bytes, 'image/png')],
             template=template,
             host=pre_reg.host
         )
