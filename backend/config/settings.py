@@ -52,7 +52,9 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework_simplejwt',
     'corsheaders',
+    'django_filters',
     'visitors',
+    'property_management',
 ]
 
 MIDDLEWARE = [
@@ -140,6 +142,22 @@ STATIC_URL = 'static/'
 
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Push Notification Settings
+FCM_SERVER_KEY = 'test_fcm_server_key_for_development_only'
+
+# Stripe Payment Settings
+STRIPE_SECRET_KEY = 'sk_test_51234567890abcdef1234567890abcdef'  # Test key
+STRIPE_PUBLISHABLE_KEY = 'pk_test_51234567890abcdef1234567890abcdef'
+STRIPE_WEBHOOK_SECRET = 'whsec_test_webhook_secret_for_development'
+
+# Stripe Price IDs (would be created in Stripe dashboard)
+STRIPE_PRICE_BASIC = 'price_basic_monthly'
+STRIPE_PRICE_PRO = 'price_pro_monthly'
+STRIPE_PRICE_ENTERPRISE = 'price_enterprise_monthly'
+STRIPE_PRICE_BASIC_YEARLY = 'price_basic_yearly'
+STRIPE_PRICE_PRO_YEARLY = 'price_pro_yearly'
+STRIPE_PRICE_ENTERPRISE_YEARLY = 'price_enterprise_yearly'
 
 
 # Django REST Framework settings
