@@ -1,10 +1,49 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { StyleSheet, View, Text, TouchableOpacity, ImageBackground } from 'react-native';
 import { useRouter } from 'expo-router';
 import { QrCode, UserPlus, LogOut } from 'lucide-react-native';
+import { KioskAuth } from '../src/utils/auth';
 
 export default function WelcomeScreen() {
     const router = useRouter();
+    const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        checkAuthStatus();
+    }, []);
+
+    const checkAuthStatus = async () => {
+        try {
+            const authenticated = await KioskAuth.isAuthenticated();
+            setIsAuthenticated(authenticated);
+            
+            if (!authenticated) {
+                router.replace('/auth');
+            }
+        } catch (error) {
+            router.replace('/auth');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleLogout = async () => {
+        await KioskAuth.logout();
+        router.replace('/auth');
+    };
+
+    if (loading) {
+        return (
+            <View style={styles.loadingContainer}>
+                <Text>Loading...</Text>
+            </View>
+        );
+    }
+
+    if (!isAuthenticated) {
+        return null; // Will redirect to auth screen
+    }
 
     return (
         <View style={styles.container}>
@@ -48,6 +87,17 @@ export default function WelcomeScreen() {
                         <View style={styles.buttonInfo}>
                             <Text style={styles.buttonTitle}>Returning Visitor</Text>
                             <Text style={styles.buttonDesc}>Search by email or phone</Text>
+                        </View>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                        style={[styles.menuButton, styles.logoutButton]}
+                        onPress={handleLogout}
+                    >
+                        <LogOut color="#fff" size={32} />
+                        <View style={styles.buttonInfo}>
+                            <Text style={styles.buttonTitle}>Lock Kiosk</Text>
+                            <Text style={styles.buttonDesc}>Return to authentication</Text>
                         </View>
                     </TouchableOpacity>
 
@@ -152,5 +202,14 @@ const styles = StyleSheet.create({
         color: '#475569',
         fontSize: 14,
         fontWeight: '600',
+    },
+    loadingContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: '#0f172a',
+    },
+    logoutButton: {
+        backgroundColor: '#dc2626',
     },
 });

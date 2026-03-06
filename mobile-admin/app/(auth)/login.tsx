@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { StyleSheet, View, Text, TextInput, TouchableOpacity, Alert, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { login } from '../../src/api/auth';
+import { AuthSecurity } from '../../src/utils/auth';
 import { LogIn, Eye, EyeOff } from 'lucide-react-native';
 
 export default function LoginScreen() {
@@ -20,9 +21,17 @@ export default function LoginScreen() {
         setLoading(true);
         try {
             await login(username, password);
+            
+            // Verify admin role
+            await AuthSecurity.verifyAdminRole();
+            
             router.replace('/(tabs)');
         } catch (error: any) {
-            Alert.alert('Login Failed', error.response?.data?.detail || 'Invalid credentials');
+            if (error.message.includes('Access denied')) {
+                Alert.alert('Access Denied', error.message);
+            } else {
+                Alert.alert('Login Failed', error.response?.data?.detail || 'Invalid credentials');
+            }
         } finally {
             setLoading(false);
         }
