@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, Alert } from 'react-native';
+import { StyleSheet, View, Text, TouchableOpacity, Alert, ScrollView, Platform, KeyboardAvoidingView } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import SignatureScreen from 'react-native-signature-canvas';
 import { checkInVisitor } from '../../src/api/visitors';
@@ -40,7 +40,11 @@ export default function NDAScreen() {
     };
 
     return (
-        <View style={styles.container}>
+        <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            style={{ flex: 1 }}
+        >
+            <View style={styles.container}>
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
                     <ArrowLeft color="#fff" size={24} />
@@ -89,6 +93,7 @@ export default function NDAScreen() {
                 </View>
             </View>
         </View>
+        </KeyboardAvoidingView>
     );
 }
 

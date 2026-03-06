@@ -1,7 +1,12 @@
 import React, { useState } from 'react';
-import { StyleSheet, View, Text, TextInput, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from 'react-native';
+import { StyleSheet, View, Text, TextInput, TouchableOpacity, ScrollView, Alert, ActivityIndicator, Platform, KeyboardAvoidingView } from 'react-native';
 import { createInvite } from '../../src/api/visitors';
 import { UserPlus, Calendar, Clock } from 'lucide-react-native';
+
+// For native date/time pickers, you'd normally use:
+// - @react-native-community/datetimepicker
+// - expo-datetimepicker
+// For this web/Expo demo, we'll show a simple native HTML picker when on web
 
 export default function InvitesScreen() {
     const [name, setName] = useState('');
@@ -9,23 +14,25 @@ export default function InvitesScreen() {
     const [phone, setPhone] = useState('');
     const [company, setCompany] = useState('');
     const [date, setDate] = useState('');
+    const [time, setTime] = useState('');
     const [loading, setLoading] = useState(false);
 
     const handleInvite = async () => {
-        if (!name || !email || !date) {
-            Alert.alert('Error', 'Please fill in Name, Email, and Expected Arrival');
+        if (!name || !email || !date || !time) {
+            Alert.alert('Error', 'Please fill in Name, Email, and Expected Arrival (date and time)');
             return;
         }
 
         setLoading(true);
         try {
-            // Basic implementation - in a real app you'd use a date picker
+            // Combine date and time
+            const isoDateTime = new Date(`${date}T${time}`).toISOString();
             await createInvite({
                 visitor_name: name,
                 visitor_email: email,
                 visitor_phone: phone,
                 visitor_company: company,
-                expected_arrival: new Date(date).toISOString(),
+                expected_arrival: isoDateTime,
             });
             Alert.alert('Success', 'Invite sent successfully');
             setName('');
@@ -33,6 +40,7 @@ export default function InvitesScreen() {
             setPhone('');
             setCompany('');
             setDate('');
+            setTime('');
         } catch (error: any) {
             Alert.alert('Error', error.response?.data?.detail || 'Failed to create invite');
         } finally {
@@ -41,7 +49,11 @@ export default function InvitesScreen() {
     };
 
     return (
-        <ScrollView style={styles.container}>
+        <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            style={{ flex: 1 }}
+        >
+            <ScrollView style={styles.container} keyboardShouldPersistTaps='handled'>
             <View style={styles.header}>
                 <UserPlus color="#10b981" size={40} />
                 <Text style={styles.headerTitle}>Pre-Register Visitor</Text>
@@ -88,14 +100,47 @@ export default function InvitesScreen() {
                     onChangeText={setCompany}
                 />
 
-                <Text style={styles.label}>Expected Arrival (YYYY-MM-DD HH:MM)</Text>
-                <TextInput
-                    style={styles.input}
-                    placeholder="e.g. 2026-03-04 14:00"
-                    placeholderTextColor="#64748b"
-                    value={date}
-                    onChangeText={setDate}
-                />
+                <View style={styles.dateTimeRow}>
+                    <View style={styles.dateTimeColumn}>
+                        <Text style={styles.label}>Expected Arrival Date</Text>
+                        {Platform.OS === 'web' ? (
+                            <input
+                                type="date"
+                                style={styles.webInput}
+                                value={date}
+                                onChange={(e: any) => setDate(e.target.value)}
+                                min={new Date().toISOString().split('T')[0]}
+                            />
+                        ) : (
+                            <TextInput
+                                style={styles.input}
+                                placeholder="YYYY-MM-DD"
+                                placeholderTextColor="#64748b"
+                                value={date}
+                                onChangeText={setDate}
+                            />
+                        )}
+                    </View>
+                    <View style={styles.dateTimeColumn}>
+                        <Text style={styles.label}>Expected Arrival Time</Text>
+                        {Platform.OS === 'web' ? (
+                            <input
+                                type="time"
+                                style={styles.webInput}
+                                value={time}
+                                onChange={(e: any) => setTime(e.target.value)}
+                            />
+                        ) : (
+                            <TextInput
+                                style={styles.input}
+                                placeholder="HH:MM"
+                                placeholderTextColor="#64748b"
+                                value={time}
+                                onChangeText={setTime}
+                            />
+                        )}
+                    </View>
+                </View>
 
                 <TouchableOpacity
                     style={[styles.button, loading && styles.buttonDisabled]}
@@ -110,6 +155,7 @@ export default function InvitesScreen() {
                 </TouchableOpacity>
             </View>
         </ScrollView>
+        </KeyboardAvoidingView>
     );
 }
 
@@ -155,6 +201,24 @@ const styles = StyleSheet.create({
         paddingHorizontal: 15,
         color: '#fff',
         fontSize: 16,
+    },
+    dateTimeRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginTop: 15,
+    },
+    dateTimeColumn: {
+        flex: 1,
+        marginRight: 10,
+    },
+    webInput: {
+        backgroundColor: '#047857',
+        height: 55,
+        borderRadius: 12,
+        paddingHorizontal: 15,
+        color: '#fff',
+        fontSize: 16,
+        borderWidth: 0,
     },
     button: {
         backgroundColor: '#10b981',

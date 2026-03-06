@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { StyleSheet, View, Text, TextInput, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
+import { StyleSheet, View, Text, TextInput, TouchableOpacity, Alert, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { login } from '../../src/api/auth';
 import { LogIn, Eye, EyeOff } from 'lucide-react-native';
@@ -29,7 +29,10 @@ export default function LoginScreen() {
     };
 
     return (
-        <View style={styles.container}>
+        <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            style={styles.container}
+        >
             <View style={styles.card}>
                 <View style={styles.iconContainer}>
                     <LogIn color="#fff" size={40} />
@@ -76,7 +79,7 @@ export default function LoginScreen() {
                     )}
                 </TouchableOpacity>
             </View>
-        </View>
+        </KeyboardAvoidingView>
     );
 }
 

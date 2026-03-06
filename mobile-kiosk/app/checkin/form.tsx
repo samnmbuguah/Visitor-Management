@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { StyleSheet, View, Text, TextInput, TouchableOpacity, ScrollView, Alert, ActivityIndicator, Image } from 'react-native';
+import { StyleSheet, View, Text, TextInput, TouchableOpacity, ScrollView, Alert, ActivityIndicator, Image, Platform, KeyboardAvoidingView } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Camera, CameraView, useCameraPermissions } from 'expo-camera';
 import { getLocations, getHosts } from '../../src/api/visitors';
@@ -130,7 +130,11 @@ export default function CheckinForm() {
     }
 
     return (
-        <View style={styles.container}>
+        <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            style={{ flex: 1 }}
+        >
+            <View style={styles.container}>
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
                     <ArrowLeft color="#fff" size={24} />
@@ -138,7 +142,7 @@ export default function CheckinForm() {
                 <Text style={styles.headerTitle}>Visitor Registration</Text>
             </View>
 
-            <ScrollView contentContainerStyle={styles.scroll}>
+            <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps='handled'>
                 <View style={styles.formContainer}>
                     {formData.photo ? (
                         <View style={styles.photoPreviewContainer}>
@@ -246,6 +250,7 @@ export default function CheckinForm() {
                 </View>
             </ScrollView>
         </View>
+        </KeyboardAvoidingView>
     );
 }
 
