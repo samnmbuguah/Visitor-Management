@@ -3,8 +3,8 @@ import { Providers } from '@/components/Providers';
 import Navigation from '@/components/Navigation';
 
 export const metadata = {
-  title: 'Visitor Management | Premium Kiosk',
-  description: 'A modern, secure visitor management system',
+  title: 'Property Management | Premium Platform',
+  description: 'A modern, secure property and visitor management system',
 };
 
 export default function RootLayout({

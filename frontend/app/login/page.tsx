@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { loginUser } from '@/lib/api';
+import { APIService } from '@/services/api';
 import { Lock, User, Eye, EyeOff, Loader2, ShieldCheck } from 'lucide-react';
 
 export default function LoginPage() {
@@ -18,10 +18,16 @@ export default function LoginPage() {
         setIsLoading(true);
 
         try {
-            const res = await loginUser(credentials);
-            login(res.data.access);
+            console.log('Attempting login with:', credentials.username);
+            const res = await APIService.auth.login(credentials.username, credentials.password);
+            console.log('Login response:', res);
+            login(res.access);
+            console.log('Login successful, token set');
         } catch (err: any) {
-            console.error(err);
+            console.error('Login error details:', err);
+            console.error('Error response:', err.response);
+            console.error('Error status:', err.response?.status);
+            console.error('Error data:', err.response?.data);
             setError(err.response?.data?.detail || 'Invalid username or password');
         } finally {
             setIsLoading(false);
@@ -42,7 +48,7 @@ export default function LoginPage() {
                         <ShieldCheck size={40} />
                     </div>
                     <h1 className="text-4xl font-extrabold text-foreground mb-3 tracking-tight">Welcome Back</h1>
-                    <p className="text-muted-foreground text-lg">Secure Access to Visitor Management</p>
+                    <p className="text-muted-foreground text-lg">Secure Access to Property Management</p>
                 </div>
 
                 <div className="glass-card p-10 border-white/5 bg-white/5 backdrop-blur-3xl shadow-2xl">

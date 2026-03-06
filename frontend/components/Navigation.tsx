@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
-import { LogOut, LayoutDashboard, UserCheck, Settings, Bell, ShieldCheck, Mail, Menu, X, User, Wrench, Building } from 'lucide-react';
+import { LogOut, LayoutDashboard, UserCheck, Settings, Bell, ShieldCheck, Mail, Menu, X, User, Wrench, Building, Users } from 'lucide-react';
 
 export default function Navigation() {
     const { user, logout } = useAuth();
@@ -15,10 +15,12 @@ export default function Navigation() {
 
     const navItems = [
         { href: '/admin', label: 'Dashboard', icon: LayoutDashboard, roles: ['SUPER_ADMIN', 'ADMIN'] },
-        { href: '/admin/maintenance', label: 'Maintenance', icon: Wrench, roles: ['SUPER_ADMIN', 'ADMIN', 'HOST'] },
-        { href: '/admin/assets', label: 'Assets', icon: Building, roles: ['SUPER_ADMIN', 'ADMIN', 'HOST'] },
-        { href: '/host', label: 'Host Portal', icon: UserCheck, roles: ['HOST'] },
-        { href: '/admin/invites', label: 'Invites', icon: Mail, roles: ['SUPER_ADMIN', 'ADMIN', 'HOST'] },
+        { href: '/admin/maintenance', label: 'Maintenance', icon: Wrench, roles: ['SUPER_ADMIN', 'ADMIN'] },
+        { href: '/admin/assets', label: 'Assets', icon: Building, roles: ['SUPER_ADMIN', 'ADMIN'] },
+        { href: '/admin/tenants', label: 'Tenants', icon: Users, roles: ['SUPER_ADMIN'] },
+        { href: '/admin/leases', label: 'Leases', icon: Mail, roles: ['SUPER_ADMIN', 'ADMIN'] },
+        { href: '/host', label: 'Property Manager', icon: UserCheck, roles: ['HOST'] },
+        { href: '/receptionist', label: 'Receptionist', icon: UserCheck, roles: ['RECEPTIONIST'] },
     ];
 
     const filteredItems = navItems.filter(item => item.roles.includes(user.role));
@@ -29,8 +31,8 @@ export default function Navigation() {
                 <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
                     <div className="flex items-center gap-8">
                         <Link href="/" className="text-xl font-black bg-gradient-to-r from-primary to-indigo-400 bg-clip-text text-transparent flex items-center gap-2">
-                            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-white text-xs">VM</div>
-                            <span className="hidden sm:inline">Visitor Management</span>
+                            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-white text-xs">PM</div>
+                            <span className="hidden sm:inline">Property Management</span>
                         </Link>
 
                         <div className="hidden md:flex items-center gap-2">
