@@ -120,6 +120,18 @@ export default function InvitesScreen() {
                                 onChangeText={setDate}
                             />
                         )}
+                        <View style={styles.quickButtons}>
+                            <TouchableOpacity style={styles.quickButton} onPress={() => setDate(new Date().toISOString().split('T')[0])}>
+                                <Text style={styles.quickButtonText}>Today</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity style={styles.quickButton} onPress={() => {
+                                const tomorrow = new Date();
+                                tomorrow.setDate(tomorrow.getDate() + 1);
+                                setDate(tomorrow.toISOString().split('T')[0]);
+                            }}>
+                                <Text style={styles.quickButtonText}>Tomorrow</Text>
+                            </TouchableOpacity>
+                        </View>
                     </View>
                     <View style={styles.dateTimeColumn}>
                         <Text style={styles.label}>Expected Arrival Time</Text>
@@ -129,6 +141,8 @@ export default function InvitesScreen() {
                                 style={styles.webInput}
                                 value={time}
                                 onChange={(e: any) => setTime(e.target.value)}
+                                min="08:00"
+                                max="18:00"
                             />
                         ) : (
                             <TextInput
@@ -139,6 +153,13 @@ export default function InvitesScreen() {
                                 onChangeText={setTime}
                             />
                         )}
+                        <View style={styles.timeButtons}>
+                            {['09:00', '11:00', '14:00', '16:00'].map(t => (
+                                <TouchableOpacity key={t} style={styles.quickButton} onPress={() => setTime(t)}>
+                                    <Text style={styles.quickButtonText}>{t}</Text>
+                                </TouchableOpacity>
+                            ))}
+                        </View>
                     </View>
                 </View>
 
@@ -219,6 +240,30 @@ const styles = StyleSheet.create({
         color: '#fff',
         fontSize: 16,
         borderWidth: 0,
+    },
+    quickButtons: {
+        flexDirection: 'row',
+        marginTop: 8,
+        gap: 8,
+    },
+    timeButtons: {
+        flexDirection: 'row',
+        marginTop: 8,
+        flexWrap: 'wrap',
+        gap: 8,
+    },
+    quickButton: {
+        backgroundColor: '#065f46',
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 8,
+        borderWidth: 1,
+        borderColor: '#10b981',
+    },
+    quickButtonText: {
+        color: '#a7f3d0',
+        fontSize: 12,
+        fontWeight: '500',
     },
     button: {
         backgroundColor: '#10b981',

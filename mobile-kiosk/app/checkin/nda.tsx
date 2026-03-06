@@ -97,9 +97,6 @@ export default function NDAScreen() {
     );
 }
 
-// Utility for ScrollView as standard import might be missing in snippet
-import { ScrollView } from 'react-native';
-
 const styles = StyleSheet.create({
     container: {
         flex: 1,

@@ -1,5 +1,5 @@
 import { Tabs } from 'expo-router';
-import { LayoutDashboard, Users, Settings, Package } from 'lucide-react-native';
+import { LayoutDashboard, Users, Settings, Package, Wrench, Building } from 'lucide-react-native';
 
 export default function TabsLayout() {
     return (
@@ -36,6 +36,20 @@ export default function TabsLayout() {
                 options={{
                     title: 'Parcels',
                     tabBarIcon: ({ color }) => <Package color={color} size={24} />,
+                }}
+            />
+            <Tabs.Screen
+                name="maintenance"
+                options={{
+                    title: 'Maintenance',
+                    tabBarIcon: ({ color }) => <Wrench color={color} size={24} />,
+                }}
+            />
+            <Tabs.Screen
+                name="assets"
+                options={{
+                    title: 'Assets',
+                    tabBarIcon: ({ color }) => <Building color={color} size={24} />,
                 }}
             />
         </Tabs>
