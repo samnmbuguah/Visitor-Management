@@ -44,11 +44,12 @@ class DashboardStatsView(APIView):
 
         avg_duration = None
         if checked_out.exists():
+            checked_out_limit = checked_out[:100]  # Limit for performance
             total_duration = sum([
                 (v.checkout_time - v.checkin_time).total_seconds() / 60
-                for v in checked_out[:100]  # Limit for performance
+                for v in checked_out_limit
             ])
-            avg_duration = round(total_duration / checked_out.count()[:100], 1)
+            avg_duration = round(total_duration / checked_out.count(), 1)
 
         return Response({
             'active_visitors': active_visitors.count(),

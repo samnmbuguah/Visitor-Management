@@ -141,7 +141,7 @@ class VisitorSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Visitor
-        fields = ['id', 'name', 'email', 'phone', 'company', 'host', 'host_name',
+        fields = ['id', 'name', 'email', 'phone', 'company', 'number_plate', 'host', 'host_name',
                   'purpose', 'photo', 'location', 'location_name', 'kiosk', 'kiosk_name',
                   'checkin_time', 'checkout_time', 'expected_duration', 'status', 'badge_number']
         read_only_fields = ['id', 'checkin_time', 'status', 'badge_number']
@@ -151,7 +151,7 @@ class VisitorCreateSerializer(serializers.ModelSerializer):
     """Serializer for creating visitors."""
     class Meta:
         model = Visitor
-        fields = ['id', 'name', 'email', 'phone', 'company', 'host', 'purpose', 'photo',
+        fields = ['id', 'name', 'email', 'phone', 'company', 'number_plate', 'host', 'purpose', 'photo',
                   'location', 'kiosk', 'expected_duration', 'status', 'nda_accepted', 'signature']
         read_only_fields = ['id', 'status']
 
@@ -224,7 +224,7 @@ class PreRegistrationSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = PreRegistration
-        fields = ['id', 'visitor_name', 'visitor_email', 'visitor_phone', 'visitor_company',
+        fields = ['id', 'visitor_name', 'visitor_email', 'visitor_phone', 'visitor_company', 'visitor_number_plate',
                   'host', 'host_name', 'location', 'location_name', 'expected_arrival',
                   'status', 'token', 'qr_code', 'created_at']
         read_only_fields = ['id', 'token', 'status', 'created_at']

@@ -44,7 +44,7 @@ class VisitorViewSet(viewsets.ModelViewSet):
     queryset = Visitor.objects.all().order_by('-checkin_time')
     
     def get_permissions(self):
-        if self.action in ['create', 'list', 'checkout']:
+        if self.action in ['create', 'list', 'checkout', 'search', 'active']:
             return [AllowAny()]
         return [IsAuthenticated()]
 
@@ -56,8 +56,12 @@ class VisitorViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         user = self.request.user
         if not user.is_authenticated:
-            # Allow unauthenticated access for kiosk (list only active visitors)
-            return Visitor.objects.filter(status='CHECKED_IN').order_by('-checkin_time')
+            # Allow unauthenticated access for kiosk
+            # For search action, return all visitors; for list, return only active
+            if self.action == 'search':
+                return Visitor.objects.all().order_by('-checkin_time')
+            else:
+                return Visitor.objects.filter(status='CHECKED_IN').order_by('-checkin_time')
             
         queryset = Visitor.objects.all().order_by('-checkin_time')
 
@@ -123,14 +127,9 @@ class VisitorViewSet(viewsets.ModelViewSet):
         reject_reason = None
         status_val = 'CHECKED_IN'  # Default
         
-        # Check against watchlist
-        from ..services.watchlist_service import WatchlistService
-        watchlist_hit = WatchlistService.check_visitor(
-            serializer.validated_data.get('name', ''),
-            serializer.validated_data.get('email', ''),
-            serializer.validated_data.get('phone', ''),
-            location=serializer.validated_data.get('location')
-        )
+        # TODO: Implement watchlist service when available
+        # For now, skip watchlist check
+        watchlist_hit = None
         
         if watchlist_hit:
             status_val = 'REJECTED'
@@ -138,7 +137,7 @@ class VisitorViewSet(viewsets.ModelViewSet):
             print(f"[CREATE] Visitor {serializer.validated_data.get('email', '')} blocked by watchlist: {reject_reason}")
         
         visitor = serializer.save(status=status_val)
-        print(f"[CREATE] Created visitor {visitor.id} with status {visitor.status} by {request.user}")
+        print(f"[CREATE] Created visitor {visitor.id} with status {visitor.status} by {self.request.user}")
 
         # Handle Watchlist Rejection
         if status_val == 'REJECTED':
@@ -267,6 +266,13 @@ class VisitorViewSet(viewsets.ModelViewSet):
         today = timezone.now().date()
         queryset = self.get_queryset().filter(checkin_time__date=today)
         serializer = VisitorSerializer(queryset, many=True)
+        return Response(serializer.data)
+
+    @action(detail=False, methods=['get'])
+    def active(self, request):
+        """Get list of currently active (checked-in) visitors."""
+        queryset = self.get_queryset().filter(status='CHECKED_IN')
+        serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
 
 

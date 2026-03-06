@@ -2,10 +2,13 @@ from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
+import logging
 from ..models import PreRegistration, Visitor, Host
 from ..serializers.base_serializers import PreRegistrationSerializer, VisitorSerializer
 from ..services.notifications import NotificationService
 from rest_framework.permissions import IsAuthenticated, AllowAny
+
+logger = logging.getLogger(__name__)
 
 class PreRegistrationViewSet(viewsets.ModelViewSet):
     queryset = PreRegistration.objects.all().order_by('-expected_arrival')
@@ -80,6 +83,7 @@ class PreRegistrationViewSet(viewsets.ModelViewSet):
                 email=pre_reg.visitor_email,
                 phone=pre_reg.visitor_phone,
                 company=pre_reg.visitor_company,
+                number_plate=pre_reg.visitor_number_plate,
                 host=pre_reg.host,
                 location=pre_reg.location,
                 purpose="Pre-registered Visit", # Or allow overriding

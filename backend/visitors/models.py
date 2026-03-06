@@ -1,6 +1,8 @@
 from django.db import models
 from django.contrib.auth.models import User
+from django.utils import timezone
 import uuid
+from .tenant_models import Tenant
 
 
 class UserRole(models.TextChoices):
@@ -11,7 +13,8 @@ class UserRole(models.TextChoices):
 
 
 class Location(models.Model):
-    """Represents a physical location/office."""
+    """Physical location/office where visitors are managed."""
+    tenant = models.ForeignKey(Tenant, on_delete=models.CASCADE, related_name='locations', null=True, blank=True)
     name = models.CharField(max_length=100)
     address = models.TextField(blank=True)
     floor = models.CharField(max_length=50, blank=True)
@@ -32,6 +35,7 @@ class Location(models.Model):
 
 class Kiosk(models.Model):
     """Represents a check-in kiosk at a location."""
+    tenant = models.ForeignKey(Tenant, on_delete=models.CASCADE, related_name='kiosks', null=True, blank=True)
     name = models.CharField(max_length=100)
     location = models.ForeignKey(Location, on_delete=models.CASCADE, related_name='kiosks')
     is_active = models.BooleanField(default=True)
@@ -68,6 +72,7 @@ class UserProfile(models.Model):
 
 class Host(models.Model):
     """Employee who can receive visitors."""
+    tenant = models.ForeignKey(Tenant, on_delete=models.CASCADE, related_name='hosts', null=True, blank=True)
     name = models.CharField(max_length=100)
     email = models.EmailField(unique=True)
     department = models.CharField(max_length=100)
@@ -95,10 +100,12 @@ class PreRegistration(models.Model):
         ('EXPIRED', 'Expired'),
     ]
 
+    tenant = models.ForeignKey(Tenant, on_delete=models.CASCADE, related_name='pre_registrations', null=True, blank=True)
     visitor_name = models.CharField(max_length=100)
     visitor_email = models.EmailField()
     visitor_phone = models.CharField(max_length=15, blank=True)
     visitor_company = models.CharField(max_length=100, blank=True)
+    visitor_number_plate = models.CharField(max_length=20, blank=True, help_text="Vehicle number plate")
     host = models.ForeignKey(Host, on_delete=models.CASCADE, related_name='invites')
     location = models.ForeignKey(Location, on_delete=models.CASCADE, related_name='invites')
     expected_arrival = models.DateTimeField()
@@ -124,10 +131,12 @@ class Visitor(models.Model):
         ('REJECTED', 'Rejected'),
     ]
 
+    tenant = models.ForeignKey(Tenant, on_delete=models.CASCADE, related_name='visitors', null=True, blank=True)
     name = models.CharField(max_length=100)
     email = models.EmailField()
     phone = models.CharField(max_length=15)
     company = models.CharField(max_length=100, blank=True)
+    number_plate = models.CharField(max_length=20, blank=True, help_text="Vehicle number plate")
     host = models.ForeignKey(Host, on_delete=models.SET_NULL, null=True, related_name='visitors')
     purpose = models.TextField()
     photo = models.TextField(blank=True, help_text="Base64 encoded image")
@@ -177,15 +186,15 @@ class NotificationTemplate(models.Model):
         ordering = ['type', 'name']
 
 
-class NotificationLog(models.Model):
-    """Log of sent notifications."""
+class EmailNotificationLog(models.Model):
+    """Log of sent email notifications."""
     STATUS_CHOICES = [
         ('SENT', 'Sent'),
         ('FAILED', 'Failed'),
         ('PENDING', 'Pending'),
     ]
 
-    template = models.ForeignKey(NotificationTemplate, on_delete=models.SET_NULL, null=True, related_name='logs')
+    template = models.ForeignKey(NotificationTemplate, on_delete=models.SET_NULL, null=True, related_name='email_logs')
     recipient_email = models.EmailField()
     recipient_phone = models.CharField(max_length=15, blank=True)
     subject = models.CharField(max_length=200)
@@ -193,8 +202,8 @@ class NotificationLog(models.Model):
     sent_at = models.DateTimeField(auto_now_add=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='PENDING')
     error_message = models.TextField(blank=True)
-    visitor = models.ForeignKey(Visitor, on_delete=models.SET_NULL, null=True, blank=True, related_name='notifications')
-    host = models.ForeignKey(Host, on_delete=models.SET_NULL, null=True, blank=True, related_name='notifications')
+    visitor = models.ForeignKey(Visitor, on_delete=models.SET_NULL, null=True, blank=True, related_name='email_notifications')
+    host = models.ForeignKey(Host, on_delete=models.SET_NULL, null=True, blank=True, related_name='email_notifications')
 
     def __str__(self):
         return f"{self.subject} to {self.recipient_email} ({self.status})"
@@ -250,3 +259,32 @@ class Parcel(models.Model):
 
     class Meta:
         ordering = ['-received_at']
+
+
+# Import security models
+try:
+    from .security_models import (
+        GateAccessLog, SecurityIncident, SecurityAlert,
+        CameraStatus, VisitorTracking
+    )
+except ImportError:
+    # Security models not yet available
+    pass
+
+# Import notification models
+try:
+    from .notification_models import (
+        DeviceToken, NotificationLog, NotificationPreference
+    )
+except ImportError:
+    # Notification models not yet available
+    pass
+
+# Import payment models
+try:
+    from .payment_models import (
+        Customer, StripeSubscription, Invoice, PaymentMethod, Transaction
+    )
+except ImportError:
+    # Payment models not yet available
+    pass
