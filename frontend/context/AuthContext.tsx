@@ -39,6 +39,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             router.push('/admin');
         } else if (userData?.role === 'HOST') {
             router.push('/host');
+        } else if (userData?.role === 'RECEPTIONIST') {
+            router.push('/receptionist');
         } else {
             router.push('/');
         }

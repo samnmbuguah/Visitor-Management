@@ -1,43 +1,47 @@
 "use client";
 
 import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getPreRegistrations, createPreRegistration, cancelPreRegistration, getHosts, getLocations } from '@/lib/api';
+import { useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { Card } from '@/components/ui/card';
 import { UserPlus, Calendar, Mail, MapPin, XCircle, Search, QrCode, Upload } from 'lucide-react';
-import { useAuthStore } from '@/lib/store';
-import { bulkUploadPreRegistrations } from '@/lib/api';
+import { AdminPage } from '@/components/ProtectedPage';
+import { 
+  useInvites, 
+  useHosts, 
+  useLocations,
+  useCreateInvite,
+  useCancelPreRegistration
+} from '@/hooks/useData';
 
-export default function InvitesPage() {
+function InvitesPageContent() {
     const queryClient = useQueryClient();
-    const { user, profile } = useAuthStore();
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
 
-    const { data: invites, isLoading } = useQuery({
-        queryKey: ['invites'],
-        queryFn: () => getPreRegistrations().then(res => res.data),
-    });
-
-    const cancelMutation = useMutation({
-        mutationFn: cancelPreRegistration,
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['invites'] });
-        },
-    });
+    // Use centralized hooks
+    const { data: invites = [], isLoading } = useInvites();
+    const { data: hosts = [], isLoading: hostsLoading } = useHosts();
+    const { data: locations = [], isLoading: locationsLoading } = useLocations();
+    
+    const createMutation = useCreateInvite();
+    const cancelMutation = useCancelPreRegistration();
 
     const handleCancel = (id: number) => {
         if (confirm('Are you sure you want to cancel this invite?')) {
-            cancelMutation.mutate(id);
+            cancelMutation.mutate(id, {
+                onSuccess: () => {
+                    queryClient.invalidateQueries({ queryKey: ['invites'] });
+                }
+            });
         }
     };
 
     const filteredInvites = invites?.filter(invite =>
-        invite.visitor_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        invite.visitor_email.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+        invite.visitor_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        invite.visitor_email?.toLowerCase().includes(searchQuery.toLowerCase())
+    ) || [];
 
     return (
         <div className="space-y-6">
@@ -155,7 +159,7 @@ function CreateInviteModal({ onClose, onSuccess }: { onClose: () => void, onSucc
     const { data: locations } = useQuery({ queryKey: ['locations'], queryFn: () => getLocations().then(res => res.data) });
 
     const createMutation = useMutation({
-        mutationFn: createPreRegistration,
+        mutationFn: createInvite,
         onSuccess: () => {
             onSuccess();
         },
@@ -386,5 +390,14 @@ function BulkImportModal({ onClose, onSuccess }: { onClose: () => void, onSucces
                 )}
             </div>
         </div>
+    );
+}
+
+// Wrap the component with AdminPage for authentication
+export default function InvitesPage() {
+    return (
+        <AdminPage>
+            <InvitesPageContent />
+        </AdminPage>
     );
 }

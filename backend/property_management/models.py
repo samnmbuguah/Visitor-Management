@@ -1,3 +1,18 @@
+"""
+Property Management Models
+
+This module defines the core models for the property management system,
+including maintenance requests, assets, vendors, and related entities.
+
+Key Features:
+- Multi-tenant support with tenant isolation
+- Comprehensive maintenance request tracking
+- Asset lifecycle management with QR codes
+- Vendor management and insurance verification
+- Cost center tracking for expense management
+- Maintenance scheduling and work order management
+"""
+
 from django.db import models
 from django.contrib.auth.models import User
 from django.utils import timezone
@@ -6,6 +21,13 @@ from visitors.models import Tenant, Location, Host
 
 
 class PriorityLevel(models.TextChoices):
+    """Priority levels for maintenance requests and work orders.
+    
+    EMERGENCY: Immediate attention required (safety critical)
+    HIGH: Urgent but not safety critical
+    MEDIUM: Normal priority, routine maintenance
+    LOW: Low priority, can be scheduled
+    """
     EMERGENCY = 'EMERGENCY', 'Emergency'
     HIGH = 'HIGH', 'High'
     MEDIUM = 'MEDIUM', 'Medium'
@@ -13,6 +35,15 @@ class PriorityLevel(models.TextChoices):
 
 
 class MaintenanceStatus(models.TextChoices):
+    """Status options for maintenance requests and schedules.
+    
+    REQUESTED: Initial request submitted, awaiting assignment
+    ASSIGNED: Vendor assigned, work scheduled
+    IN_PROGRESS: Work currently being performed
+    COMPLETED: Work finished, awaiting review/payment
+    CANCELLED: Request cancelled (duplicate, resolved, etc.)
+    ON_HOLD: Work paused (waiting for parts, access, etc.)
+    """
     REQUESTED = 'REQUESTED', 'Requested'
     ASSIGNED = 'ASSIGNED', 'Assigned'
     IN_PROGRESS = 'IN_PROGRESS', 'In Progress'
@@ -22,6 +53,13 @@ class MaintenanceStatus(models.TextChoices):
 
 
 class AssetStatus(models.TextChoices):
+    """Status options for assets in the system.
+    
+    OPERATIONAL: Asset is functioning normally
+    UNDER_MAINTENANCE: Asset being serviced or repaired
+    OUT_OF_SERVICE: Asset not working, awaiting repair
+    RETIRED: Asset decommissioned, no longer in use
+    """
     OPERATIONAL = 'OPERATIONAL', 'Operational'
     UNDER_MAINTENANCE = 'UNDER_MAINTENANCE', 'Under Maintenance'
     OUT_OF_SERVICE = 'OUT_OF_SERVICE', 'Out of Service'
@@ -29,22 +67,51 @@ class AssetStatus(models.TextChoices):
 
 
 class MaintenanceCategory(models.Model):
-    """Categories for maintenance requests (HVAC, Electrical, Plumbing, etc.)"""
-    tenant = models.ForeignKey(Tenant, on_delete=models.CASCADE, related_name='maintenance_categories', null=True, blank=True)
-    name = models.CharField(max_length=100)
-    description = models.TextField(blank=True)
-    is_active = models.BooleanField(default=True)
-    created_at = models.DateTimeField(auto_now_add=True)
+    """Categories for maintenance requests (HVAC, Electrical, Plumbing, etc.)
+    
+    Used to organize maintenance requests by type and assign appropriate vendors.
+    Each category can have multiple vendors with expertise in that area.
+    """
+    tenant = models.ForeignKey(
+        Tenant, 
+        on_delete=models.CASCADE, 
+        related_name='maintenance_categories', 
+        null=True, 
+        blank=True,
+        help_text="Tenant this category belongs to (multi-tenant support)"
+    )
+    name = models.CharField(
+        max_length=100,
+        help_text="Category name (e.g., HVAC, Electrical, Plumbing)"
+    )
+    description = models.TextField(
+        blank=True,
+        help_text="Detailed description of what this category covers"
+    )
+    is_active = models.BooleanField(
+        default=True,
+        help_text="Whether this category is currently active for new requests"
+    )
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        help_text="When this category was created"
+    )
 
     def __str__(self):
         return self.name
 
     class Meta:
         ordering = ['name']
+        verbose_name_plural = "Maintenance Categories"
 
 
 class Vendor(models.Model):
-    """Approved contractors and service providers"""
+    """Approved contractors and service providers.
+    
+    Vendors are external service providers who can be assigned to maintenance requests.
+    They can have multiple specialties and are tracked for insurance verification
+    and performance metrics.
+    """
     tenant = models.ForeignKey(Tenant, on_delete=models.CASCADE, related_name='vendors', null=True, blank=True)
     name = models.CharField(max_length=200)
     contact_person = models.CharField(max_length=100)
@@ -71,7 +138,7 @@ class MaintenanceRequest(models.Model):
     """Repair requests submitted by hosts"""
     tenant = models.ForeignKey(Tenant, on_delete=models.CASCADE, related_name='maintenance_requests', null=True, blank=True)
     location = models.ForeignKey(Location, on_delete=models.CASCADE, related_name='maintenance_requests')
-    host = models.ForeignKey(Host, on_delete=models.CASCADE, related_name='maintenance_requests')
+    host = models.ForeignKey(Host, on_delete=models.CASCADE, related_name='maintenance_requests', null=True, blank=True)
     category = models.ForeignKey(MaintenanceCategory, on_delete=models.SET_NULL, null=True, related_name='requests')
     title = models.CharField(max_length=200)
     description = models.TextField()

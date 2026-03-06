@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -9,7 +10,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Modal } from '@/components/ui/modal';
 import { Building, QrCode, CheckCircle, AlertTriangle, Wrench, Plus, Filter, Search } from 'lucide-react';
-import axios from 'axios';
+import { AdminPage } from '@/components/ProtectedPage';
+import { 
+  useAssets, 
+  useAssetTypes, 
+  useLocations,
+  useCreateAsset,
+  useGenerateAssetQRCode,
+  useCheckoutAsset
+} from '@/hooks/useData';
 
 interface Asset {
   id: number;
@@ -28,11 +37,18 @@ interface Asset {
   warranty_expiry: string;
 }
 
-const API_BASE = '/api/property-management';
-
-export default function AssetsPage() {
-  const [assets, setAssets] = useState<Asset[]>([]);
-  const [loading, setLoading] = useState(true);
+function AssetsPageContent() {
+  const queryClient = useQueryClient();
+  
+  // Use centralized hooks
+  const { data: assets = [], isLoading: assetsLoading } = useAssets();
+  const { data: assetTypes = [], isLoading: assetTypesLoading } = useAssetTypes();
+  const { data: locations = [], isLoading: locationsLoading } = useLocations();
+  
+  const createMutation = useCreateAsset();
+  const qrCodeMutation = useGenerateAssetQRCode();
+  const checkoutMutation = useCheckoutAsset();
+  
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [showQRModal, setShowQRModal] = useState(false);
@@ -55,98 +71,70 @@ export default function AssetsPage() {
     expected_lifespan_years: '',
     location_detail: '',
   });
-  
-  const [assetTypes, setAssetTypes] = useState([]);
-  const [locations, setLocations] = useState([]);
 
-  useEffect(() => {
-    fetchAssets();
-    fetchAssetTypes();
-    fetchLocations();
-  }, []);
-
-  const fetchAssets = async () => {
-    try {
-      const response = await axios.get(`${API_BASE}/assets/`);
-      setAssets(response.data.results || response.data);
-    } catch (error) {
-      console.error('Error fetching assets:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchAssetTypes = async () => {
-    try {
-      const response = await axios.get(`${API_BASE}/asset-types/`);
-      setAssetTypes(response.data.results || response.data);
-    } catch (error) {
-      console.error('Error fetching asset types:', error);
-    }
-  };
-
-  const fetchLocations = async () => {
-    try {
-      const response = await axios.get('/api/visitors/locations/');
-      setLocations(response.data.results || response.data);
-    } catch (error) {
-      console.error('Error fetching locations:', error);
-    }
-  };
+  const loading = assetsLoading || assetTypesLoading || locationsLoading;
 
   const createAsset = async () => {
     if (!newAsset.name || !newAsset.asset_type || !newAsset.location) {
       return;
     }
 
-    try {
-      await axios.post(`${API_BASE}/assets/`, newAsset);
-      setShowCreateModal(false);
-      setNewAsset({
-        name: '',
-        description: '',
-        asset_type: '',
-        location: '',
-        serial_number: '',
-        manufacturer: '',
-        model: '',
-        purchase_date: '',
-        warranty_expiry: '',
-        expected_lifespan_years: '',
-        location_detail: '',
-      });
-      fetchAssets();
-    } catch (error) {
-      console.error('Error creating asset:', error);
-    }
+    createMutation.mutate(newAsset, {
+      onSuccess: () => {
+        setShowCreateModal(false);
+        setNewAsset({
+          name: '',
+          description: '',
+          asset_type: '',
+          location: '',
+          serial_number: '',
+          manufacturer: '',
+          model: '',
+          purchase_date: '',
+          warranty_expiry: '',
+          expected_lifespan_years: '',
+          location_detail: '',
+        });
+        queryClient.invalidateQueries({ queryKey: ['assets'] });
+      },
+      onError: (error) => {
+        console.error('Error creating asset:', error);
+      }
+    });
   };
 
   const generateQRCode = async (assetId: number) => {
-    try {
-      const response = await axios.get(`${API_BASE}/assets/${assetId}/qr_code/`);
-      setQrCodeData(response.data.qr_code);
-      setShowQRModal(true);
-    } catch (error) {
-      console.error('Error generating QR code:', error);
-    }
+    qrCodeMutation.mutate(assetId, {
+      onSuccess: (data) => {
+        setQrCodeData(data.qr_code);
+        setShowQRModal(true);
+      },
+      onError: (error) => {
+        console.error('Error generating QR code:', error);
+      }
+    });
   };
 
   const checkoutAsset = async (assetId: number) => {
     const expectedReturn = prompt('Enter expected return date (YYYY-MM-DD):', 
       new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
-    
     if (!expectedReturn) return;
     
-    try {
-      await axios.post(`${API_BASE}/assets/${assetId}/checkout/`, {
+    checkoutMutation.mutate({ 
+      id: assetId, 
+      data: {
         expected_return_at: expectedReturn,
         notes: 'Checked out via web app',
         condition: 'Good condition',
-      });
-      fetchAssets();
-    } catch (error) {
-      console.error('Error checking out asset:', error);
-    }
+      }
+    }, {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ['assets'] });
+      },
+      onError: (error) => {
+        console.error('Error checking out asset:', error);
+      }
+    });
   };
 
   const getStatusColor = (status: string) => {
@@ -624,5 +612,14 @@ export default function AssetsPage() {
         </div>
       </Modal>
     </div>
+  );
+}
+
+// Wrap the component with AdminPage for authentication
+export default function AssetsPage() {
+  return (
+    <AdminPage>
+      <AssetsPageContent />
+    </AdminPage>
   );
 }

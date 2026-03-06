@@ -10,9 +10,16 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@radix-ui/react-dialog": "^1.1.1",
+    "@radix-ui/react-select": "^2.1.1",
+    "@radix-ui/react-slot": "^1.1.0",
     "@tanstack/react-query": "^5.90.21",
+    "@tanstack/react-query-devtools": "^5.91.3",
     "@types/react-signature-canvas": "^1.0.7",
     "axios": "^1.13.6",
+    "class-variance-authority": "^0.7.0",
+    "clsx": "^2.1.1",
+    "date-fns": "^4.1.0",
     "html5-qrcode": "^2.3.8",
     "jwt-decode": "^4.0.0",
     "lucide-react": "^0.562.0",
@@ -20,7 +27,9 @@
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-signature-canvas": "^1.1.0-alpha.2",
-    "react-webcam": "^7.2.0"
+    "react-webcam": "^7.2.0",
+    "tailwind-merge": "^2.5.2",
+    "zustand": "^5.0.11"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

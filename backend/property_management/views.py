@@ -10,8 +10,9 @@ import io
 import base64
 
 from .models import (
-    MaintenanceCategory, Vendor, MaintenanceRequest, MaintenancePhoto, WorkOrder,
-    AssetType, Asset, MaintenanceSchedule, AssetCheckout, CostCenter, MaintenanceExpense
+    MaintenanceCategory, Vendor, MaintenanceRequest, MaintenancePhoto,
+    WorkOrder, AssetType, Asset, MaintenanceSchedule, AssetCheckout,
+    CostCenter, MaintenanceExpense, PriorityLevel, MaintenanceStatus, AssetStatus
 )
 from .serializers import (
     MaintenanceCategorySerializer, VendorSerializer, MaintenanceRequestSerializer,

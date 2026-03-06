@@ -169,18 +169,29 @@ class MaintenanceRequestCreateSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         photo_data = validated_data.pop('photo_data', [])
-        request = MaintenanceRequest.objects.create(**validated_data)
+        
+        # Get host from request context if available
+        request = self.context.get('request')
+        host = None
+        if request and hasattr(request, 'user'):
+            try:
+                from visitors.models import Host
+                host = Host.objects.get(user=request.user)
+            except Host.DoesNotExist:
+                pass
+        
+        request_obj = MaintenanceRequest.objects.create(**validated_data, host=host)
         
         # Create photos if provided
         for i, photo in enumerate(photo_data):
             MaintenancePhoto.objects.create(
-                maintenance_request=request,
+                maintenance_request=request_obj,
                 photo=photo,
                 caption=f"Photo {i+1}",
                 is_before_photo=True
             )
         
-        return request
+        return request_obj
 
 
 class AssetCreateSerializer(serializers.ModelSerializer):

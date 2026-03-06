@@ -1,6 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { useEnhancedMaintenanceRequests, useEnhancedMaintenanceCategories, useEnhancedLocations, useEnhancedCreateMaintenanceRequest, useEnhancedUpdateMaintenanceRequestStatus } from '@/hooks/useEnhancedData';
+import { useAdminPage } from '@/hooks/useAuthQuery';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -9,7 +12,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Modal } from '@/components/ui/modal';
 import { Wrench, AlertTriangle, Clock, CheckCircle, Camera, Plus, Filter } from 'lucide-react';
-import axios from 'axios';
+import { AdminPage } from '@/components/ProtectedPage';
+import { 
+  useMaintenanceRequests, 
+  useMaintenanceCategories, 
+  useLocations,
+  useCreateMaintenanceRequest,
+  useUpdateMaintenanceRequestStatus
+} from '@/hooks/useData';
 
 interface MaintenanceRequest {
   id: number;
@@ -25,11 +35,17 @@ interface MaintenanceRequest {
   photos: Array<{ id: number; photo: string; caption: string }>;
 }
 
-const API_BASE = '/api/property-management';
-
-export default function MaintenancePage() {
-  const [requests, setRequests] = useState<MaintenanceRequest[]>([]);
-  const [loading, setLoading] = useState(true);
+function MaintenancePageContent() {
+  const queryClient = useQueryClient();
+  
+  // Use enhanced hooks with better caching
+  const { data: requests = [], isLoading: requestsLoading } = useEnhancedMaintenanceRequests();
+  const { data: categories = [], isLoading: categoriesLoading } = useEnhancedMaintenanceCategories();
+  const { data: locations = [], isLoading: locationsLoading } = useEnhancedLocations();
+  
+  const createMutation = useEnhancedCreateMaintenanceRequest();
+  const updateStatusMutation = useEnhancedUpdateMaintenanceRequestStatus();
+  
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showPhotoModal, setShowPhotoModal] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<MaintenanceRequest | null>(null);
@@ -43,75 +59,41 @@ export default function MaintenancePage() {
     category: '',
     location: '',
   });
-  
-  const [categories, setCategories] = useState([]);
-  const [locations, setLocations] = useState([]);
 
-  useEffect(() => {
-    fetchRequests();
-    fetchCategories();
-    fetchLocations();
-  }, []);
-
-  const fetchRequests = async () => {
-    try {
-      const response = await axios.get(`${API_BASE}/requests/`);
-      setRequests(response.data.results || response.data);
-    } catch (error) {
-      console.error('Error fetching maintenance requests:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchCategories = async () => {
-    try {
-      const response = await axios.get(`${API_BASE}/categories/`);
-      setCategories(response.data.results || response.data);
-    } catch (error) {
-      console.error('Error fetching categories:', error);
-    }
-  };
-
-  const fetchLocations = async () => {
-    try {
-      const response = await axios.get('/api/visitors/locations/');
-      setLocations(response.data.results || response.data);
-    } catch (error) {
-      console.error('Error fetching locations:', error);
-    }
-  };
+  const loading = requestsLoading || categoriesLoading || locationsLoading;
 
   const createRequest = async () => {
     if (!newRequest.title || !newRequest.description) {
       return;
     }
 
-    try {
-      await axios.post(`${API_BASE}/requests/`, newRequest);
-      setShowCreateModal(false);
-      setNewRequest({
-        title: '',
-        description: '',
-        priority: 'MEDIUM',
-        category: '',
-        location: '',
-      });
-      fetchRequests();
-    } catch (error) {
-      console.error('Error creating request:', error);
-    }
+    createMutation.mutate(newRequest, {
+      onSuccess: () => {
+        setShowCreateModal(false);
+        setNewRequest({
+          title: '',
+          description: '',
+          priority: 'MEDIUM',
+          category: '',
+          location: '',
+        });
+        queryClient.invalidateQueries({ queryKey: ['maintenanceRequests'] });
+      },
+      onError: (error) => {
+        console.error('Error creating request:', error);
+      }
+    });
   };
 
   const updateRequestStatus = async (requestId: number, newStatus: string) => {
-    try {
-      await axios.post(`${API_BASE}/requests/${requestId}/update_status/`, {
-        status: newStatus,
-      });
-      fetchRequests();
-    } catch (error) {
-      console.error('Error updating status:', error);
-    }
+    updateStatusMutation.mutate({ id: requestId, status: newStatus }, {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ['maintenanceRequests'] });
+      },
+      onError: (error) => {
+        console.error('Error updating status:', error);
+      }
+    });
   };
 
   const getPriorityColor = (priority: string) => {
@@ -453,5 +435,14 @@ export default function MaintenancePage() {
         )}
       </Modal>
     </div>
+  );
+}
+
+// Wrap the component with AdminPage for authentication
+export default function MaintenancePage() {
+  return (
+    <AdminPage>
+      <MaintenancePageContent />
+    </AdminPage>
   );
 }
