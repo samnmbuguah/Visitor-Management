@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
-import { LogOut, LayoutDashboard, UserCheck, Settings, Bell, ShieldCheck, Mail, Menu, X, User } from 'lucide-react';
+import { LogOut, LayoutDashboard, UserCheck, Settings, Bell, ShieldCheck, Mail, Menu, X, User, Wrench, Building } from 'lucide-react';
 
 export default function Navigation() {
     const { user, logout } = useAuth();
@@ -15,6 +15,8 @@ export default function Navigation() {
 
     const navItems = [
         { href: '/admin', label: 'Dashboard', icon: LayoutDashboard, roles: ['SUPER_ADMIN', 'ADMIN'] },
+        { href: '/admin/maintenance', label: 'Maintenance', icon: Wrench, roles: ['SUPER_ADMIN', 'ADMIN', 'HOST'] },
+        { href: '/admin/assets', label: 'Assets', icon: Building, roles: ['SUPER_ADMIN', 'ADMIN', 'HOST'] },
         { href: '/host', label: 'Host Portal', icon: UserCheck, roles: ['HOST'] },
         { href: '/admin/invites', label: 'Invites', icon: Mail, roles: ['SUPER_ADMIN', 'ADMIN', 'HOST'] },
     ];
