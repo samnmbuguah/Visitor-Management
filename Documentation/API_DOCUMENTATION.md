@@ -174,6 +174,7 @@ GET /api/visitors/visitors/
       "status": "CHECKED_IN",
       "checkin_time": "2024-01-15T09:30:00Z",
       "checkout_time": null,
+      "expected_duration": 60,
       "badge_number": "B001",
       "photo": "base64-encoded-image-data"
     }
@@ -194,6 +195,7 @@ Content-Type: application/json
   "purpose": "Equipment Installation",
   "host": 1,
   "location": 1,
+  "expected_duration": 120,
   "photo": "base64-encoded-photo-data",
   "signature": "base64-encoded-signature-data"
 }
@@ -224,6 +226,7 @@ Content-Type: application/json
   "host": 1,
   "location": 1,
   "expected_arrival": "2024-01-20T14:00:00Z",
+  "expected_duration": 60,
   "purpose": "Partner Meeting"
 }
 ```
@@ -715,6 +718,9 @@ List endpoints support pagination:
   "results": [...]
 }
 ```
+
+> [!NOTE]
+> Client applications should always check for the `results` key. If absent, the response might be a direct list (for smaller payloads or specific non-paginated actions).
 
 ## Filtering and Search
 

@@ -45,7 +45,14 @@ frontend/
 └── app/
     └── admin/
         ├── maintenance/page.tsx # Refactored to use centralized hooks
-        └── assets/page.tsx       # To be refactored
+        └── assets/page.tsx      # Refactored to use centralized hooks
+
+mobile-admin/ | mobile-host/ | mobile-kiosk/
+├── src/
+│   ├── api/
+│   │   ├── client.ts            # Axios client with SecureStore interceptors
+│   │   └── visitors.ts          # Centralized visitor/invite services
+│   └── components/              # Shared UI components
 ```
 
 ## 🔧 Core Components
@@ -128,6 +135,24 @@ export function useCreateMaintenanceRequest()
 - ✅ Consistent loading/error states
 - ✅ Automatic redirects
 - ✅ Reusable across all admin pages
+
+### 5. Mobile API Interceptors (`mobile-*/src/api/client.ts`)
+
+```typescript
+// Shared Axios client for mobile apps
+const client = axios.create({ baseURL: API_URL });
+
+client.interceptors.request.use(async (config) => {
+  const token = await SecureStore.getItemAsync('userToken');
+  if (token) config.headers.Authorization = `Bearer ${token}`;
+  return config;
+});
+```
+
+**Benefits:**
+- ✅ Secure token handling via `expo-secure-store`
+- ✅ Automatic header injection
+- ✅ consistent base URL management
 
 ## 🚀 Usage Examples
 
@@ -218,10 +243,11 @@ export default function MaintenancePage() {
 - ✅ Refactor maintenance page as proof of concept
 - ✅ Test and validate architecture
 
-### Phase 2: In Progress
-- 🔄 Refactor assets page using same pattern
-- 🔄 Refactor other admin pages
-- 🔄 Update mobile apps to use centralized services
+### Phase 2: ✅ Substantially Complete
+- ✅ Refactor assets page using same pattern
+- ✅ Refactor other admin pages (Invites, Dashboard)
+- ✅ Update mobile apps to use centralized services where available
+- 🔄 Refactor remaining edge cases in Property Management
 
 ### Phase 3: Future
 - 📋 Create similar patterns for visitor management

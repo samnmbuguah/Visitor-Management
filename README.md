@@ -48,14 +48,38 @@ A comprehensive visitor and property management system built with Django REST Fr
 - **UI**: Custom components with Lucide icons
 - **Offline Support**: Local data caching
 
+## � Documentation
+
+### 📖 Comprehensive Guide
+- **[Complete System Guide](./COMPREHENSIVE_GUIDE.md)** - Full documentation covering all aspects
+- **[API Documentation](./API_DOCUMENTATION.md)** - Detailed API reference
+- **[Architecture Guide](./ARCHITECTURE.md)** - System design and patterns
+- **[SOLID Implementation](./SOLID_IMPLEMENTATION_SUMMARY.md)** - Code organization principles
+
+### 🔍 Analysis & Improvements
+- **[Logic Gaps Analysis](./LOGIC_GAPS_ANALYSIS.md)** - Identified issues and recommendations
+- **[Critical Fixes Guide](./CRITICAL_FIXES_IMPLEMENTATION.md)** - Step-by-step security fixes
+- **[Production Readiness](./PRODUCTION_READINESS_REPORT.md)** - Deployment preparation checklist
+
+### 📋 Feature Documentation
+- **[Invitation System](./INVITATION_FEATURE_DOCUMENTATION.md)** - Pre-registration workflow
+- **[Security Report](./RBAC_SECURITY_REPORT.md)** - Role-based access control
+- **[System Testing](./SYSTEM_TEST_REPORT.md)** - Testing procedures and results
+
+### 🛠️ Development Resources
+- **[Receptionist Workflow](./RECEPTIONIST_PENDING_APPROVAL_WORKFLOW.md)** - Front desk procedures
+- **[Kiosk UI Improvements](./KIOSK_UI_IMPROVEMENTS.md)** - Self-service interface
+- **[Registration Fix Guide](./RECEPTIONIST_MANUAL_REGISTRATION_FIX.md)** - Manual check-in process
+
+### 📋 Documentation Summary
+- **[Documentation Enhancement Summary](./DOCUMENTATION_SUMMARY.md)** - Complete overview of all documentation improvements and implementation roadmap
+
 ## 🚀 Quick Start
 
 ### Prerequisites
 - Docker and Docker Compose
 - Node.js 18+ (for local development)
 - Python 3.12+ (for local development)
-
-### Using Docker (Recommended)
 
 1. **Clone the repository**
    ```bash
