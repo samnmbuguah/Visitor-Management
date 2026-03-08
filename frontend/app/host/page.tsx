@@ -1,10 +1,10 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getVisitors, approveVisitor, rejectVisitor, Visitor } from '@/lib/api';
+import { getVisitors, approveVisitor, rejectVisitor, getLocations, getHosts, getVisitorTypes, createInvite, Visitor, Location, Host, VisitorType } from '@/lib/api';
 import {
     Users,
     Clock,
@@ -15,13 +15,31 @@ import {
     LogOut,
     User,
     Calendar,
-    MessageSquare
+    MessageSquare,
+    Mail,
+    Phone,
+    Building,
+    Plus,
+    Send
 } from 'lucide-react';
 
 export default function HostPage() {
     const { user, loading, logout } = useAuth();
     const router = useRouter();
     const queryClient = useQueryClient();
+    
+    // State for invitation form
+    const [showInviteForm, setShowInviteForm] = useState(false);
+    const [inviteData, setInviteData] = useState({
+        visitor_name: '',
+        visitor_email: '',
+        visitor_phone: '',
+        visitor_company: '',
+        visitor_type: '',
+        expected_arrival: '',
+        purpose: '',
+        expected_duration: ''
+    });
 
     useEffect(() => {
         if (!loading && (!user || user.role !== 'HOST')) {
@@ -42,6 +60,45 @@ export default function HostPage() {
         select: (data: Visitor[]) => data.filter(v => v.host_name === user?.username)
     });
 
+    const { data: locations = [] } = useQuery({
+        queryKey: ['locations'],
+        queryFn: () => getLocations().then(res => Array.isArray(res.data) ? res.data : res.data.results || []),
+        enabled: !!user
+    });
+
+    const { data: hosts = [] } = useQuery({
+        queryKey: ['hosts'],
+        queryFn: () => getHosts().then(res => Array.isArray(res.data) ? res.data : res.data.results || []),
+        enabled: !!user
+    });
+
+    const { data: visitorTypes = [] } = useQuery({
+        queryKey: ['visitorTypes'],
+        queryFn: () => getVisitorTypes().then(res => Array.isArray(res.data) ? res.data : res.data.results || []),
+        enabled: !!user
+    });
+
+    // Get current host's information
+    const currentHost = hosts.find((host: Host) => host.email === user?.email);
+
+    const inviteMutation = useMutation({
+        mutationFn: createInvite,
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['invites'] });
+            setShowInviteForm(false);
+            setInviteData({
+                visitor_name: '',
+                visitor_email: '',
+                visitor_phone: '',
+                visitor_company: '',
+                visitor_type: '',
+                expected_arrival: '',
+                purpose: '',
+                expected_duration: ''
+            });
+        }
+    });
+
     const approveMutation = useMutation({
         mutationFn: approveVisitor,
         onSuccess: () => queryClient.invalidateQueries({ queryKey: ['myVisitors'] })
@@ -51,6 +108,29 @@ export default function HostPage() {
         mutationFn: rejectVisitor,
         onSuccess: () => queryClient.invalidateQueries({ queryKey: ['myVisitors'] })
     });
+
+    const handleInviteSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        
+        if (!inviteData.visitor_name || !inviteData.visitor_email || !inviteData.expected_arrival) {
+            return;
+        }
+
+        // Find the first location (in a real app, host would have assigned location)
+        const location = locations[0];
+        if (!location) {
+            alert('No locations available');
+            return;
+        }
+
+        inviteMutation.mutate({
+            ...inviteData,
+            host: currentHost?.id,  // Add the current host's ID
+            location: location.id,
+            expected_arrival: new Date(inviteData.expected_arrival).toISOString(),
+            expected_duration: inviteData.expected_duration ? parseInt(inviteData.expected_duration) : null
+        });
+    };
 
     if (loading || !user) {
         return (
@@ -115,6 +195,163 @@ export default function HostPage() {
                         <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Active</span>
                     </div>
                 </div>
+
+                {/* Invite Guest Section */}
+                <section className="space-y-6">
+                    <div className="flex items-center justify-between px-2">
+                        <h3 className="text-lg font-black text-foreground flex items-center gap-2">
+                            <Send size={20} className="text-primary" />
+                            Invite Guest
+                            <div className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
+                        </h3>
+                        <button 
+                            onClick={() => setShowInviteForm(!showInviteForm)}
+                            className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-xl text-sm font-black active:scale-95 transition-all"
+                        >
+                            <Plus size={16} />
+                            {showInviteForm ? 'Cancel' : 'New Invitation'}
+                        </button>
+                    </div>
+
+                    {showInviteForm && (
+                        <div className="glass-card p-6 border-primary/10">
+                            <form onSubmit={handleInviteSubmit} className="space-y-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-black text-foreground flex items-center gap-2">
+                                            <User size={14} />
+                                            Guest Name *
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={inviteData.visitor_name}
+                                            onChange={(e) => setInviteData({...inviteData, visitor_name: e.target.value})}
+                                            className="w-full px-4 py-3 bg-background border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                                            placeholder="Enter guest name"
+                                            required
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-black text-foreground flex items-center gap-2">
+                                            <Mail size={14} />
+                                            Email Address *
+                                        </label>
+                                        <input
+                                            type="email"
+                                            value={inviteData.visitor_email}
+                                            onChange={(e) => setInviteData({...inviteData, visitor_email: e.target.value})}
+                                            className="w-full px-4 py-3 bg-background border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                                            placeholder="guest@example.com"
+                                            required
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-black text-foreground flex items-center gap-2">
+                                            <Phone size={14} />
+                                            Phone Number
+                                        </label>
+                                        <input
+                                            type="tel"
+                                            value={inviteData.visitor_phone}
+                                            onChange={(e) => setInviteData({...inviteData, visitor_phone: e.target.value})}
+                                            className="w-full px-4 py-3 bg-background border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                                            placeholder="+1 (555) 123-4567"
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-black text-foreground flex items-center gap-2">
+                                            <Building size={14} />
+                                            Company
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={inviteData.visitor_company}
+                                            onChange={(e) => setInviteData({...inviteData, visitor_company: e.target.value})}
+                                            className="w-full px-4 py-3 bg-background border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                                            placeholder="Company name"
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-black text-foreground flex items-center gap-2">
+                                            <Building size={14} />
+                                            Visit Type *
+                                        </label>
+                                        <select
+                                            value={inviteData.visitor_type}
+                                            onChange={(e) => setInviteData({...inviteData, visitor_type: e.target.value})}
+                                            className="w-full px-4 py-3 bg-background border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                                            required
+                                        >
+                                            <option value="">Select visit type</option>
+                                            {visitorTypes.map((visitorType: VisitorType) => (
+                                                <option key={visitorType.id} value={visitorType.id}>
+                                                    {visitorType.name}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-black text-foreground flex items-center gap-2">
+                                            <Calendar size={14} />
+                                            Expected Arrival *
+                                        </label>
+                                        <input
+                                            type="datetime-local"
+                                            value={inviteData.expected_arrival}
+                                            onChange={(e) => setInviteData({...inviteData, expected_arrival: e.target.value})}
+                                            className="w-full px-4 py-3 bg-background border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                                            required
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-black text-foreground flex items-center gap-2">
+                                            <MessageSquare size={14} />
+                                            Purpose of Visit
+                                        </label>
+                                        <textarea
+                                            value={inviteData.purpose}
+                                            onChange={(e) => setInviteData({...inviteData, purpose: e.target.value})}
+                                            className="w-full px-4 py-3 bg-background border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary resize-none"
+                                            rows={3}
+                                            placeholder="Purpose of the visit..."
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-black text-foreground flex items-center gap-2">
+                                            <Clock size={14} />
+                                            Expected Duration (minutes)
+                                        </label>
+                                        <input
+                                            type="number"
+                                            value={inviteData.expected_duration}
+                                            onChange={(e) => setInviteData({...inviteData, expected_duration: e.target.value})}
+                                            className="w-full px-4 py-3 bg-background border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                                            placeholder="60"
+                                            min="1"
+                                        />
+                                    </div>
+                                </div>
+                                <div className="flex gap-3 pt-4">
+                                    <button
+                                        type="submit"
+                                        disabled={inviteMutation.isPending}
+                                        className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-xl font-black active:scale-95 transition-all disabled:opacity-50"
+                                    >
+                                        <Send size={16} />
+                                        {inviteMutation.isPending ? 'Sending...' : 'Send Invitation'}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowInviteForm(false)}
+                                        className="px-6 py-3 bg-muted text-muted-foreground rounded-xl font-black active:scale-95 transition-all"
+                                    >
+                                        Cancel
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    )}
+                </section>
 
                 {/* Visitors Section */}
                 <section className="space-y-6">

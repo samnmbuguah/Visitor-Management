@@ -33,6 +33,21 @@ class Location(models.Model):
         ordering = ['name']
 
 
+class VisitorType(models.Model):
+    """Predefined visitor types for common visit reasons."""
+    name = models.CharField(max_length=50, unique=True)
+    description = models.TextField(blank=True)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        ordering = ['name']
+
+
 class Kiosk(models.Model):
     """Represents a check-in kiosk at a location."""
     tenant = models.ForeignKey(Tenant, on_delete=models.CASCADE, related_name='kiosks', null=True, blank=True)
@@ -106,9 +121,12 @@ class PreRegistration(models.Model):
     visitor_phone = models.CharField(max_length=15, blank=True)
     visitor_company = models.CharField(max_length=100, blank=True)
     visitor_number_plate = models.CharField(max_length=20, blank=True, help_text="Vehicle number plate")
+    visitor_type = models.ForeignKey(VisitorType, on_delete=models.SET_NULL, null=True, blank=True, related_name='invites')
+    purpose = models.TextField(blank=True)  # Now optional, used for additional details
     host = models.ForeignKey(Host, on_delete=models.CASCADE, related_name='invites')
     location = models.ForeignKey(Location, on_delete=models.CASCADE, related_name='invites')
     expected_arrival = models.DateTimeField()
+    expected_duration = models.IntegerField(null=True, blank=True, help_text="Expected visit duration in minutes")
     token = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='PENDING')
     created_at = models.DateTimeField(auto_now_add=True)
@@ -138,7 +156,8 @@ class Visitor(models.Model):
     company = models.CharField(max_length=100, blank=True)
     number_plate = models.CharField(max_length=20, blank=True, help_text="Vehicle number plate")
     host = models.ForeignKey(Host, on_delete=models.SET_NULL, null=True, related_name='visitors')
-    purpose = models.TextField()
+    visitor_type = models.ForeignKey(VisitorType, on_delete=models.SET_NULL, null=True, blank=True, related_name='visitors')
+    purpose = models.TextField(blank=True)  # Now optional, used for additional details
     photo = models.TextField(blank=True, help_text="Base64 encoded image")
     location = models.ForeignKey(Location, on_delete=models.SET_NULL, null=True, blank=True, related_name='visitors')
     kiosk = models.ForeignKey(Kiosk, on_delete=models.SET_NULL, null=True, blank=True, related_name='visitors')
@@ -151,6 +170,10 @@ class Visitor(models.Model):
     nda_accepted = models.BooleanField(default=False)
     signature = models.TextField(blank=True, help_text="Base64 encoded signature")
     nda_signed_at = models.DateTimeField(null=True, blank=True)
+    
+    # Audit trail for approvals
+    approved_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='approved_visitors')
+    approved_at = models.DateTimeField(null=True, blank=True)
 
 
     def __str__(self):

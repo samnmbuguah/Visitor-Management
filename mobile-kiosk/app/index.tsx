@@ -48,14 +48,6 @@ export default function WelcomeScreen() {
     return (
         <View style={styles.container}>
             <View style={styles.overlay}>
-                <View style={styles.header}>
-                    <View style={styles.logo}>
-                        <UserPlus color="#fff" size={40} />
-                    </View>
-                    <Text style={styles.title}>Welcome</Text>
-                    <Text style={styles.subtitle}>Visitor Management Kiosk</Text>
-                </View>
-
                 <View style={styles.menu}>
                     <TouchableOpacity
                         style={[styles.menuButton, styles.primaryButton]}
@@ -128,12 +120,8 @@ const styles = StyleSheet.create({
     },
     overlay: {
         flex: 1,
-        padding: 40,
+        padding: 30,
         justifyContent: 'center',
-    },
-    header: {
-        alignItems: 'center',
-        marginBottom: 60,
     },
     logo: {
         width: 100,
@@ -148,26 +136,15 @@ const styles = StyleSheet.create({
         shadowRadius: 20,
         elevation: 10,
     },
-    title: {
-        fontSize: 42,
-        fontWeight: 'bold',
-        color: '#fff',
-        letterSpacing: 1,
-    },
-    subtitle: {
-        fontSize: 20,
-        color: '#94a3b8',
-        marginTop: 10,
-    },
     menu: {
-        gap: 20,
+        gap: 16,
     },
     menuButton: {
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: '#1e293b',
         borderRadius: 24,
-        padding: 25,
+        padding: 20,
         borderWidth: 1,
         borderColor: '#334155',
     },

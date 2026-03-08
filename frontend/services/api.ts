@@ -26,8 +26,8 @@ export class AuthAPI {
 // Property Management API Service
 export class PropertyManagementAPI {
   // Maintenance Requests
-  static async getMaintenanceRequests() {
-    const response = await api.get('/property-management/requests/');
+  static async getMaintenanceRequests(params?: any) {
+    const response = await api.get('/property-management/requests/', { params });
     return response.data.results || response.data;
   }
 
@@ -44,14 +44,14 @@ export class PropertyManagementAPI {
   }
 
   // Categories
-  static async getMaintenanceCategories() {
-    const response = await api.get('/property-management/categories/');
+  static async getMaintenanceCategories(params?: any) {
+    const response = await api.get('/property-management/categories/', { params });
     return response.data.results || response.data;
   }
 
   // Assets
-  static async getAssets() {
-    const response = await api.get('/property-management/assets/');
+  static async getAssets(params?: any) {
+    const response = await api.get('/property-management/assets/', { params });
     return response.data.results || response.data;
   }
 
@@ -71,26 +71,26 @@ export class PropertyManagementAPI {
   }
 
   // Asset Types
-  static async getAssetTypes() {
-    const response = await api.get('/property-management/asset-types/');
+  static async getAssetTypes(params?: any) {
+    const response = await api.get('/property-management/asset-types/', { params });
     return response.data.results || response.data;
   }
 
   // Vendors
-  static async getVendors() {
-    const response = await api.get('/property-management/vendors/');
+  static async getVendors(params?: any) {
+    const response = await api.get('/property-management/vendors/', { params });
     return response.data.results || response.data;
   }
 
   // Work Orders
-  static async getWorkOrders() {
-    const response = await api.get('/property-management/work-orders/');
+  static async getWorkOrders(params?: any) {
+    const response = await api.get('/property-management/work-orders/', { params });
     return response.data.results || response.data;
   }
 
   // Cost Centers
-  static async getCostCenters() {
-    const response = await api.get('/property-management/cost-centers/');
+  static async getCostCenters(params?: any) {
+    const response = await api.get('/property-management/cost-centers/', { params });
     return response.data.results || response.data;
   }
 }

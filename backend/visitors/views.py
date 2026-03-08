@@ -2,8 +2,13 @@ from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.utils import timezone
-from .models import Visitor, Host
-from .serializers import VisitorSerializer, HostSerializer
+from .models import Visitor, Host, VisitorType
+from .serializers import VisitorSerializer, HostSerializer, VisitorTypeSerializer
+
+class VisitorTypeViewSet(viewsets.ReadOnlyModelViewSet):
+    """ViewSet for visitor types (read-only for common use)."""
+    queryset = VisitorType.objects.filter(is_active=True).order_by('name')
+    serializer_class = VisitorTypeSerializer
 
 class HostViewSet(viewsets.ModelViewSet):
     queryset = Host.objects.all()

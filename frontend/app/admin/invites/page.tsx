@@ -1,11 +1,12 @@
 "use client";
 
 import { useState } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQueryClient, useQuery, useMutation } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { Card } from '@/components/ui/card';
 import { UserPlus, Calendar, Mail, MapPin, XCircle, Search, QrCode, Upload } from 'lucide-react';
 import { AdminPage } from '@/components/ProtectedPage';
+import { PreRegistration, Host, Location, getHosts, getLocations, createInvite, bulkUploadPreRegistrations } from '@/lib/api';
 import { 
   useInvites, 
   useHosts, 
@@ -38,7 +39,7 @@ function InvitesPageContent() {
         }
     };
 
-    const filteredInvites = invites?.filter(invite =>
+    const filteredInvites = invites?.filter((invite: PreRegistration) =>
         invite.visitor_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         invite.visitor_email?.toLowerCase().includes(searchQuery.toLowerCase())
     ) || [];
@@ -84,7 +85,7 @@ function InvitesPageContent() {
                 <div className="text-center py-10 text-gray-400">Loading invites...</div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {filteredInvites?.map((invite) => (
+                    {filteredInvites?.map((invite: PreRegistration) => (
                         <Card key={invite.id} className="p-4 space-y-3 bg-white/5 border-white/10 relative overflow-hidden group">
                             <div className="absolute top-0 right-0 p-2 opacity-50 text-[10px] uppercase font-bold tracking-wider">
                                 {invite.status}
@@ -111,7 +112,7 @@ function InvitesPageContent() {
                             <div className="space-y-2 pt-2 border-t border-white/5">
                                 <div className="flex items-center gap-2 text-sm">
                                     <Calendar size={14} className="text-blue-400" />
-                                    <span>{format(new Date(invite.expected_arrival), 'PPP p')}</span>
+                                    <span>{invite.expected_arrival ? format(new Date(invite.expected_arrival), 'PPP p') : 'Not specified'}</span>
                                 </div>
                                 <div className="flex items-center gap-2 text-sm">
                                     <MapPin size={14} className="text-purple-400" />
@@ -165,14 +166,10 @@ function CreateInviteModal({ onClose, onSuccess }: { onClose: () => void, onSucc
         },
     });
 
-    const [formData, setFormData] = useState({
-        visitor_name: '',
-        visitor_email: '',
-        visitor_phone: '',
-        visitor_company: '',
         host: '',
         location: '',
         expected_arrival: '',
+        expected_duration: '',
     });
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -182,6 +179,7 @@ function CreateInviteModal({ onClose, onSuccess }: { onClose: () => void, onSucc
             host: Number(formData.host),
             location: Number(formData.location),
             expected_arrival: new Date(formData.expected_arrival).toISOString(), // Ensure ISO format
+            expected_duration: formData.expected_duration ? Number(formData.expected_duration) : null,
         });
     };
 
@@ -241,7 +239,7 @@ function CreateInviteModal({ onClose, onSuccess }: { onClose: () => void, onSucc
                                 onChange={e => setFormData({ ...formData, host: e.target.value })}
                             >
                                 <option value="">Select Host</option>
-                                {hosts?.map(h => <option key={h.id} value={h.id}>{h.name}</option>)}
+                                {hosts?.map((h: Host) => <option key={h.id} value={h.id}>{h.name}</option>)}
                             </select>
                         </div>
                         <div className="space-y-1">
@@ -253,7 +251,7 @@ function CreateInviteModal({ onClose, onSuccess }: { onClose: () => void, onSucc
                                 onChange={e => setFormData({ ...formData, location: e.target.value })}
                             >
                                 <option value="">Select Location</option>
-                                {locations?.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
+                                {locations?.map((l: Location) => <option key={l.id} value={l.id}>{l.name}</option>)}
                             </select>
                         </div>
                     </div>
@@ -266,6 +264,17 @@ function CreateInviteModal({ onClose, onSuccess }: { onClose: () => void, onSucc
                             className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 outline-none focus:border-blue-500/50"
                             value={formData.expected_arrival}
                             onChange={e => setFormData({ ...formData, expected_arrival: e.target.value })}
+                        />
+                    </div>
+
+                    <div className="space-y-1">
+                        <label className="text-sm text-gray-400">Expected Duration (Minutes)</label>
+                        <input
+                            type="number"
+                            className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 outline-none focus:border-blue-500/50"
+                            value={formData.expected_duration}
+                            onChange={e => setFormData({ ...formData, expected_duration: e.target.value })}
+                            placeholder="e.g. 60"
                         />
                     </div>
 
@@ -305,7 +314,9 @@ function BulkImportModal({ onClose, onSuccess }: { onClose: () => void, onSucces
 
         setUploading(true);
         try {
-            const res = await bulkUploadPreRegistrations(file);
+            const formData = new FormData();
+            formData.append('file', file);
+            const res = await bulkUploadPreRegistrations(formData);
             setResult(res.data);
             if (res.data.created > 0) {
                 setTimeout(() => {

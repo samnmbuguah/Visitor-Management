@@ -1,7 +1,7 @@
 import random
 import string
 from django.core.cache import cache
-from .notification_service import NotificationService
+from .notifications import NotificationService
 
 class OTPService:
     @staticmethod

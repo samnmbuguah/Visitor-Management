@@ -25,6 +25,7 @@ export default function CheckinForm() {
         location: '',
         host: '',
         photo: '',
+        expected_duration: '60', // Default 60 mins
     });
 
     useEffect(() => {
@@ -232,6 +233,18 @@ export default function CheckinForm() {
                             </ScrollView>
                             {hosts.length === 0 && <Text style={styles.errorText}>No hosts available for this location</Text>}
                         </View>
+                    </View>
+
+                    <View style={styles.inputGroup}>
+                        <Clock color="#64748b" size={20} style={styles.inputIcon} />
+                        <TextInput
+                            style={styles.input}
+                            placeholder="Expected Duration (minutes)"
+                            placeholderTextColor="#64748b"
+                            value={formData.expected_duration}
+                            onChangeText={(text) => setFormData({ ...formData, expected_duration: text })}
+                            keyboardType="numeric"
+                        />
                     </View>
 
                     <TextInput

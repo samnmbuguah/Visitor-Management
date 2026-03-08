@@ -117,7 +117,9 @@ class AssetSerializer(serializers.ModelSerializer):
 
 class MaintenanceScheduleSerializer(serializers.ModelSerializer):
     asset = AssetSerializer(read_only=True)
+    asset_id = serializers.IntegerField(write_only=True)
     assigned_to = VendorSerializer(read_only=True)
+    assigned_to_id = serializers.IntegerField(write_only=True, required=False, allow_null=True)
     status_display = serializers.CharField(source='get_status_display', read_only=True)
 
     class Meta:
@@ -136,6 +138,7 @@ class AssetCheckoutSerializer(serializers.ModelSerializer):
 
 class CostCenterSerializer(serializers.ModelSerializer):
     manager = HostSerializer(read_only=True)
+    manager_id = serializers.IntegerField(write_only=True, required=False)
     budget_remaining = serializers.SerializerMethodField()
 
     class Meta:
@@ -165,7 +168,8 @@ class MaintenanceRequestCreateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = MaintenanceRequest
-        fields = ['title', 'description', 'priority', 'category', 'location', 'photo_data']
+        fields = ['id', 'title', 'description', 'priority', 'category', 'location', 'photo_data']
+        read_only_fields = ['id']
 
     def create(self, validated_data):
         photo_data = validated_data.pop('photo_data', [])

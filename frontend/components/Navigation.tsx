@@ -18,7 +18,7 @@ export default function Navigation() {
         { href: '/admin/maintenance', label: 'Maintenance', icon: Wrench, roles: ['SUPER_ADMIN', 'ADMIN'] },
         { href: '/admin/assets', label: 'Assets', icon: Building, roles: ['SUPER_ADMIN', 'ADMIN'] },
         { href: '/admin/tenants', label: 'Tenants', icon: Users, roles: ['SUPER_ADMIN'] },
-        { href: '/admin/leases', label: 'Leases', icon: Mail, roles: ['SUPER_ADMIN', 'ADMIN'] },
+        { href: '/admin/leases', label: 'Leases', icon: Mail, roles: ['SUPER_ADMIN'] },
         { href: '/host', label: 'Property Manager', icon: UserCheck, roles: ['HOST'] },
         { href: '/receptionist', label: 'Receptionist', icon: UserCheck, roles: ['RECEPTIONIST'] },
     ];

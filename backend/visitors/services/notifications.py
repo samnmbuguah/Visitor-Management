@@ -1,7 +1,7 @@
 from django.core.mail import EmailMultiAlternatives
 from django.template import Template, Context
 from django.conf import settings
-from ..models import NotificationTemplate, NotificationLog, Visitor, Host
+from ..models import NotificationTemplate, EmailNotificationLog, Visitor, Host
 
 
 class NotificationService:
@@ -92,7 +92,7 @@ class NotificationService:
             error_message = str(e)
 
         # Log the notification
-        NotificationLog.objects.create(
+        EmailNotificationLog.objects.create(
             template=template,
             recipient_email=recipient_email,
             subject=subject,

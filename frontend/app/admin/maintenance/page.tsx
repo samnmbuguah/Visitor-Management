@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { Modal } from '@/components/ui/modal';
+import { Modal, ModalContent } from '@/components/ui/modal';
 import { Wrench, AlertTriangle, Clock, CheckCircle, Camera, Plus, Filter } from 'lucide-react';
 import { AdminPage } from '@/components/ProtectedPage';
 import { 
@@ -126,7 +126,7 @@ function MaintenancePageContent() {
     }
   };
 
-  const filteredRequests = requests.filter(request => {
+  const filteredRequests = (requests as MaintenanceRequest[]).filter((request: MaintenanceRequest) => {
     if (filterStatus !== 'all' && request.status !== filterStatus) return false;
     if (filterPriority !== 'all' && request.priority !== filterPriority) return false;
     return true;
@@ -288,8 +288,9 @@ function MaintenancePageContent() {
       </div>
 
       {/* Create Request Modal */}
-      <Modal isOpen={showCreateModal} onClose={() => setShowCreateModal(false)}>
-        <div className="space-y-6">
+      <Modal open={showCreateModal} onOpenChange={setShowCreateModal}>
+        <ModalContent>
+          <div className="space-y-6">
           <h2 className="text-2xl font-bold">New Maintenance Request</h2>
           
           <div className="space-y-4">
@@ -369,76 +370,12 @@ function MaintenancePageContent() {
             </Button>
           </div>
         </div>
-      </Modal>
-
-      {/* Photo Modal */}
-      <Modal isOpen={showPhotoModal} onClose={() => setShowPhotoModal(false)}>
-        {selectedRequest && (
-          <div className="space-y-6">
-            <h2 className="text-2xl font-bold">{selectedRequest.title}</h2>
-            
-            <div className="space-y-4">
-              <p>{selectedRequest.description}</p>
-              
-              <div className="flex items-center gap-4">
-                <Badge variant={getPriorityColor(selectedRequest.priority)}>
-                  {selectedRequest.priority}
-                </Badge>
-                <Badge variant={getStatusColor(selectedRequest.status)}>
-                  {selectedRequest.status.replace('_', ' ')}
-                </Badge>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <span className="font-medium">Location:</span> {selectedRequest.location?.name}
-                </div>
-                <div>
-                  <span className="font-medium">Category:</span> {selectedRequest.category?.name}
-                </div>
-                <div>
-                  <span className="font-medium">Requested by:</span> {selectedRequest.host?.name}
-                </div>
-                <div>
-                  <span className="font-medium">Date:</span>{' '}
-                  {new Date(selectedRequest.requested_at).toLocaleDateString()}
-                </div>
-              </div>
-
-              {selectedRequest.photos && selectedRequest.photos.length > 0 && (
-                <div>
-                  <h3 className="text-lg font-semibold mb-3">Photos</h3>
-                  <div className="grid gap-4">
-                    {selectedRequest.photos.map((photo) => (
-                      <div key={photo.id} className="space-y-2">
-                        <img
-                          src={`data:image/jpeg;base64,${photo.photo}`}
-                          alt={photo.caption}
-                          className="w-full h-48 object-cover rounded-lg"
-                        />
-                        {photo.caption && (
-                          <p className="text-sm text-muted-foreground">{photo.caption}</p>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <div className="flex justify-end">
-              <Button onClick={() => setShowPhotoModal(false)}>
-                Close
-              </Button>
-            </div>
-          </div>
-        )}
+        </ModalContent>
       </Modal>
     </div>
   );
 }
 
-// Wrap the component with AdminPage for authentication
 export default function MaintenancePage() {
   return (
     <AdminPage>

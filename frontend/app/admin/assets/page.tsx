@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { Modal } from '@/components/ui/modal';
+import { Modal, ModalContent } from '@/components/ui/modal';
 import { Building, QrCode, CheckCircle, AlertTriangle, Wrench, Plus, Filter, Search } from 'lucide-react';
 import { AdminPage } from '@/components/ProtectedPage';
 import { 
@@ -170,7 +170,7 @@ function AssetsPageContent() {
     return null;
   };
 
-  const filteredAssets = assets.filter(asset => {
+  const filteredAssets = assets.filter((asset: Asset) => {
     const matchesSearch = asset.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          asset.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          asset.serial_number.toLowerCase().includes(searchTerm.toLowerCase());
@@ -256,7 +256,7 @@ function AssetsPageContent() {
 
       {/* Assets Grid */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {filteredAssets.map((asset) => {
+        {filteredAssets.map((asset: Asset) => {
           const maintenanceStatus = getMaintenanceStatus(asset);
           
           return (
@@ -271,7 +271,7 @@ function AssetsPageContent() {
                 </div>
                 
                 {maintenanceStatus && (
-                  <Badge variant={maintenanceStatus.color} className="w-fit">
+                  <Badge variant={maintenanceStatus.color as "default" | "success" | "destructive" | "outline" | "secondary" | "warning" | "info"} className="w-fit">
                     {maintenanceStatus.status}
                   </Badge>
                 )}
@@ -351,8 +351,9 @@ function AssetsPageContent() {
       </div>
 
       {/* Create Asset Modal */}
-      <Modal isOpen={showCreateModal} onClose={() => setShowCreateModal(false)}>
-        <div className="space-y-6">
+      <Modal open={showCreateModal} onOpenChange={setShowCreateModal}>
+        <ModalContent>
+          <div className="space-y-6">
           <h2 className="text-2xl font-bold">New Asset</h2>
           
           <div className="grid gap-4 md:grid-cols-2">
@@ -481,12 +482,14 @@ function AssetsPageContent() {
             </Button>
           </div>
         </div>
+        </ModalContent>
       </Modal>
 
       {/* Asset Detail Modal */}
-      <Modal isOpen={showDetailModal} onClose={() => setShowDetailModal(false)}>
-        {selectedAsset && (
-          <div className="space-y-6">
+      <Modal open={showDetailModal} onOpenChange={setShowDetailModal}>
+        <ModalContent>
+          {selectedAsset && (
+            <div className="space-y-6">
             <div className="flex items-center justify-between">
               <h2 className="text-2xl font-bold">{selectedAsset.name}</h2>
               <Button
@@ -579,11 +582,13 @@ function AssetsPageContent() {
             </div>
           </div>
         )}
+        </ModalContent>
       </Modal>
 
       {/* QR Code Modal */}
-      <Modal isOpen={showQRModal} onClose={() => setShowQRModal(false)}>
-        <div className="space-y-6 text-center">
+      <Modal open={showQRModal} onOpenChange={setShowQRModal}>
+        <ModalContent>
+          <div className="space-y-6 text-center">
           <h2 className="text-2xl font-bold">QR Code</h2>
           
           {qrCodeData ? (
@@ -610,6 +615,7 @@ function AssetsPageContent() {
             </Button>
           </div>
         </div>
+        </ModalContent>
       </Modal>
     </div>
   );

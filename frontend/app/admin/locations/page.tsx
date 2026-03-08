@@ -91,14 +91,14 @@ export default function LocationsPage() {
     const handleUpdateLocation = (e: React.FormEvent) => {
         e.preventDefault();
         if (editingLocation) {
+            const data = {
+                name: editingLocation.name,
+                address: editingLocation.address,
+                floor: editingLocation.floor,
+            }
             updateLocationMutation.mutate({
                 id: editingLocation.id,
-                data: {
-                    name: editingLocation.name,
-                    address: editingLocation.address,
-                    floor: editingLocation.floor,
-                    timezone: editingLocation.timezone,
-                }
+                data
             });
         }
     };
@@ -109,7 +109,7 @@ export default function LocationsPage() {
     };
 
     const getKiosksForLocation = (locationId: number) => {
-        return kiosks.filter(k => k.location === locationId);
+        return kiosks.filter((k: Kiosk) => k.location === locationId);
     };
 
     return (
@@ -254,7 +254,7 @@ export default function LocationsPage() {
                     </div>
                 ) : (
                     <div className="space-y-4">
-                        {locations.map(location => {
+                        {locations.map((location: Location) => {
                             const locationKiosks = getKiosksForLocation(location.id);
                             return (
                                 <div key={location.id} className="glass-card p-6">
@@ -341,7 +341,7 @@ export default function LocationsPage() {
                                             <p className="text-gray-500 text-sm">No kiosks configured</p>
                                         ) : (
                                             <div className="flex flex-wrap gap-2">
-                                                {locationKiosks.map(kiosk => (
+                                                {locationKiosks.map((kiosk: Kiosk) => (
                                                     <div
                                                         key={kiosk.id}
                                                         className="flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 text-sm"

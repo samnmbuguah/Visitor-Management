@@ -35,10 +35,13 @@ class PropertyManagementTestCase(TestCase):
         )
         
         # Create user and host
+        # Create user and host
+        import uuid
+        unique_username = f"testuser_{uuid.uuid4().hex[:8]}"
         self.user = User.objects.create_user(
-            username='testuser',
+            username=unique_username,
             password='testpass123',
-            email='test@example.com'
+            email=f'{unique_username}@example.com'
         )
         
         # Create user profile
@@ -225,7 +228,7 @@ class AssetManagementTests(PropertyManagementTestCase):
 
     def test_get_assets(self):
         """Test retrieving assets"""
-        Asset.objects.create(
+        Asset.objects.create(qr_code=__import__('uuid').uuid4().hex, 
             tenant=self.tenant,
             name="Test Asset",
             description="Test description",
@@ -240,7 +243,7 @@ class AssetManagementTests(PropertyManagementTestCase):
 
     def test_generate_qr_code(self):
         """Test generating QR code for asset"""
-        asset = Asset.objects.create(
+        asset = Asset.objects.create(qr_code=__import__('uuid').uuid4().hex, 
             tenant=self.tenant,
             name="Test Asset",
             description="Test description",
@@ -256,7 +259,7 @@ class AssetManagementTests(PropertyManagementTestCase):
 
     def test_checkout_asset(self):
         """Test checking out an asset"""
-        asset = Asset.objects.create(
+        asset = Asset.objects.create(qr_code=__import__('uuid').uuid4().hex, 
             tenant=self.tenant,
             name="Test Asset",
             description="Test description",
@@ -286,7 +289,7 @@ class AssetManagementTests(PropertyManagementTestCase):
 
     def test_checkin_asset(self):
         """Test checking in an asset"""
-        asset = Asset.objects.create(
+        asset = Asset.objects.create(qr_code=__import__('uuid').uuid4().hex, 
             tenant=self.tenant,
             name="Test Asset",
             description="Test description",
@@ -354,7 +357,8 @@ class VendorManagementTests(PropertyManagementTestCase):
 class MaintenanceScheduleTests(PropertyManagementTestCase):
     def test_create_maintenance_schedule(self):
         """Test creating maintenance schedule"""
-        asset = Asset.objects.create(
+        import uuid
+        asset = Asset.objects.create(qr_code=__import__('uuid').uuid4().hex, 
             tenant=self.tenant,
             name="Test Asset",
             description="Test description",
@@ -364,12 +368,12 @@ class MaintenanceScheduleTests(PropertyManagementTestCase):
         
         scheduled_date = timezone.now() + timedelta(days=7)
         data = {
-            'asset': asset.id,
+            'asset_id': asset.id,
             'title': 'Preventive Maintenance',
             'description': 'Monthly checkup',
             'scheduled_date': scheduled_date.isoformat(),
             'estimated_duration_hours': 2.0,
-            'assigned_to': self.vendor.id
+            'assigned_to_id': self.vendor.id
         }
         
         response = self.client.post('/api/property-management/schedules/', data)
@@ -382,7 +386,8 @@ class MaintenanceScheduleTests(PropertyManagementTestCase):
 
     def test_get_upcoming_schedules(self):
         """Test retrieving upcoming maintenance schedules"""
-        asset = Asset.objects.create(
+        import uuid
+        asset = Asset.objects.create(qr_code=__import__('uuid').uuid4().hex, 
             tenant=self.tenant,
             name="Test Asset",
             description="Test description",
@@ -422,7 +427,7 @@ class CostCenterTests(PropertyManagementTestCase):
             'code': 'IT001',
             'description': 'IT operations and equipment',
             'budget_limit': 10000.00,
-            'manager': self.host.id
+            'manager_id': self.host.id
         }
         
         response = self.client.post('/api/property-management/cost-centers/', data)
@@ -431,7 +436,7 @@ class CostCenterTests(PropertyManagementTestCase):
         cost_center = CostCenter.objects.get(id=response.data['id'])
         self.assertEqual(cost_center.name, 'IT Department')
         self.assertEqual(cost_center.code, 'IT001')
-        self.assertEqual(cost_center.manager, self.host)
+        self.assertEqual(cost_center.manager_id, self.host.id)
 
     def test_get_cost_center_expenses(self):
         """Test retrieving cost center expenses"""
@@ -484,7 +489,7 @@ class DashboardTests(PropertyManagementTestCase):
             host=self.host
         )
         
-        Asset.objects.create(
+        Asset.objects.create(qr_code=__import__('uuid').uuid4().hex, 
             tenant=self.tenant,
             name="Test Asset",
             description="Test",
@@ -568,20 +573,22 @@ class IntegrationTests(PropertyManagementTestCase):
         )
         
         # Create assets in different locations
-        asset1 = Asset.objects.create(
+        asset1 = Asset.objects.create(qr_code=__import__('uuid').uuid4().hex, 
             tenant=self.tenant,
             name="Asset 1",
             description="Test",
             asset_type=self.asset_type,
-            location=self.location
+            location=self.location,
+            serial_number="SN1"
         )
         
-        asset2 = Asset.objects.create(
+        asset2 = Asset.objects.create(qr_code=__import__('uuid').uuid4().hex, 
             tenant=self.tenant,
             name="Asset 2",
             description="Test",
             asset_type=self.asset_type,
-            location=other_location
+            location=other_location,
+            serial_number="SN2"
         )
         
         # Filter by user's location

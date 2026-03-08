@@ -4,6 +4,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from .views import (
     VisitorViewSet,
     HostViewSet,
+    VisitorTypeViewSet,
     WatchlistViewSet,
     LocationViewSet,
     KioskViewSet,
@@ -49,6 +50,7 @@ from .views import (
 router = DefaultRouter()
 router.register(r'visitors', VisitorViewSet)
 router.register(r'hosts', HostViewSet)
+router.register(r'visitor-types', VisitorTypeViewSet)
 router.register(r'locations', LocationViewSet)
 router.register(r'kiosks', KioskViewSet)
 router.register(r'notification-templates', NotificationTemplateViewSet)

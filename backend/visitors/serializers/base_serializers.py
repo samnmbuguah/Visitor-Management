@@ -3,15 +3,8 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from django.utils import timezone
 from django.contrib.auth.models import User
 from ..models import (
-    Visitor,
-    Location,
-    Host,
-    Kiosk,
-    NotificationTemplate,
-    NotificationLog,
-    PreRegistration,
-    WatchlistEntry,
-    UserProfile,
+    User, UserProfile, UserRole, Location, Kiosk, Host, Visitor, 
+    PreRegistration, VisitorType, WatchlistEntry, Tenant, NotificationTemplate, NotificationLog
 )
 from ..services.qrcode_service import QRCodeService
 
@@ -138,11 +131,12 @@ class VisitorSerializer(serializers.ModelSerializer):
     host_name = serializers.CharField(source='host.name', read_only=True)
     location_name = serializers.CharField(source='location.name', read_only=True)
     kiosk_name = serializers.CharField(source='kiosk.name', read_only=True)
+    visitor_type_name = serializers.CharField(source='visitor_type.name', read_only=True)
 
     class Meta:
         model = Visitor
         fields = ['id', 'name', 'email', 'phone', 'company', 'number_plate', 'host', 'host_name',
-                  'purpose', 'photo', 'location', 'location_name', 'kiosk', 'kiosk_name',
+                  'visitor_type', 'visitor_type_name', 'purpose', 'photo', 'location', 'location_name', 'kiosk', 'kiosk_name',
                   'checkin_time', 'checkout_time', 'expected_duration', 'status', 'badge_number']
         read_only_fields = ['id', 'checkin_time', 'status', 'badge_number']
 
@@ -151,9 +145,9 @@ class VisitorCreateSerializer(serializers.ModelSerializer):
     """Serializer for creating visitors."""
     class Meta:
         model = Visitor
-        fields = ['id', 'name', 'email', 'phone', 'company', 'number_plate', 'host', 'purpose', 'photo',
-                  'location', 'kiosk', 'expected_duration', 'status', 'nda_accepted', 'signature']
-        read_only_fields = ['id', 'status']
+        fields = ['id', 'name', 'email', 'phone', 'company', 'number_plate', 'host', 'visitor_type', 'purpose', 'expected_duration', 'photo',
+                  'location', 'kiosk', 'status', 'nda_accepted', 'signature']
+        read_only_fields = ['id']
 
     def validate(self, attrs):
         attrs = super().validate(attrs)
@@ -179,6 +173,10 @@ class VisitorCreateSerializer(serializers.ModelSerializer):
 
         if nda_accepted and signature:
             validated_data['nda_signed_at'] = timezone.now()
+
+        # Force status to PENDING for receptionist registration
+        # This overrides the model default of CHECKED_IN
+        validated_data['status'] = 'PENDING'
 
         return super().create(validated_data)
 
@@ -221,16 +219,25 @@ class PreRegistrationSerializer(serializers.ModelSerializer):
     qr_code = serializers.SerializerMethodField()
     host_name = serializers.CharField(source='host.name', read_only=True)
     location_name = serializers.CharField(source='location.name', read_only=True)
+    visitor_type_name = serializers.CharField(source='visitor_type.name', read_only=True)
 
     class Meta:
         model = PreRegistration
         fields = ['id', 'visitor_name', 'visitor_email', 'visitor_phone', 'visitor_company', 'visitor_number_plate',
-                  'host', 'host_name', 'location', 'location_name', 'expected_arrival',
+                  'visitor_type', 'visitor_type_name', 'purpose', 'expected_duration', 'host', 'host_name', 'location', 'location_name', 'expected_arrival',
                   'status', 'token', 'qr_code', 'created_at']
         read_only_fields = ['id', 'token', 'status', 'created_at']
 
     def get_qr_code(self, obj):
         return QRCodeService.generate_qr_code(str(obj.token))
+
+
+class VisitorTypeSerializer(serializers.ModelSerializer):
+    """Serializer for visitor types."""
+    class Meta:
+        model = VisitorType
+        fields = ['id', 'name', 'description', 'is_active', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'created_at', 'updated_at']
 
 
 class WatchlistSerializer(serializers.ModelSerializer):
@@ -241,4 +248,9 @@ class WatchlistSerializer(serializers.ModelSerializer):
         model = WatchlistEntry
         fields = ['id', 'name', 'email', 'phone', 'match_type', 'reason', 'is_active', 'location', 'location_name', 'created_at']
         read_only_fields = ['id', 'created_at']
+
+
+class VisitorActionSerializer(serializers.Serializer):
+    """Simple serializer for visitor approval/rejection actions."""
+    notes = serializers.CharField(required=False, allow_blank=True)
 

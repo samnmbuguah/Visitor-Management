@@ -14,6 +14,7 @@ const mockAuthContext = {
 
 vi.mock('@/context/AuthContext', () => ({
   useAuth: () => mockAuthContext,
+  AuthProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
 
 describe('Navigation Component', () => {
@@ -78,10 +79,10 @@ describe('Navigation Component', () => {
     expect(screen.getByText('Dashboard')).toBeInTheDocument();
     expect(screen.getByText('Maintenance')).toBeInTheDocument();
     expect(screen.getByText('Assets')).toBeInTheDocument();
-    expect(screen.getByText('Tenants')).toBeInTheDocument();
-    expect(screen.getByText('Leases')).toBeInTheDocument();
     
     // Should not show super admin-only items
+    expect(screen.queryByText('Tenants')).toBeNull();
+    expect(screen.queryByText('Leases')).toBeNull();
     expect(screen.queryByText('User Management')).toBeNull();
   });
 

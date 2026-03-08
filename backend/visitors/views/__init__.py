@@ -1,4 +1,4 @@
-from .visitor_views import VisitorViewSet, HostViewSet, WatchlistViewSet
+from .visitor_views import VisitorViewSet, HostViewSet, WatchlistViewSet, VisitorTypeViewSet
 from .location_views import LocationViewSet, KioskViewSet
 from .auth_views import RegisterView, UserProfileView, UserListView, LogoutView, CustomTokenObtainPairView
 from .notification_template_views import NotificationTemplateViewSet, NotificationLogViewSet
@@ -42,6 +42,7 @@ from .security_views import (
 
 __all__ = [
     'VisitorViewSet',
+    'VisitorTypeViewSet',
     'HostViewSet',
     'WatchlistViewSet',
     'LocationViewSet',

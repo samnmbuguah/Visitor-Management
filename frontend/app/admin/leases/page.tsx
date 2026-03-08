@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Modal } from '@/components/ui/modal';
+import { Modal, ModalContent } from '@/components/ui/modal';
 import { AdminPage } from '@/components/ProtectedPage';
 import { FileText, Calendar, DollarSign, Users, Plus, Search, Filter, Edit, Eye, Download } from 'lucide-react';
 
@@ -265,8 +265,9 @@ function LeasesPageContent() {
       </Card>
 
       {/* Create Lease Modal */}
-      <Modal isOpen={showCreateModal} onClose={() => setShowCreateModal(false)}>
-        <div className="p-6">
+      <Modal open={showCreateModal} onOpenChange={setShowCreateModal}>
+        <ModalContent>
+          <div className="p-6">
           <h2 className="text-xl font-bold mb-4">Create New Lease</h2>
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
@@ -307,6 +308,7 @@ function LeasesPageContent() {
             </div>
           </div>
         </div>
+        </ModalContent>
       </Modal>
     </div>
   );

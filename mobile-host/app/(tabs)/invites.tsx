@@ -15,6 +15,7 @@ export default function InvitesScreen() {
     const [company, setCompany] = useState('');
     const [date, setDate] = useState('');
     const [time, setTime] = useState('');
+    const [expectedDuration, setExpectedDuration] = useState('');
     const [loading, setLoading] = useState(false);
 
     const handleInvite = async () => {
@@ -33,6 +34,7 @@ export default function InvitesScreen() {
                 visitor_phone: phone,
                 visitor_company: company,
                 expected_arrival: isoDateTime,
+                expected_duration: expectedDuration ? parseInt(expectedDuration) : null,
             });
             Alert.alert('Success', 'Invite sent successfully');
             setName('');
@@ -41,6 +43,7 @@ export default function InvitesScreen() {
             setCompany('');
             setDate('');
             setTime('');
+            setExpectedDuration('');
         } catch (error: any) {
             Alert.alert('Error', error.response?.data?.detail || 'Failed to create invite');
         } finally {
@@ -162,6 +165,16 @@ export default function InvitesScreen() {
                         </View>
                     </View>
                 </View>
+
+                <Text style={styles.label}>Expected Duration (Minutes)</Text>
+                <TextInput
+                    style={styles.input}
+                    placeholder="e.g. 60"
+                    placeholderTextColor="#64748b"
+                    value={expectedDuration}
+                    onChangeText={setExpectedDuration}
+                    keyboardType="numeric"
+                />
 
                 <TouchableOpacity
                     style={[styles.button, loading && styles.buttonDisabled]}
