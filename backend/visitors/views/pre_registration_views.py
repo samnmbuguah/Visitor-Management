@@ -7,12 +7,15 @@ from ..models import PreRegistration, Visitor, Host
 from ..serializers.base_serializers import PreRegistrationSerializer, VisitorSerializer
 from ..services.notifications import NotificationService
 from rest_framework.permissions import IsAuthenticated, AllowAny
+from ..utils import get_user_tenant
+from .visitor_views import VisitorViewSet
 
 logger = logging.getLogger(__name__)
 
 class PreRegistrationViewSet(viewsets.ModelViewSet):
-    queryset = PreRegistration.objects.all().order_by('-expected_arrival')
+    queryset = PreRegistration.objects.none()
     serializer_class = PreRegistrationSerializer
+    permission_classes = [IsAuthenticated]
     
     def get_permissions(self):
         if self.action in ['scan', 'checkin']:
@@ -20,7 +23,13 @@ class PreRegistrationViewSet(viewsets.ModelViewSet):
         return [IsAuthenticated()]
     
     def get_queryset(self):
-        queryset = super().get_queryset()
+        """Filter pre-registrations by user's tenant and other parameters."""
+        tenant = get_user_tenant(self.request.user)
+        if not tenant:
+            return PreRegistration.objects.none()
+
+        queryset = PreRegistration.objects.filter(location__tenant=tenant).order_by('-expected_arrival')
+
         status_param = self.request.query_params.get('status')
         host_id = self.request.query_params.get('host')
         
@@ -128,6 +137,7 @@ class PreRegistrationViewSet(viewsets.ModelViewSet):
         import csv
         import io
         from datetime import datetime
+        from django.utils import timezone
         
         try:
             decoded_file = file.read().decode('utf-8')
@@ -188,7 +198,7 @@ class PreRegistrationViewSet(viewsets.ModelViewSet):
                     visitor_company=row.get('company', ''),
                     host=host,
                     location=location,
-                    expected_arrival=datetime.strptime(date_str, '%Y-%m-%d %H:%M'),
+                    expected_arrival=timezone.make_aware(datetime.strptime(date_str, '%Y-%m-%d %H:%M')),
                     status='PENDING'
                 )
                 print(f"[BULK_UPLOAD] Created invite {pre_reg.id} for {email}")

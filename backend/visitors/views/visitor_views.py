@@ -1,113 +1,97 @@
-from rest_framework import viewsets, status
+from rest_framework import viewsets, status, filters
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from django.utils import timezone
-from ..models import Visitor, Host
-from ..serializers import VisitorSerializer, VisitorCreateSerializer, HostSerializer
+from django_filters.rest_framework import DjangoFilterBackend
+from ..models import Visitor, Host, Location, UserRole, WatchlistEntry, VisitorType
+from ..serializers import VisitorSerializer, VisitorCreateSerializer, VisitorActionSerializer, HostSerializer, VisitorTypeSerializer, WatchlistSerializer
 from ..services.notifications import NotificationService
+from ..utils import get_user_tenant
 from ..permissions import IsSuperAdmin, IsLocationAdmin, IsHost
 
 
 class HostViewSet(viewsets.ModelViewSet):
     """ViewSet for managing hosts."""
-    queryset = Host.objects.all()
+    queryset = Host.objects.none()
     serializer_class = HostSerializer
-    permission_classes = [AllowAny] # Allow visitors to see host list
+    permission_classes = [IsAuthenticated] # Allow visitors to see host list
 
     def get_queryset(self):
-        user = self.request.user
-        queryset = Host.objects.filter(is_active=True)
-        
-        # If user is logged in, apply RBAC
-        if user.is_authenticated:
-            # Super Admin sees all
-            if user.profile.role == 'SUPER_ADMIN':
-                pass
-            # Admin sees hosts in their location
-            elif user.profile.role == 'ADMIN':
-                queryset = queryset.filter(location=user.profile.location)
-            # Standard hosts/others can only see hosts in their location
-            else:
-                queryset = queryset.filter(location=user.profile.location)
-        
-        # Filter by location if provided in query params (useful for Kiosk)
-        location_id = self.request.query_params.get('location')
-        if location_id:
-            queryset = queryset.filter(location_id=location_id)
-            
-        return queryset
+        tenant = get_user_tenant(self.request.user)
+        if not tenant:
+            return Host.objects.none()
+        return Host.objects.filter(location__tenant=tenant)
+
+
+class WatchlistViewSet(viewsets.ModelViewSet):
+    """ViewSet for managing watchlist entries."""
+    queryset = WatchlistEntry.objects.none()
+    serializer_class = WatchlistSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        tenant = get_user_tenant(self.request.user)
+        if not tenant:
+            return WatchlistEntry.objects.none()
+        return WatchlistEntry.objects.filter(location__tenant=tenant)
+
+
+class VisitorTypeViewSet(viewsets.ReadOnlyModelViewSet):
+    """ViewSet for visitor types (read-only for common use)."""
+    queryset = VisitorType.objects.none()
+    serializer_class = VisitorTypeSerializer
+
+    def get_queryset(self):
+        tenant = get_user_tenant(self.request.user)
+        if not tenant:
+            return VisitorType.objects.none()
+        return VisitorType.objects.filter(is_active=True, tenant=tenant).order_by('name')
 
 
 class VisitorViewSet(viewsets.ModelViewSet):
     """ViewSet for managing visitors."""
-    queryset = Visitor.objects.all().order_by('-checkin_time')
+    queryset = Visitor.objects.none()
+    serializer_class = VisitorSerializer
+    permission_classes = [IsAuthenticated]
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     
     def get_permissions(self):
-        if self.action in ['create', 'list', 'checkout', 'search', 'active']:
+        if self.action in ['create', 'search']:
             return [AllowAny()]
+        return [IsAuthenticated()]
+    filterset_fields = ['status', 'location', 'host', 'visitor_type']
+    search_fields = ['name', 'email', 'company', 'purpose']
+    ordering_fields = ['checkin_time', 'created_at', 'status']
+
+    def get_permissions(self):
+        if self.action in ['create', 'list', 'checkout', 'search', 'active']:
+            return [IsAuthenticated()] # Changed to IsAuthenticated
         return [IsAuthenticated()]
 
     def get_serializer_class(self):
         if self.action == 'create':
             return VisitorCreateSerializer
+        if self.action in ['approve', 'reject']:
+            return VisitorActionSerializer
         return VisitorSerializer
 
     def get_queryset(self):
-        user = self.request.user
-        if not user.is_authenticated:
-            # Allow unauthenticated access for kiosk
-            # For search action, return all visitors; for list, return only active
-            if self.action == 'search':
-                return Visitor.objects.all().order_by('-checkin_time')
-            else:
-                return Visitor.objects.filter(status='CHECKED_IN').order_by('-checkin_time')
+        """Filter queryset by user's tenant for strict isolation."""
+        tenant = get_user_tenant(self.request.user)
+        if not tenant:
+            return Visitor.objects.none()
             
-        queryset = Visitor.objects.all().order_by('-checkin_time')
+        queryset = Visitor.objects.filter(location__tenant=tenant).order_by('-checkin_time')
 
-        # RBAC Filtering
-        if not user.is_staff: # If standard user via API
-             profile = getattr(user, 'profile', None)
-             if profile:
-                 if profile.role == 'SUPER_ADMIN':
-                     pass
-                 elif profile.role == 'ADMIN':
-                     queryset = queryset.filter(location=profile.location)
-                 elif profile.role == 'HOST':
-                     # Hosts only see their own visitors
-                     # But wait, dashboard might need to see more? Only their own.
-                     # However, a receptionist (if role existed) would see all.
-                     # For now, Host sees their own visitors.
-                     if hasattr(user, 'host_profile'):
-                         queryset = queryset.filter(host=user.host_profile)
-                     else:
-                         return Visitor.objects.none()
-
-        status_filter = self.request.query_params.get('status')
-
-        # Filter by status
-        status_filter = self.request.query_params.get('status')
-        if status_filter:
-            queryset = queryset.filter(status=status_filter)
-
-        # Filter by location
-        location_id = self.request.query_params.get('location')
-        if location_id:
-            queryset = queryset.filter(location_id=location_id)
-
-        # Filter by date range
+        # Apply date range filters if present
         start_date = self.request.query_params.get('start_date')
         end_date = self.request.query_params.get('end_date')
         if start_date:
             queryset = queryset.filter(checkin_time__date__gte=start_date)
         if end_date:
             queryset = queryset.filter(checkin_time__date__lte=end_date)
-
-        # Filter by host
-        host_id = self.request.query_params.get('host')
-        if host_id:
-            queryset = queryset.filter(host_id=host_id)
-
+            
         return queryset
 
     def perform_create(self, serializer):
@@ -219,16 +203,41 @@ class VisitorViewSet(viewsets.ModelViewSet):
         if visitor.status != 'PENDING':
             print(f"[APPROVE] Failed: visitor not pending (status={visitor.status})")
             return Response({'error': 'Visitor is not pending approval'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Check if user is the host of this visitor or is admin/super admin
+        user = request.user
+        profile = getattr(user, 'profile', None)
+        
+        if profile:
+            if profile.role in ['SUPER_ADMIN', 'ADMIN']:
+                # Admins can approve any visitor at their location
+                if profile.role == 'ADMIN' and visitor.location != profile.location:
+                    return Response({'error': 'Cannot approve visitor outside your location'}, status=status.HTTP_403_FORBIDDEN)
+                # Admin can approve regardless of host assignment
+            elif profile.role == 'HOST':
+                # Hosts can only approve their own visitors
+                user_host_profile = getattr(user, 'host_profile', None)
+                if not user_host_profile or visitor.host != user_host_profile:
+                    return Response({'error': 'Cannot approve visitor assigned to another host'}, status=status.HTTP_403_FORBIDDEN)
+            else:
+                return Response({'error': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
+        else:
+            return Response({'error': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
             
         visitor.status = 'CHECKED_IN'
+        visitor.approved_by = request.user
+        visitor.approved_at = timezone.now()
+        visitor.checkin_time = timezone.now()
         visitor.save()
         
         print(f"[APPROVE] Approved visitor {visitor.id}")
         
         # Notify host (confirmation) and potentially visitor
         try:
-            NotificationService.notify_host_of_arrival(visitor)
-            print("[APPROVE] Notified host of arrival")
+            # Only notify if visitor has a host
+            if visitor.host:
+                NotificationService.notify_host_of_arrival(visitor)
+                print("[APPROVE] Notified host of arrival")
         except Exception as e:
             print(f"[APPROVE] Failed to notify host: {e}")
         
@@ -274,25 +283,4 @@ class VisitorViewSet(viewsets.ModelViewSet):
         queryset = self.get_queryset().filter(status='CHECKED_IN')
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
-
-
-from ..models import WatchlistEntry
-from ..serializers import WatchlistSerializer
-
-class WatchlistViewSet(viewsets.ModelViewSet):
-    queryset = WatchlistEntry.objects.all().order_by('-created_at')
-    serializer_class = WatchlistSerializer
-    permission_classes = [IsAuthenticated]
-
-    def get_queryset(self):
-        user = self.request.user
-        queryset = super().get_queryset()
-        
-        if not user.is_staff:
-             profile = getattr(user, 'profile', None)
-             if not profile or profile.role == 'HOST':
-                 return WatchlistEntry.objects.none() # Hosts cannot see watchlist
-             if profile.role == 'ADMIN':
-                 queryset = queryset.filter(location=profile.location)
-        return queryset
 

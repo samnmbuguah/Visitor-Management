@@ -3,6 +3,7 @@ from rest_framework import status
 from django.test import TestCase
 from ..models import UserProfile, Location, Tenant
 from .base import BaseTestCase
+from ..tenant_models import Tenant, TenantUser
 
 class PropertyManagementTests(BaseTestCase):
     """Test property management features"""
@@ -27,20 +28,22 @@ class PropertyManagementTests(BaseTestCase):
         )
         
         self.location = Location.objects.create(name="PM HQ", address="456 PM St", floor="1", timezone="UTC", tenant=self.tenant)
-        
+
         self.admin = User.objects.create_user(
-            username=f"admin_{unique_id}", 
+            username=f"admin_{unique_id}",
             password="test123",
             email=f"admin_{unique_id}@test.com"
         )
-        UserProfile.objects.create(user=self.admin, role='ADMIN')
-        
+        UserProfile.objects.create(user=self.admin, role='ADMIN', location=self.location)
+        TenantUser.objects.create(tenant=self.tenant, user=self.admin, role='ADMIN')
+
         self.property_manager = User.objects.create_user(
-            username=f"property_manager_{unique_id}", 
+            username=f"property_manager_{unique_id}",
             password="test123",
             email=f"pm_{unique_id}@test.com"
         )
-        UserProfile.objects.create(user=self.property_manager, role='HOST')
+        UserProfile.objects.create(user=self.property_manager, role='HOST', location=self.location)
+        TenantUser.objects.create(tenant=self.tenant, user=self.property_manager, role='HOST')
 
     def test_tenant_creation_by_super_admin(self):
         """Test that super admin can create tenants"""

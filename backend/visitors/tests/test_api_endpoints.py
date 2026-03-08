@@ -105,8 +105,6 @@ class APIEndpointTests(BaseTestCase):
         # Get locations
         response = self.client.get('/api/locations/')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        print(f"[DEBUG] test_location_endpoints Response: {json.dumps(response.data, indent=2)}")
-        print(f"[DEBUG] self.location ID: {self.location.id}")
         
         # Filter for self.location
         location_results = [loc for loc in response.data['results'] if loc['id'] == self.location.id]
@@ -193,12 +191,19 @@ class APIEndpointTests(BaseTestCase):
             'description': 'Room 302 faucet is leaking'
         }
         response = self.client.post('/api/property-management/requests/', request_data)
+        if response.status_code != 201:
+            print(f"[DEBUG] test_maintenance_endpoints POST fail: {response.data}")
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         created_request = response.data
         
         # Get maintenance requests
         response = self.client.get('/api/property-management/requests/')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+        # Filter for our request
+        req_results = [r for r in response.data['results'] if r['id'] == created_request['id']]
+        if not req_results:
+             print(f"[DEBUG] test_maintenance_endpoints GET fail. All IDs: {[r['id'] for r in response.data['results']]}")
+        self.assertGreater(len(req_results), 0)
         self.assertIn('results', response.data)
         self.assertIsInstance(response.data['results'], list)
         
@@ -219,9 +224,11 @@ class APIEndpointTests(BaseTestCase):
             'name': 'Conference Room Projector',
             'asset_type': asset_type.id,
             'location': self.location.id,
-            'status': 'AVAILABLE'
+            'status': 'OPERATIONAL'
         }
         response = self.client.post('/api/property-management/assets/', asset_data)
+        if response.status_code != 201:
+             print(f"[DEBUG] test_asset_endpoints POST fail: {response.data}")
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         created_asset = response.data
         
@@ -232,7 +239,13 @@ class APIEndpointTests(BaseTestCase):
         self.assertIsInstance(response.data['results'], list)
         
         # Generate QR code for asset
-        response = self.client.get(f'/api/property-management/assets/{created_asset["id"]}/qr_code/')
+        response = self.client.get(f'/api/property-management/assets/{created_asset["id"]}/')
+        if response.status_code != 200:
+             print(f"[DEBUG] test_asset_endpoints GET fail: {response.status_code} for ID {created_asset['id']}")
+             # Check if it's there at all
+             from property_management.models import Asset
+             a = Asset.objects.filter(id=created_asset['id']).first()
+             print(f"[DEBUG] Asset in DB: ID={a.id}, Tenant={a.tenant}, Location={a.location}")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIn('qr_code', response.data)
 

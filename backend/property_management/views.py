@@ -20,6 +20,7 @@ from .serializers import (
     MaintenanceScheduleSerializer, AssetCheckoutSerializer, CostCenterSerializer,
     MaintenanceExpenseSerializer, MaintenanceRequestCreateSerializer, AssetCreateSerializer
 )
+from visitors.utils import get_user_tenant
 
 
 class IsOwnerOrReadOnly(permissions.BasePermission):
@@ -41,23 +42,47 @@ class IsOwnerOrReadOnly(permissions.BasePermission):
 
 
 class MaintenanceCategoryViewSet(viewsets.ModelViewSet):
-    queryset = MaintenanceCategory.objects.all()
+    queryset = MaintenanceCategory.objects.none()
     serializer_class = MaintenanceCategorySerializer
     permission_classes = [permissions.IsAuthenticated]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
-    filterset_fields = ['tenant', 'is_active']
-    search_fields = ['name', 'description']
     ordering_fields = ['name', 'created_at']
+
+    def get_queryset(self):
+        tenant = get_user_tenant(self.request.user)
+        if not tenant:
+            return MaintenanceCategory.objects.none()
+        return MaintenanceCategory.objects.filter(tenant=tenant)
+
+    def perform_create(self, serializer):
+        tenant = get_user_tenant(self.request.user)
+        if tenant:
+            serializer.save(tenant=tenant)
+        else:
+            serializer.save()
 
 
 class VendorViewSet(viewsets.ModelViewSet):
-    queryset = Vendor.objects.all()
+    queryset = Vendor.objects.none()
     serializer_class = VendorSerializer
     permission_classes = [permissions.IsAuthenticated]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields = ['tenant', 'is_active', 'insurance_verified']
     search_fields = ['name', 'company', 'contact_person']
     ordering_fields = ['name', 'rating', 'created_at']
+
+    def get_queryset(self):
+        tenant = get_user_tenant(self.request.user)
+        if not tenant:
+            return Vendor.objects.none()
+        return Vendor.objects.filter(tenant=tenant)
+
+    def perform_create(self, serializer):
+        tenant = get_user_tenant(self.request.user)
+        if tenant:
+            serializer.save(tenant=tenant)
+        else:
+            serializer.save()
 
     @action(detail=True, methods=['post'])
     def verify_insurance(self, request, pk=None):
@@ -78,13 +103,17 @@ class VendorViewSet(viewsets.ModelViewSet):
 
 
 class MaintenanceRequestViewSet(viewsets.ModelViewSet):
-    queryset = MaintenanceRequest.objects.all()
+    queryset = MaintenanceRequest.objects.none()
     serializer_class = MaintenanceRequestSerializer
     permission_classes = [permissions.IsAuthenticated, IsOwnerOrReadOnly]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
-    filterset_fields = ['location', 'host', 'category', 'priority', 'status', 'assigned_to']
-    search_fields = ['title', 'description']
     ordering_fields = ['requested_at', 'priority', 'status']
+
+    def get_queryset(self):
+        tenant = get_user_tenant(self.request.user)
+        if not tenant:
+            return MaintenanceRequest.objects.none()
+        return MaintenanceRequest.objects.filter(tenant=tenant)
 
     def get_serializer_class(self):
         if self.action == 'create':
@@ -92,9 +121,9 @@ class MaintenanceRequestViewSet(viewsets.ModelViewSet):
         return MaintenanceRequestSerializer
 
     def perform_create(self, serializer):
-        # Set tenant from user's profile if available
-        if hasattr(self.request.user, 'profile') and hasattr(self.request.user.profile, 'tenant'):
-            serializer.save(tenant=self.request.user.profile.tenant)
+        tenant = get_user_tenant(self.request.user)
+        if tenant:
+            serializer.save(tenant=tenant)
         else:
             serializer.save()
 
@@ -175,33 +204,59 @@ class MaintenanceRequestViewSet(viewsets.ModelViewSet):
 
 
 class WorkOrderViewSet(viewsets.ModelViewSet):
-    queryset = WorkOrder.objects.all()
+    queryset = WorkOrder.objects.none()
     serializer_class = WorkOrderSerializer
     permission_classes = [permissions.IsAuthenticated]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields = ['vendor', 'maintenance_request']
-    search_fields = ['work_order_number', 'instructions']
     ordering_fields = ['created_at', 'work_order_number']
+
+    def get_queryset(self):
+        tenant = get_user_tenant(self.request.user)
+        if not tenant:
+            return WorkOrder.objects.none()
+        return WorkOrder.objects.filter(maintenance_request__tenant=tenant)
 
 
 class AssetTypeViewSet(viewsets.ModelViewSet):
-    queryset = AssetType.objects.all()
+    queryset = AssetType.objects.none()
     serializer_class = AssetTypeSerializer
     permission_classes = [permissions.IsAuthenticated]
-    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
-    filterset_fields = ['tenant', 'is_active', 'requires_maintenance']
-    search_fields = ['name', 'description']
-    ordering_fields = ['name', 'created_at']
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter]
+    search_fields = ['name']
 
+    def get_queryset(self):
+        tenant = get_user_tenant(self.request.user)
+        if not tenant:
+            return AssetType.objects.none()
+        return AssetType.objects.filter(tenant=tenant)
+
+    def perform_create(self, serializer):
+        tenant = get_user_tenant(self.request.user)
+        if tenant:
+            serializer.save(tenant=tenant)
+        else:
+            serializer.save()
 
 class AssetViewSet(viewsets.ModelViewSet):
-    queryset = Asset.objects.all()
+    queryset = Asset.objects.none()
     serializer_class = AssetSerializer
     permission_classes = [permissions.IsAuthenticated]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
-    filterset_fields = ['location', 'asset_type', 'status']
-    search_fields = ['name', 'description', 'serial_number', 'manufacturer', 'model']
     ordering_fields = ['name', 'purchase_date', 'last_maintenance_date']
+
+    def get_queryset(self):
+        tenant = get_user_tenant(self.request.user)
+        if not tenant:
+            return Asset.objects.none()
+        return Asset.objects.filter(tenant=tenant)
+
+    def perform_create(self, serializer):
+        tenant = get_user_tenant(self.request.user)
+        if tenant:
+            serializer.save(tenant=tenant)
+        else:
+            serializer.save()
 
     def get_serializer_class(self):
         if self.action == 'create':
@@ -289,13 +344,17 @@ class AssetViewSet(viewsets.ModelViewSet):
 
 
 class MaintenanceScheduleViewSet(viewsets.ModelViewSet):
-    queryset = MaintenanceSchedule.objects.all()
+    queryset = MaintenanceSchedule.objects.none()
     serializer_class = MaintenanceScheduleSerializer
     permission_classes = [permissions.IsAuthenticated]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
-    filterset_fields = ['asset', 'assigned_to', 'status']
-    search_fields = ['title', 'description']
     ordering_fields = ['scheduled_date', 'created_at']
+
+    def get_queryset(self):
+        tenant = get_user_tenant(self.request.user)
+        if not tenant:
+            return MaintenanceSchedule.objects.none()
+        return MaintenanceSchedule.objects.filter(asset__tenant=tenant)
 
     @action(detail=False, methods=['get'])
     def upcoming(self, request):
@@ -311,13 +370,17 @@ class MaintenanceScheduleViewSet(viewsets.ModelViewSet):
 
 
 class AssetCheckoutViewSet(viewsets.ModelViewSet):
-    queryset = AssetCheckout.objects.all()
+    queryset = AssetCheckout.objects.none()
     serializer_class = AssetCheckoutSerializer
     permission_classes = [permissions.IsAuthenticated]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
-    filterset_fields = ['asset', 'checked_out_by']
-    search_fields = ['notes']
     ordering_fields = ['checked_out_at', 'expected_return_at']
+
+    def get_queryset(self):
+        tenant = get_user_tenant(self.request.user)
+        if not tenant:
+            return AssetCheckout.objects.none()
+        return AssetCheckout.objects.filter(asset__tenant=tenant)
 
     @action(detail=False, methods=['get'])
     def overdue(self, request):
@@ -333,13 +396,24 @@ class AssetCheckoutViewSet(viewsets.ModelViewSet):
 
 
 class CostCenterViewSet(viewsets.ModelViewSet):
-    queryset = CostCenter.objects.all()
+    queryset = CostCenter.objects.none()
     serializer_class = CostCenterSerializer
     permission_classes = [permissions.IsAuthenticated]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
-    filterset_fields = ['tenant', 'manager', 'is_active']
-    search_fields = ['name', 'code', 'description']
     ordering_fields = ['code', 'name', 'current_spend']
+
+    def get_queryset(self):
+        tenant = get_user_tenant(self.request.user)
+        if not tenant:
+            return CostCenter.objects.none()
+        return CostCenter.objects.filter(tenant=tenant)
+
+    def perform_create(self, serializer):
+        tenant = get_user_tenant(self.request.user)
+        if tenant:
+            serializer.save(tenant=tenant)
+        else:
+            serializer.save()
 
     @action(detail=True, methods=['get'])
     def expenses(self, request, pk=None):
@@ -367,13 +441,17 @@ class CostCenterViewSet(viewsets.ModelViewSet):
 
 
 class MaintenanceExpenseViewSet(viewsets.ModelViewSet):
-    queryset = MaintenanceExpense.objects.all()
+    queryset = MaintenanceExpense.objects.none()
     serializer_class = MaintenanceExpenseSerializer
     permission_classes = [permissions.IsAuthenticated]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
-    filterset_fields = ['maintenance_request', 'cost_center', 'expense_type']
-    search_fields = ['description', 'invoice_number']
     ordering_fields = ['created_at', 'amount', 'invoice_date']
+
+    def get_queryset(self):
+        tenant = get_user_tenant(self.request.user)
+        if not tenant:
+            return MaintenanceExpense.objects.none()
+        return MaintenanceExpense.objects.filter(cost_center__tenant=tenant)
 
 
 class DashboardViewSet(viewsets.ViewSet):
@@ -383,13 +461,19 @@ class DashboardViewSet(viewsets.ViewSet):
     @action(detail=False, methods=['get'])
     def overview(self, request):
         """Get dashboard overview statistics"""
-        user = request.user
+        tenant = get_user_tenant(request.user)
+        if not tenant:
+            return Response({'error': 'Tenant not found'}, status=status.HTTP_403_FORBIDDEN)
+            
+        # Base filter for tenant
+        tenant_filter = {'tenant': tenant}
         
-        # Filter based on user role and location
+        # Additional location filter if preferred
+        user = request.user
         if hasattr(user, 'profile') and user.profile.location:
-            location_filter = {'location': user.profile.location}
+            location_filter = {**tenant_filter, 'location': user.profile.location}
         else:
-            location_filter = {}
+            location_filter = tenant_filter
         
         # Maintenance requests stats
         maintenance_stats = {
