@@ -93,6 +93,27 @@ export class PropertyManagementAPI {
     const response = await api.get('/property-management/cost-centers/', { params });
     return response.data.results || response.data;
   }
+
+  // Leases
+  static async getLeases(params?: any) {
+    const response = await api.get('/property-management/leases/', { params });
+    return response.data.results || response.data;
+  }
+
+  static async createLease(data: any) {
+    const response = await api.post('/property-management/leases/', data);
+    return response.data;
+  }
+
+  static async updateLease(id: number, data: any) {
+    const response = await api.patch(`/property-management/leases/${id}/`, data);
+    return response.data;
+  }
+
+  static async deleteLease(id: number) {
+    const response = await api.delete(`/property-management/leases/${id}/`);
+    return response.data;
+  }
 }
 
 // Visitors API Service (for locations)
@@ -114,6 +135,11 @@ export class VisitorsAPI {
 
   static async getInvites() {
     const response = await api.get('/pre-registrations/');
+    return response.data.results || response.data;
+  }
+
+  static async getTenants(params?: any) {
+    const response = await api.get('/tenants/', { params });
     return response.data.results || response.data;
   }
 

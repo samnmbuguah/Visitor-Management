@@ -11,71 +11,42 @@ import { Modal, ModalContent } from '@/components/ui/modal';
 import { AdminPage } from '@/components/ProtectedPage';
 import { FileText, Calendar, DollarSign, Users, Plus, Search, Filter, Edit, Eye, Download } from 'lucide-react';
 
+import { useLeases, useTenants, useCreateLease, useDeleteLease } from '@/hooks/useData';
+import { toast } from 'react-hot-toast';
+
 interface Lease {
   id: number;
   unit_number: string;
   tenant_name: string;
-  property_name: string;
   monthly_rent: number;
   start_date: string;
   end_date: string;
   status: 'ACTIVE' | 'EXPIRING' | 'EXPIRED' | 'TERMINATED';
+  status_display: string;
   created_at: string;
 }
 
 function LeasesPageContent() {
-  const [leases, setLeases] = useState<Lease[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: leases = [], isLoading: loading } = useLeases();
+  const { data: tenants = [] } = useTenants();
+  const createLeaseMutation = useCreateLease();
+  
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [showCreateModal, setShowCreateModal] = useState(false);
+  
+  const [formData, setFormData] = useState({
+    unit_number: '',
+    tenant: '',
+    monthly_rent: '',
+    start_date: '',
+    end_date: '',
+    status: 'ACTIVE',
+  });
 
-  // Mock data - replace with API call
-  React.useEffect(() => {
-    setTimeout(() => {
-      setLeases([
-        {
-          id: 1,
-          unit_number: 'A-101',
-          tenant_name: 'Tech Corp Inc.',
-          property_name: 'Business Plaza Tower',
-          monthly_rent: 2500,
-          start_date: '2024-01-01',
-          end_date: '2024-12-31',
-          status: 'ACTIVE',
-          created_at: '2024-01-15T10:30:00Z',
-        },
-        {
-          id: 2,
-          unit_number: 'B-205',
-          tenant_name: 'Property Management LLC',
-          property_name: 'Riverside Complex',
-          monthly_rent: 1800,
-          start_date: '2024-02-01',
-          end_date: '2025-01-31',
-          status: 'EXPIRING',
-          created_at: '2024-02-20T14:15:00Z',
-        },
-        {
-          id: 3,
-          unit_number: 'C-302',
-          tenant_name: 'Startup Ventures',
-          property_name: 'Tech Hub',
-          monthly_rent: 3200,
-          start_date: '2023-06-01',
-          end_date: '2024-05-31',
-          status: 'EXPIRED',
-          created_at: '2023-06-10T09:20:00Z',
-        },
-      ]);
-      setLoading(false);
-    }, 1000);
-  }, []);
-
-  const filteredLeases = leases.filter(lease => {
+  const filteredLeases = leases.filter((lease: Lease) => {
     const matchesSearch = lease.unit_number.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         lease.tenant_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         lease.property_name.toLowerCase().includes(searchQuery.toLowerCase());
+                         lease.tenant_name.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus = statusFilter === 'all' || lease.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
@@ -205,21 +176,8 @@ function LeasesPageContent() {
 
       {/* Leases Table */}
       <Card>
-        <div className="p-6">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Unit</TableHead>
-                <TableHead>Tenant</TableHead>
-                <TableHead>Property</TableHead>
-                <TableHead>Monthly Rent</TableHead>
-                <TableHead>Lease Period</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
             <TableBody>
-              {filteredLeases.map((lease) => (
+              {filteredLeases.map((lease: any) => (
                 <TableRow key={lease.id}>
                   <TableCell>
                     <p className="font-medium">{lease.unit_number}</p>
@@ -228,10 +186,7 @@ function LeasesPageContent() {
                     <p className="font-medium">{lease.tenant_name}</p>
                   </TableCell>
                   <TableCell>
-                    <p className="text-sm">{lease.property_name}</p>
-                  </TableCell>
-                  <TableCell>
-                    <p className="font-bold">${lease.monthly_rent.toLocaleString()}</p>
+                    <p className="font-bold">${Number(lease.monthly_rent).toLocaleString()}</p>
                   </TableCell>
                   <TableCell>
                     <div>
@@ -241,7 +196,7 @@ function LeasesPageContent() {
                   </TableCell>
                   <TableCell>
                     <Badge className={getStatusColor(lease.status)}>
-                      {lease.status}
+                      {lease.status_display || lease.status}
                     </Badge>
                   </TableCell>
                   <TableCell>
@@ -251,9 +206,6 @@ function LeasesPageContent() {
                       </Button>
                       <Button variant="outline" size="sm">
                         <Edit size={14} />
-                      </Button>
-                      <Button variant="outline" size="sm">
-                        <Download size={14} />
                       </Button>
                     </div>
                   </TableCell>
@@ -273,17 +225,27 @@ function LeasesPageContent() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium mb-2">Unit Number</label>
-                <Input placeholder="A-101" />
+                <Input 
+                  placeholder="A-101" 
+                  value={formData.unit_number}
+                  onChange={(e) => setFormData({ ...formData, unit_number: e.target.value })}
+                />
               </div>
               <div>
                 <label className="block text-sm font-medium mb-2">Tenant</label>
-                <Select>
+                <Select 
+                  value={formData.tenant} 
+                  onValueChange={(value) => setFormData({ ...formData, tenant: value })}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Select tenant" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="1">Tech Corp Inc.</SelectItem>
-                    <SelectItem value="2">Property Management LLC</SelectItem>
+                    {tenants.map((tenant: any) => (
+                      <SelectItem key={tenant.id} value={tenant.id.toString()}>
+                        {tenant.name}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -291,20 +253,54 @@ function LeasesPageContent() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium mb-2">Start Date</label>
-                <Input type="date" />
+                <Input 
+                  type="date" 
+                  value={formData.start_date}
+                  onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
+                />
               </div>
               <div>
                 <label className="block text-sm font-medium mb-2">End Date</label>
-                <Input type="date" />
+                <Input 
+                  type="date" 
+                  value={formData.end_date}
+                  onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
+                />
               </div>
             </div>
             <div>
               <label className="block text-sm font-medium mb-2">Monthly Rent ($)</label>
-              <Input type="number" placeholder="2500" />
+              <Input 
+                type="number" 
+                placeholder="2500" 
+                value={formData.monthly_rent}
+                onChange={(e) => setFormData({ ...formData, monthly_rent: e.target.value })}
+              />
             </div>
             <div className="flex gap-3 pt-4">
               <Button variant="outline" onClick={() => setShowCreateModal(false)}>Cancel</Button>
-              <Button>Create Lease</Button>
+              <Button 
+                onClick={async () => {
+                  try {
+                    await createLeaseMutation.mutateAsync(formData);
+                    toast.success('Lease created successfully');
+                    setShowCreateModal(false);
+                    setFormData({
+                      unit_number: '',
+                      tenant: '',
+                      monthly_rent: '',
+                      start_date: '',
+                      end_date: '',
+                      status: 'ACTIVE',
+                    });
+                  } catch (error) {
+                    toast.error('Failed to create lease');
+                  }
+                }}
+                disabled={createLeaseMutation.isLoading}
+              >
+                {createLeaseMutation.isLoading ? 'Creating...' : 'Create Lease'}
+              </Button>
             </div>
           </div>
         </div>

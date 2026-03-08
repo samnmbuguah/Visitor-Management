@@ -51,11 +51,25 @@ export function useCostCenters() {
   );
 }
 
+export function useLeases(params?: any) {
+  return useAuthenticatedQuery(
+    ['leases', params],
+    () => APIService.propertyManagement.getLeases(params)
+  );
+}
+
 // Visitors/Invites Hooks
 export function useInvites() {
   return useAuthenticatedQuery(
     ['invites'],
     APIService.visitors.getInvites
+  );
+}
+
+export function useTenants(params?: any) {
+  return useAuthenticatedQuery(
+    ['tenants', params],
+    () => APIService.visitors.getTenants(params)
   );
 }
 
@@ -123,5 +137,24 @@ export function useCreateInvite() {
 export function useCancelPreRegistration() {
   return useAuthenticatedMutation(
     APIService.visitors.cancelPreRegistration
+  );
+}
+
+export function useCreateLease() {
+  return useAuthenticatedMutation(
+    APIService.propertyManagement.createLease
+  );
+}
+
+export function useUpdateLease() {
+  return useAuthenticatedMutation(
+    ({ id, data }: { id: number; data: any }) => 
+      APIService.propertyManagement.updateLease(id, data)
+  );
+}
+
+export function useDeleteLease() {
+  return useAuthenticatedMutation(
+    (id: number) => APIService.propertyManagement.deleteLease(id)
   );
 }

@@ -11,69 +11,35 @@ import { Modal } from '@/components/ui/modal';
 import { AdminPage } from '@/components/ProtectedPage';
 import { Users, Building, Plus, Search, Filter, Edit, Trash2, Eye } from 'lucide-react';
 
+import { useTenants } from '@/hooks/useData';
+
 interface Tenant {
   id: number;
   name: string;
-  email: string;
-  phone: string;
-  address: string;
-  status: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
+  slug: string;
+  is_active: boolean;
   created_at: string;
-  locations_count: number;
-  users_count: number;
 }
 
 function TenantsPageContent() {
-  const [tenants, setTenants] = useState<Tenant[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: tenants = [], isLoading: loading } = useTenants();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedTenant, setSelectedTenant] = useState<Tenant | null>(null);
 
-  // Mock data - replace with API call
-  React.useEffect(() => {
-    setTimeout(() => {
-      setTenants([
-        {
-          id: 1,
-          name: 'Tech Corp Inc.',
-          email: 'admin@techcorp.com',
-          phone: '+1-555-0101',
-          address: '123 Business Ave, Suite 100, New York, NY 10001',
-          status: 'ACTIVE',
-          created_at: '2024-01-15T10:30:00Z',
-          locations_count: 3,
-          users_count: 25,
-        },
-        {
-          id: 2,
-          name: 'Property Management LLC',
-          email: 'manager@propmgt.com',
-          phone: '+1-555-0102',
-          address: '456 Property St, Los Angeles, CA 90001',
-          status: 'ACTIVE',
-          created_at: '2024-02-20T14:15:00Z',
-          locations_count: 5,
-          users_count: 42,
-        },
-      ]);
-      setLoading(false);
-    }, 1000);
-  }, []);
-
-  const filteredTenants = tenants.filter(tenant => {
-    const matchesSearch = tenant.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         tenant.email.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || tenant.status === statusFilter;
+  const filteredTenants = tenants.filter((tenant: Tenant) => {
+    const matchesSearch = tenant.name.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesStatus = statusFilter === 'all' || (statusFilter === 'ACTIVE' ? tenant.is_active : !tenant.is_active);
     return matchesSearch && matchesStatus;
   });
 
-  const getStatusColor = (status: string) => {
+  const getOneStatusColor = (status: string) => {
     switch (status) {
       case 'ACTIVE': return 'bg-green-100 text-green-800';
-      case 'INACTIVE': return 'bg-gray-100 text-gray-800';
+      case 'TRIAL': return 'bg-blue-100 text-blue-800';
       case 'SUSPENDED': return 'bg-red-100 text-red-800';
+      case 'CANCELLED': return 'bg-gray-100 text-gray-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
@@ -201,18 +167,17 @@ function TenantsPageContent() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredTenants.map((tenant) => (
+              {filteredTenants.map((tenant: any) => (
                 <TableRow key={tenant.id}>
                   <TableCell>
                     <div>
                       <p className="font-medium">{tenant.name}</p>
-                      <p className="text-sm text-muted-foreground">{tenant.address}</p>
+                      <p className="text-sm text-muted-foreground">{tenant.slug}</p>
                     </div>
                   </TableCell>
                   <TableCell>
                     <div>
-                      <p className="text-sm">{tenant.email}</p>
-                      <p className="text-sm text-muted-foreground">{tenant.phone}</p>
+                      <p className="text-sm">{tenant.billing_email}</p>
                     </div>
                   </TableCell>
                   <TableCell>
@@ -222,7 +187,7 @@ function TenantsPageContent() {
                     <Badge variant="secondary">{tenant.users_count}</Badge>
                   </TableCell>
                   <TableCell>
-                    <Badge className={getStatusColor(tenant.status)}>
+                    <Badge className={getOneStatusColor(tenant.status)}>
                       {tenant.status}
                     </Badge>
                   </TableCell>
