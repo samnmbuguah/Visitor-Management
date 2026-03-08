@@ -4,7 +4,7 @@ from .views import (
     MaintenanceCategoryViewSet, VendorViewSet, MaintenanceRequestViewSet,
     WorkOrderViewSet, AssetTypeViewSet, AssetViewSet, MaintenanceScheduleViewSet,
     AssetCheckoutViewSet, CostCenterViewSet, MaintenanceExpenseViewSet,
-    DashboardViewSet
+    DashboardViewSet, LeaseViewSet
 )
 
 router = DefaultRouter()
@@ -18,6 +18,7 @@ router.register(r'schedules', MaintenanceScheduleViewSet)
 router.register(r'checkouts', AssetCheckoutViewSet)
 router.register(r'cost-centers', CostCenterViewSet)
 router.register(r'expenses', MaintenanceExpenseViewSet)
+router.register(r'leases', LeaseViewSet)
 router.register(r'dashboard', DashboardViewSet, basename='dashboard')
 
 urlpatterns = [

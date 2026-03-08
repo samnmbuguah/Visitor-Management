@@ -325,3 +325,29 @@ class MaintenanceExpense(models.Model):
 
     class Meta:
         ordering = ['-created_at']
+
+class LeaseStatus(models.TextChoices):
+    """Status options for leases."""
+    ACTIVE = 'ACTIVE', 'Active'
+    EXPIRING = 'EXPIRING', 'Expiring'
+    EXPIRED = 'EXPIRED', 'Expired'
+    TERMINATED = 'TERMINATED', 'Terminated'
+
+
+class Lease(models.Model):
+    """Property lease records."""
+    tenant = models.ForeignKey(Tenant, on_delete=models.CASCADE, related_name='leases', null=True, blank=True)
+    unit_number = models.CharField(max_length=50)
+    monthly_rent = models.DecimalField(max_digits=12, decimal_places=2)
+    start_date = models.DateField()
+    end_date = models.DateField()
+    status = models.CharField(max_length=20, choices=LeaseStatus.choices, default=LeaseStatus.ACTIVE)
+    notes = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Lease: {self.unit_number} - {self.tenant.name if self.tenant else 'No Tenant'}"
+
+    class Meta:
+        ordering = ['-start_date']

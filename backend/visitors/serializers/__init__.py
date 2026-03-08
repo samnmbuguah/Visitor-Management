@@ -15,6 +15,7 @@ from .base_serializers import (
     VisitorTypeSerializer,
     CustomTokenObtainPairSerializer,
     VisitorActionSerializer,
+    TenantSerializer,
 )
 
 __all__ = [
@@ -34,4 +35,5 @@ __all__ = [
     'VisitorTypeSerializer',
     'CustomTokenObtainPairSerializer',
     'VisitorActionSerializer',
+    'TenantSerializer',
 ]

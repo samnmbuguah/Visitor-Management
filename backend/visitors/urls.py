@@ -45,6 +45,7 @@ from .views import (
     InvoicesView,
     UsageMetricsView,
     StripeWebhookView,
+    TenantViewSet,
 )
 
 router = DefaultRouter()
@@ -58,6 +59,7 @@ router.register(r'notification-logs', NotificationLogViewSet)
 router.register(r'pre-registrations', PreRegistrationViewSet)
 router.register(r'watchlist', WatchlistViewSet)
 router.register(r'parcels', ParcelViewSet)
+router.register(r'tenants', TenantViewSet)
 
 urlpatterns = [
     path('', include(router.urls)),

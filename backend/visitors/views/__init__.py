@@ -24,6 +24,7 @@ from .payment_views import (
 )
 from .pre_registration_views import PreRegistrationViewSet
 from .parcel_views import ParcelViewSet
+from .tenant_views import TenantViewSet
 from .analytics_views import (
     DashboardStatsView,
     VisitorTrendsView,
@@ -83,4 +84,5 @@ __all__ = [
     'GateControlView',
     'SecurityIncidentsView',
     'VisitorTrackingView',
+    'TenantViewSet',
 ]

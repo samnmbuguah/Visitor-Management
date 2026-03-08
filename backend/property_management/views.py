@@ -12,13 +12,14 @@ import base64
 from .models import (
     MaintenanceCategory, Vendor, MaintenanceRequest, MaintenancePhoto,
     WorkOrder, AssetType, Asset, MaintenanceSchedule, AssetCheckout,
-    CostCenter, MaintenanceExpense, PriorityLevel, MaintenanceStatus, AssetStatus
+    CostCenter, MaintenanceExpense, PriorityLevel, MaintenanceStatus, AssetStatus, Lease
 )
 from .serializers import (
     MaintenanceCategorySerializer, VendorSerializer, MaintenanceRequestSerializer,
     MaintenancePhotoSerializer, WorkOrderSerializer, AssetTypeSerializer, AssetSerializer,
     MaintenanceScheduleSerializer, AssetCheckoutSerializer, CostCenterSerializer,
-    MaintenanceExpenseSerializer, MaintenanceRequestCreateSerializer, AssetCreateSerializer
+    MaintenanceExpenseSerializer, MaintenanceRequestCreateSerializer, AssetCreateSerializer,
+    LeaseSerializer
 )
 from visitors.utils import get_user_tenant
 
@@ -571,3 +572,26 @@ class DashboardViewSet(viewsets.ViewSet):
             })
         
         return Response(sorted(data, key=lambda x: x['completion_rate'], reverse=True))
+
+
+class LeaseViewSet(viewsets.ModelViewSet):
+    queryset = Lease.objects.none()
+    serializer_class = LeaseSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filterset_fields = ['status', 'unit_number']
+    search_fields = ['unit_number', 'tenant__name']
+    ordering_fields = ['start_date', 'end_date', 'monthly_rent']
+
+    def get_queryset(self):
+        tenant = get_user_tenant(self.request.user)
+        if not tenant:
+            return Lease.objects.none()
+        return Lease.objects.filter(tenant=tenant)
+
+    def perform_create(self, serializer):
+        tenant = get_user_tenant(self.request.user)
+        if tenant:
+            serializer.save(tenant=tenant)
+        else:
+            serializer.save()

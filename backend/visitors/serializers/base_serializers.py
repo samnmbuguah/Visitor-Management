@@ -254,3 +254,23 @@ class VisitorActionSerializer(serializers.Serializer):
     """Simple serializer for visitor approval/rejection actions."""
     notes = serializers.CharField(required=False, allow_blank=True)
 
+
+
+class TenantSerializer(serializers.ModelSerializer):
+    """Serializer for tenants."""
+    locations_count = serializers.IntegerField(source='locations.count', read_only=True)
+    users_count = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Tenant
+        fields = [
+            'id', 'name', 'slug', 'is_active', 'status', 'tier',
+            'billing_email', 'billing_address', 'created_at',
+            'locations_count', 'users_count'
+        ]
+        read_only_fields = ['id', 'created_at', 'locations_count', 'users_count']
+
+    def get_users_count(self, obj):
+        # Count users associated with this tenant via UserProfile
+        from ..models import UserProfile
+        return UserProfile.objects.filter(location__tenant=obj).count()

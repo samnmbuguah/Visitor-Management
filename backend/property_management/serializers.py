@@ -2,7 +2,7 @@ from rest_framework import serializers
 from .models import (
     MaintenanceCategory, Vendor, MaintenanceRequest, MaintenancePhoto, WorkOrder,
     AssetType, Asset, MaintenanceSchedule, AssetCheckout, CostCenter, MaintenanceExpense,
-    PriorityLevel, MaintenanceStatus, AssetStatus
+    PriorityLevel, MaintenanceStatus, AssetStatus, Lease
 )
 from visitors.serializers import LocationSerializer, HostSerializer
 
@@ -220,3 +220,11 @@ class AssetCreateSerializer(serializers.ModelSerializer):
             )
         
         return super().create(validated_data)
+
+class LeaseSerializer(serializers.ModelSerializer):
+    tenant_name = serializers.CharField(source='tenant.name', read_only=True)
+    status_display = serializers.CharField(source='get_status_display', read_only=True)
+
+    class Meta:
+        model = Lease
+        fields = '__all__'
