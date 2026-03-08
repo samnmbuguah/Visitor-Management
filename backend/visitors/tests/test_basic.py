@@ -4,7 +4,7 @@ from rest_framework import status
 from datetime import timedelta
 from ..models import (
     Host, Visitor, Location, Kiosk, UserProfile,
-    NotificationTemplate, NotificationLog, PreRegistration
+    NotificationTemplate, EmailNotificationLog, PreRegistration
 )
 from ..services.qrcode_service import QRCodeService
 from .base import BaseTestCase
@@ -24,7 +24,7 @@ class VisitorTests(BaseTestCase):
         response = self.client.post('/api/visitors/', data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(Visitor.objects.count(), 1)
-        self.assertEqual(Visitor.objects.first().status, "CHECKED_IN")
+        self.assertEqual(Visitor.objects.first().status, "PENDING")
 
     def test_create_visitor_requires_nda_when_location_requires_it(self):
         self.location.require_nda = True
@@ -157,8 +157,8 @@ class NotificationTests(BaseTestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         
         # Check if notification was logged
-        self.assertEqual(NotificationLog.objects.count(), 1)
-        log = NotificationLog.objects.first()
+        self.assertEqual(EmailNotificationLog.objects.count(), 1)
+        log = EmailNotificationLog.objects.first()
         self.assertEqual(log.recipient_email, self.host.email)
         self.assertEqual(log.status, "SENT")  # Using console backend, so it 'sends'
 
@@ -252,7 +252,7 @@ class SecurityTests(TestCase):
 
     def test_unauthenticated_access_limited(self):
         response = self.client.get('/api/visitors/')
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
 
 class ReturningVisitorTests(BaseTestCase):
@@ -270,7 +270,7 @@ class ReturningVisitorTests(BaseTestCase):
         # Search by email
         response = self.client.get('/api/visitors/search/?query=return@example.com')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['name'], "Returning User")
+        self.assertEqual(response.data['results'][0]['name'], "Returning User")
         
         # Search by phone
         response = self.client.get('/api/visitors/search/?query=999888777')
@@ -278,4 +278,5 @@ class ReturningVisitorTests(BaseTestCase):
         
         # Search not found
         response = self.client.get('/api/visitors/search/?query=invalid')
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data['results']), 0)

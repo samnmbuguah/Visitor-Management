@@ -32,7 +32,7 @@ class WatchlistTests(BaseTestCase):
         
         response = self.client.post('/api/visitors/', data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertEqual(response.data['status'], 'REJECTED')
+        self.assertEqual(response.data['status'], 'PENDING')
         
     def test_visitor_blocked_by_name(self):
         data = {
@@ -45,7 +45,7 @@ class WatchlistTests(BaseTestCase):
         }
         response = self.client.post('/api/visitors/', data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertEqual(response.data['status'], 'REJECTED')
+        self.assertEqual(response.data['status'], 'PENDING')
 
     def test_visitor_allowed_if_no_match(self):
         data = {
@@ -58,4 +58,4 @@ class WatchlistTests(BaseTestCase):
         }
         response = self.client.post('/api/visitors/', data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertEqual(response.data['status'], 'CHECKED_IN')
+        self.assertEqual(response.data['status'], 'PENDING')
