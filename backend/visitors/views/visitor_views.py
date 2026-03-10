@@ -60,14 +60,10 @@ class VisitorViewSet(viewsets.ModelViewSet):
         if self.action in ['create', 'search']:
             return [AllowAny()]
         return [IsAuthenticated()]
+
     filterset_fields = ['status', 'location', 'host', 'visitor_type']
     search_fields = ['name', 'email', 'company', 'purpose']
     ordering_fields = ['checkin_time', 'created_at', 'status']
-
-    def get_permissions(self):
-        if self.action in ['create', 'list', 'checkout', 'search', 'active']:
-            return [IsAuthenticated()] # Changed to IsAuthenticated
-        return [IsAuthenticated()]
 
     def get_serializer_class(self):
         if self.action == 'create':
@@ -82,7 +78,7 @@ class VisitorViewSet(viewsets.ModelViewSet):
         if not tenant:
             return Visitor.objects.none()
             
-        queryset = Visitor.objects.filter(location__tenant=tenant).order_by('-checkin_time')
+        queryset = Visitor.objects.select_related('host', 'location', 'visitor_type').filter(location__tenant=tenant).order_by('-checkin_time')
 
         # Apply date range filters if present
         start_date = self.request.query_params.get('start_date')

@@ -76,7 +76,7 @@ class VendorViewSet(viewsets.ModelViewSet):
         tenant = get_user_tenant(self.request.user)
         if not tenant:
             return Vendor.objects.none()
-        return Vendor.objects.filter(tenant=tenant)
+        return Vendor.objects.filter(tenant=tenant).prefetch_related('specialties')
 
     def perform_create(self, serializer):
         tenant = get_user_tenant(self.request.user)
@@ -114,7 +114,7 @@ class MaintenanceRequestViewSet(viewsets.ModelViewSet):
         tenant = get_user_tenant(self.request.user)
         if not tenant:
             return MaintenanceRequest.objects.none()
-        return MaintenanceRequest.objects.filter(tenant=tenant)
+        return MaintenanceRequest.objects.select_related('location', 'category', 'assigned_to').filter(tenant=tenant)
 
     def get_serializer_class(self):
         if self.action == 'create':
@@ -250,7 +250,7 @@ class AssetViewSet(viewsets.ModelViewSet):
         tenant = get_user_tenant(self.request.user)
         if not tenant:
             return Asset.objects.none()
-        return Asset.objects.filter(tenant=tenant)
+        return Asset.objects.select_related('location', 'asset_type').filter(tenant=tenant)
 
     def perform_create(self, serializer):
         tenant = get_user_tenant(self.request.user)
@@ -587,7 +587,7 @@ class LeaseViewSet(viewsets.ModelViewSet):
         tenant = get_user_tenant(self.request.user)
         if not tenant:
             return Lease.objects.none()
-        return Lease.objects.filter(tenant=tenant)
+        return Lease.objects.select_related('tenant').filter(tenant=tenant)
 
     def perform_create(self, serializer):
         tenant = get_user_tenant(self.request.user)

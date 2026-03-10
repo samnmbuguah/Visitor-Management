@@ -2,7 +2,7 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.utils import timezone
 import uuid
-from .tenant_models import Tenant
+from .tenant_models import Tenant, TenantUser
 
 
 class UserRole(models.TextChoices):
