@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { AuthProvider } from '@/context/AuthContext';
+import { Toaster } from 'react-hot-toast';
 import { StateProvider } from './StateProvider';
 import { useTheme } from '@/store';
 
@@ -32,6 +33,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
             <AuthProvider>
                 <ThemeWrapper>
                     {children}
+                    <Toaster position="top-right" />
                 </ThemeWrapper>
             </AuthProvider>
         </StateProvider>
