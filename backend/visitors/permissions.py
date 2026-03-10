@@ -57,3 +57,29 @@ class IsHost(permissions.BasePermission):
                 return obj.host.user == request.user
                 
         return True
+
+class IsAdminUser(permissions.BasePermission):
+    """
+    Allows access only to users with ADMIN or SUPER_ADMIN role.
+    """
+    def has_permission(self, request, view):
+        if not request.user or not request.user.is_authenticated:
+            return False
+        if request.user.is_superuser:
+            return True
+        profile = getattr(request.user, 'profile', None)
+        return bool(profile and profile.role in ['ADMIN', 'SUPER_ADMIN'])
+
+class IsTenantAdmin(permissions.BasePermission):
+    """
+    Allows access only to users who are admins of the tenant.
+    """
+    def has_permission(self, request, view):
+        if not request.user or not request.user.is_authenticated:
+            return False
+        if request.user.is_superuser:
+            return True
+        
+        # Check TenantUser role if available
+        from .tenant_models import TenantUser
+        return TenantUser.objects.filter(user=request.user, role='ADMIN').exists()

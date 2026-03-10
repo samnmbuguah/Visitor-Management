@@ -43,6 +43,7 @@ class APIEndpointTests(BaseTestCase):
     def test_authentication_endpoints(self):
         """Test authentication endpoints"""
         # Test login with valid credentials
+        self.client.force_authenticate(user=None) # Ensure clean state
         response = self.client.post('/api/auth/login/', {
             'username': self.super_admin.username,
             'password': 'test123'
@@ -79,6 +80,7 @@ class APIEndpointTests(BaseTestCase):
         })
         logout_refresh = login_response.data['refresh']
         # Test logout
+        self.client.force_authenticate(user=self.super_admin)
         response = self.client.post('/api/auth/logout/', {
             'refresh': logout_refresh
         })

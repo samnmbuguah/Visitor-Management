@@ -13,9 +13,9 @@ import {
   Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import axios from 'axios';
+import client from '../../src/api/client';
 
-const API_BASE = 'http://localhost:8000/api/property-management';
+const API_BASE = '/property-management';
 
 interface MaintenanceRequest {
   id: number;
@@ -54,7 +54,7 @@ const MaintenanceScreen = () => {
 
   const fetchRequests = async () => {
     try {
-      const response = await axios.get(`${API_BASE}/requests/`);
+      const response = await client.get(`${API_BASE}/requests/`);
       setRequests(response.data.results || response.data);
     } catch (error) {
       console.error('Error fetching maintenance requests:', error);
@@ -67,7 +67,7 @@ const MaintenanceScreen = () => {
 
   const fetchCategories = async () => {
     try {
-      const response = await axios.get(`${API_BASE}/categories/`);
+      const response = await client.get(`${API_BASE}/categories/`);
       setCategories(response.data.results || response.data);
     } catch (error) {
       console.error('Error fetching categories:', error);
@@ -76,7 +76,7 @@ const MaintenanceScreen = () => {
 
   const fetchLocations = async () => {
     try {
-      const response = await axios.get('http://localhost:8000/api/visitors/locations/');
+      const response = await client.get('/visitors/locations/');
       setLocations(response.data.results || response.data);
     } catch (error) {
       console.error('Error fetching locations:', error);
@@ -95,7 +95,7 @@ const MaintenanceScreen = () => {
     }
 
     try {
-      await axios.post(`${API_BASE}/requests/`, newRequest);
+      await client.post(`${API_BASE}/requests/`, newRequest);
       setShowCreateModal(false);
       setNewRequest({
         title: '',
@@ -114,7 +114,7 @@ const MaintenanceScreen = () => {
 
   const updateRequestStatus = async (requestId: number, newStatus: string) => {
     try {
-      await axios.post(`${API_BASE}/requests/${requestId}/update_status/`, {
+      await client.post(`${API_BASE}/requests/${requestId}/update_status/`, {
         status: newStatus,
       });
       fetchRequests();

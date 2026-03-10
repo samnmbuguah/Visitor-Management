@@ -50,7 +50,9 @@ class PropertyManagementTests(BaseTestCase):
         self.client.force_authenticate(user=self.super_admin)
         data = {
             'name': 'Test Tenant',
-            'email': 'tenant@test.com',
+            'billing_email': 'tenant@test.com',
+            'slug': 'test-tenant-1',
+            'subdomain': 'test1',
             'phone': '+1234567890',
             'address': '123 Test St'
         }
@@ -62,7 +64,9 @@ class PropertyManagementTests(BaseTestCase):
         self.client.force_authenticate(user=self.admin)
         data = {
             'name': 'Test Tenant',
-            'email': 'tenant@test.com',
+            'billing_email': 'tenant@test.com',
+            'slug': 'test-tenant-2',
+            'subdomain': 'test2',
             'phone': '+1234567890',
             'address': '123 Test St'
         }
@@ -75,7 +79,9 @@ class PropertyManagementTests(BaseTestCase):
         self.client.force_authenticate(user=self.property_manager)
         data = {
             'name': 'Test Tenant',
-            'email': 'tenant@test.com',
+            'billing_email': 'tenant@test.com',
+            'slug': 'test-tenant-3',
+            'subdomain': 'test3',
             'phone': '+1234567890',
             'address': '123 Test St'
         }
@@ -101,6 +107,7 @@ class PropertyManagementTests(BaseTestCase):
 
     def test_unauthenticated_tenant_access(self):
         """Test that unauthenticated users cannot access tenants"""
+        self.client.force_authenticate(user=None)
         response = self.client.get('/api/tenants/')
         self.assertIn(response.status_code, [status.HTTP_401_UNAUTHORIZED, status.HTTP_404_NOT_FOUND])
 

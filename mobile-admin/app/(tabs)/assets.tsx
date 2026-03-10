@@ -13,9 +13,9 @@ import {
   Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import axios from 'axios';
+import client from '../../src/api/client';
 
-const API_BASE = 'http://localhost:8000/api/property-management';
+const API_BASE = '/property-management';
 
 interface Asset {
   id: number;
@@ -67,7 +67,7 @@ const AssetsScreen = () => {
 
   const fetchAssets = async () => {
     try {
-      const response = await axios.get(`${API_BASE}/assets/`);
+      const response = await client.get(`${API_BASE}/assets/`);
       setAssets(response.data.results || response.data);
     } catch (error) {
       console.error('Error fetching assets:', error);
@@ -80,7 +80,7 @@ const AssetsScreen = () => {
 
   const fetchAssetTypes = async () => {
     try {
-      const response = await axios.get(`${API_BASE}/asset-types/`);
+      const response = await client.get(`${API_BASE}/asset-types/`);
       setAssetTypes(response.data.results || response.data);
     } catch (error) {
       console.error('Error fetching asset types:', error);
@@ -89,7 +89,7 @@ const AssetsScreen = () => {
 
   const fetchLocations = async () => {
     try {
-      const response = await axios.get('http://localhost:8000/api/visitors/locations/');
+      const response = await client.get('/visitors/locations/');
       setLocations(response.data.results || response.data);
     } catch (error) {
       console.error('Error fetching locations:', error);
@@ -108,7 +108,7 @@ const AssetsScreen = () => {
     }
 
     try {
-      await axios.post(`${API_BASE}/assets/`, newAsset);
+      await client.post(`${API_BASE}/assets/`, newAsset);
       setShowCreateModal(false);
       setNewAsset({
         name: '',
@@ -133,7 +133,7 @@ const AssetsScreen = () => {
 
   const generateQRCode = async (assetId: number) => {
     try {
-      const response = await axios.get(`${API_BASE}/assets/${assetId}/qr_code/`);
+      const response = await client.get(`${API_BASE}/assets/${assetId}/qr_code/`);
       setQrCodeData(response.data.qr_code);
       setShowQRModal(true);
     } catch (error) {
@@ -156,7 +156,7 @@ const AssetsScreen = () => {
           onPress: async (date) => {
             if (!date) return;
             try {
-              await axios.post(`${API_BASE}/assets/${assetId}/checkout/`, {
+              await client.post(`${API_BASE}/assets/${assetId}/checkout/`, {
                 expected_return_at: date,
                 notes: 'Checked out via mobile app',
                 condition: 'Good condition',
