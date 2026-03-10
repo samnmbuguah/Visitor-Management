@@ -11,6 +11,8 @@ Usage:
 The command creates realistic test data that demonstrates all features of the system.
 """
 
+import os
+
 from django.core.management.base import BaseCommand
 from django.contrib.auth.models import User
 from django.utils import timezone
@@ -213,7 +215,7 @@ class Command(BaseCommand):
                         user = User.objects.create_user(
                             username=username,
                             email=email,
-                            password='demo123456',
+                            password=os.environ.get('SEED_USER_PASSWORD', 'changeme123!'),
                             first_name=f'{role_name} {j + 1}',
                             last_name=f'{tenant.name}'
                         )

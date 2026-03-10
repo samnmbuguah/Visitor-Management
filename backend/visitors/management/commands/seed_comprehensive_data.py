@@ -1,3 +1,5 @@
+import os
+
 from django.core.management.base import BaseCommand
 from django.contrib.auth import get_user_model
 from django.utils import timezone
@@ -301,7 +303,7 @@ class Command(BaseCommand):
         user = User.objects.create_user(
             username=username,
             email=email,
-            password='password123',
+            password=os.environ.get('SEED_USER_PASSWORD', 'changeme123!'),
             first_name=username.title(),
             last_name='Test'
         )

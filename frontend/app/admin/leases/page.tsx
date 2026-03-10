@@ -176,6 +176,18 @@ function LeasesPageContent() {
 
       {/* Leases Table */}
       <Card>
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Unit</TableHead>
+                <TableHead>Tenant</TableHead>
+                <TableHead>Monthly Rent</TableHead>
+                <TableHead>Lease Period</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Actions</TableHead>
+              </TableRow>
+            </TableHeader>
             <TableBody>
               {filteredLeases.map((lease: any) => (
                 <TableRow key={lease.id}>
