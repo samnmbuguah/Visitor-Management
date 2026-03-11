@@ -27,5 +27,13 @@ export const logout = async () => {
 
 export const getProfile = async () => {
     const response = await client.get('/auth/me/');
-    return response.data;
+    const { user, profile } = response.data;
+    // Flatten the nested response into the shape auth utilities expect
+    return {
+        user_id: user.id,
+        username: user.username,
+        email: user.email,
+        role: profile.role,
+        ...profile,
+    };
 };
