@@ -224,6 +224,7 @@ class RTSPCameraStream:
     def _process_stream(self):
         """Process frames from RTSP stream."""
         ocr_service = NumberPlateOCR()
+        from visitors.services.face_recognition_service import face_service
         last_detection_time = 0
         detection_cooldown = 2  # seconds between detections
         
@@ -236,17 +237,22 @@ class RTSPCameraStream:
             
             current_time = time.time()
             
-            # Perform OCR detection at intervals
+            # Perform OCR and Face detection at intervals
             if current_time - last_detection_time >= detection_cooldown:
+                # 1. Number Plate Detection
                 detected_plate = ocr_service.detect_number_plate(frame)
                 
-                if detected_plate:
-                    logger.info(f"Detected number plate: {detected_plate}")
+                # 2. Face Detection
+                detected_faces = face_service.detect_faces(frame)
+                
+                if detected_plate or detected_faces:
+                    logger.info(f"Detections: Plate={detected_plate}, Faces={len(detected_faces)}")
                     
-                    # Call callback with detection result
+                    # Call callback with detection results
                     if self.frame_callback:
                         self.frame_callback({
                             'plate': detected_plate,
+                            'faces': detected_faces,
                             'timestamp': datetime.now(),
                             'frame': frame.copy()
                         })

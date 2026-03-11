@@ -29,6 +29,7 @@ from .views import (
     GateControlView,
     SecurityIncidentsView,
     VisitorTrackingView,
+    CameraViewSet,
     RegisterDeviceTokenView,
     UnregisterDeviceTokenView,
     ListDeviceTokensView,
@@ -59,6 +60,7 @@ router.register(r'notification-logs', NotificationLogViewSet)
 router.register(r'pre-registrations', PreRegistrationViewSet)
 router.register(r'watchlist', WatchlistViewSet)
 router.register(r'parcels', ParcelViewSet)
+router.register(r'cameras', CameraViewSet, basename='camera')
 router.register(r'tenants', TenantViewSet)
 
 urlpatterns = [

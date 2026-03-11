@@ -39,6 +39,7 @@ from .security_views import (
     GateControlView,
     SecurityIncidentsView,
     VisitorTrackingView,
+    CameraViewSet,
 )
 
 __all__ = [
@@ -84,5 +85,6 @@ __all__ = [
     'GateControlView',
     'SecurityIncidentsView',
     'VisitorTrackingView',
+    'CameraViewSet',
     'TenantViewSet',
 ]

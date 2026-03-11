@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from ..models.security_models import (
+from ..security_models import (
     GateAccessLog, SecurityIncident, SecurityAlert,
     CameraStatus, VisitorTracking
 )

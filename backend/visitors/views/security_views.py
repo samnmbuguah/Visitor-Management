@@ -1,7 +1,7 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
-from rest_framework import status
+from rest_framework import status, viewsets
 from django.utils import timezone
 from datetime import timedelta, datetime
 from django.db.models import Count, Q, Avg
@@ -18,6 +18,7 @@ from visitors.security_models import (
 from visitors.models import Visitor, PreRegistration
 from visitors.tenant_models import Tenant, TenantSettings
 from visitors.services.ocr_service import gate_service
+from visitors.serializers.security_serializers import CameraStatusSerializer
 
 logger = logging.getLogger(__name__)
 
@@ -489,3 +490,26 @@ class VisitorTrackingView(APIView):
                 for event in tracking_events
             ],
         })
+
+
+class CameraViewSet(viewsets.ModelViewSet):
+    """ViewSet for managing security cameras."""
+    queryset = CameraStatus.objects.all()
+    serializer_class = CameraStatusSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        tenant = getattr(self.request.user.profile, 'tenant', None) if hasattr(self.request.user, 'profile') else None
+        if not tenant:
+            return CameraStatus.objects.none()
+        return CameraStatus.objects.filter(tenant=tenant)
+
+    def perform_create(self, serializer):
+        tenant = getattr(self.request.user.profile, 'tenant', None) if hasattr(self.request.user, 'profile') else None
+        if tenant:
+            serializer.save(tenant=tenant)
+        else:
+            # Fallback for superadmin
+            tenant = Tenant.objects.first()
+            serializer.save(tenant=tenant)
+
