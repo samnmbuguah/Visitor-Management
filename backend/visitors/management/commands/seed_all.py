@@ -94,9 +94,31 @@ class Command(BaseCommand):
             self.seed_watchlist_entries(tenants)
             self.seed_parcels(tenants)
             self.seed_leases(tenants)
+            self.link_superusers_to_tenant(tenants[0])
 
         self.stdout.write(self.style.SUCCESS('\n=== All seeders completed successfully! ==='))
         self._print_summary()
+
+    def link_superusers_to_tenant(self, tenant):
+        """Link all superusers (like admin) to the first tenant so they can see data."""
+        from django.contrib.auth import get_user_model
+        from visitors.tenant_models import TenantUser
+        User = get_user_model()
+        
+        superusers = User.objects.filter(is_superuser=True)
+        count = 0
+        for su in superusers:
+            if not TenantUser.objects.filter(user=su).exists():
+                TenantUser.objects.create(
+                    tenant=tenant,
+                    user=su,
+                    role='OWNER'
+                )
+                count += 1
+                
+        if count > 0:
+            self.stdout.write(f"  Linked {count} superuser(s) to tenant '{tenant.name}' for data visibility")
+
 
     # ------------------------------------------------------------------
     # Notification templates
