@@ -15,13 +15,24 @@ class HostViewSet(viewsets.ModelViewSet):
     """ViewSet for managing hosts."""
     queryset = Host.objects.none()
     serializer_class = HostSerializer
-    permission_classes = [IsAuthenticated] # Allow visitors to see host list
+    permission_classes = [AllowAny] # Allow visitors to see host list
 
     def get_queryset(self):
         tenant = get_user_tenant(self.request.user)
-        if not tenant:
-            return Host.objects.none()
-        return Host.objects.filter(location__tenant=tenant)
+        location_id = self.request.query_params.get('location')
+        
+        if tenant:
+            queryset = Host.objects.filter(location__tenant=tenant)
+        else:
+            # If no tenant (anonymous Kiosk), must provide location_id
+            if not location_id:
+                return Host.objects.none()
+            queryset = Host.objects.all()
+        
+        if location_id:
+            queryset = queryset.filter(location_id=location_id)
+            
+        return queryset
 
 
 class WatchlistViewSet(viewsets.ModelViewSet):
@@ -76,8 +87,12 @@ class VisitorViewSet(viewsets.ModelViewSet):
         """Filter queryset by user's tenant for strict isolation."""
         tenant = get_user_tenant(self.request.user)
         if not tenant:
+            # For anonymous Kiosk search/create, we allow access but might need filtering
+            # For now, allow all if it's AllowAny actions
+            if self.action in ['create', 'search']:
+                return Visitor.objects.all()
             return Visitor.objects.none()
-            
+        
         queryset = Visitor.objects.select_related('host', 'location', 'visitor_type').filter(location__tenant=tenant).order_by('-checkin_time')
 
         # Apply date range filters if present

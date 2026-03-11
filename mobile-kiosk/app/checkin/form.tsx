@@ -3,7 +3,7 @@ import { StyleSheet, View, Text, TextInput, TouchableOpacity, ScrollView, Alert,
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Camera, CameraView, useCameraPermissions } from 'expo-camera';
 import { getLocations, getHosts } from '../../src/api/visitors';
-import { ArrowLeft, User, Mail, Phone, Building, UserCheck, Camera as CameraIcon, CheckCircle2, RefreshCw } from 'lucide-react-native';
+import { ArrowLeft, User, Mail, Phone, Building, UserCheck, Camera as CameraIcon, CheckCircle2, RefreshCw, Clock } from 'lucide-react-native';
 
 export default function CheckinForm() {
     const params = useLocalSearchParams();
@@ -109,23 +109,22 @@ export default function CheckinForm() {
     if (showCamera) {
         return (
             <View style={styles.container}>
-                <CameraView style={styles.camera} ref={cameraRef} facing="front">
-                    <View style={styles.cameraOverlay}>
-                        <View style={styles.cameraHeader}>
-                            <TouchableOpacity style={styles.cameraBackButton} onPress={() => setShowCamera(false)}>
-                                <ArrowLeft color="#fff" size={24} />
-                            </TouchableOpacity>
-                            <Text style={styles.cameraTitle}>Take Photo</Text>
-                            <View style={{ width: 40 }} />
-                        </View>
-                        <View style={styles.cameraFrame} />
-                        <View style={styles.cameraFooter}>
-                            <TouchableOpacity style={styles.captureButton} onPress={takePicture}>
-                                <View style={styles.captureButtonInner} />
-                            </TouchableOpacity>
-                        </View>
+                <CameraView style={styles.camera} ref={cameraRef} facing="front" />
+                <View style={[styles.cameraOverlay, StyleSheet.absoluteFillObject]}>
+                    <View style={styles.cameraHeader}>
+                        <TouchableOpacity style={styles.cameraBackButton} onPress={() => setShowCamera(false)}>
+                            <ArrowLeft color="#fff" size={24} />
+                        </TouchableOpacity>
+                        <Text style={styles.cameraTitle}>Take Photo</Text>
+                        <View style={{ width: 40 }} />
                     </View>
-                </CameraView>
+                    <View style={styles.cameraFrame} />
+                    <View style={styles.cameraFooter}>
+                        <TouchableOpacity style={styles.captureButton} onPress={takePicture}>
+                            <View style={styles.captureButtonInner} />
+                        </TouchableOpacity>
+                    </View>
+                </View>
             </View>
         );
     }

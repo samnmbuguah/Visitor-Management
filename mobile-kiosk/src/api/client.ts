@@ -13,7 +13,7 @@ const client = axios.create({
 // For Kiosk app, we might use a fixed Kiosk Token instead of user login
 // But we'll keep the base client structure for consistency
 client.interceptors.request.use(async (config) => {
-    const token = await SecureStore.getItemAsync('kioskToken');
+    const token = await SecureStore.getItemAsync('kiosk_token');
     if (token) {
         config.headers.Authorization = `Bearer ${token}`;
     }

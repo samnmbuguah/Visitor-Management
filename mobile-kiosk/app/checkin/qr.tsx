@@ -49,19 +49,18 @@ export default function QRScannerScreen() {
                 barcodeScannerSettings={{
                     barcodeTypes: ["qr"],
                 }}
-            >
-                <View style={styles.overlay}>
-                    <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-                        <ArrowLeft color="#fff" size={30} />
-                    </TouchableOpacity>
+            />
+            <View style={[styles.overlay, StyleSheet.absoluteFillObject]}>
+                <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+                    <ArrowLeft color="#fff" size={30} />
+                </TouchableOpacity>
 
-                    <View style={styles.scanFrame} />
+                <View style={styles.scanFrame} />
 
-                    <Text style={styles.instructionText}>
-                        Align the QR code within the frame
-                    </Text>
-                </View>
-            </CameraView>
+                <Text style={styles.instructionText}>
+                    Align the QR code within the frame
+                </Text>
+            </View>
         </View>
     );
 }
