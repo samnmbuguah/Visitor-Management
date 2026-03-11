@@ -52,7 +52,7 @@ services:
     volumes:
       - ./mobile-admin:/app
       - mobile_admin_node_modules:/app/node_modules
-    command: ["sh", "-c", "npm ci --legacy-peer-deps && npx expo start --port 8084 --lan --clear"]
+    command: ["sh", "-c", "npm install --legacy-peer-deps && npx expo start --port 8084 --lan --clear"]
     tty: true
     stdin_open: true
     ports:
@@ -74,7 +74,7 @@ services:
     volumes:
       - ./mobile-host:/app
       - mobile_host_node_modules:/app/node_modules
-    command: ["sh", "-c", "npm ci --legacy-peer-deps && npx expo start --port 8085 --lan --clear"]
+    command: ["sh", "-c", "npm install --legacy-peer-deps && npx expo start --port 8085 --lan --clear"]
     tty: true
     stdin_open: true
     ports:
@@ -96,7 +96,7 @@ services:
     volumes:
       - ./mobile-kiosk:/app
       - mobile_kiosk_node_modules:/app/node_modules
-    command: ["sh", "-c", "npm ci --legacy-peer-deps && npx expo start --port 8086 --lan --clear"]
+    command: ["sh", "-c", "npm install --legacy-peer-deps && npx expo start --port 8086 --lan --clear"]
     tty: true
     stdin_open: true
     ports:
