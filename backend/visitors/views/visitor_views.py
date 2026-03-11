@@ -68,6 +68,7 @@ class VisitorViewSet(viewsets.ModelViewSet):
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     
     def get_permissions(self):
+        print(f"[VISITOR] Action: {self.action}, User: {self.request.user}, Auth: {self.request.user.is_authenticated}")
         if self.action in ['create', 'search', 'active', 'checkout']:
             return [AllowAny()]
         return [IsAuthenticated()]
@@ -84,26 +85,29 @@ class VisitorViewSet(viewsets.ModelViewSet):
         return VisitorSerializer
 
     def get_queryset(self):
-        """Filter queryset by user's tenant for strict isolation."""
-        tenant = get_user_tenant(self.request.user)
+        user = self.request.user
+        tenant = get_user_tenant(user)
+        print(f"[VISITOR QS] Action: {self.action}, User: {user}, Tenant: {tenant}")
+        
         if not tenant:
-            # For anonymous Kiosk search/create, we allow access but might need filtering
-            # For now, allow all if it's AllowAny actions
-            if self.action in ['create', 'search', 'active', 'checkout']:
+            # For kiosk actions without a user, we allow seeing all visitors for search
+            if self.action in ['search', 'active', 'checkout']:
                 return Visitor.objects.all()
             return Visitor.objects.none()
         
-        queryset = Visitor.objects.select_related('host', 'location', 'visitor_type').filter(location__tenant=tenant).order_by('-checkin_time')
-
-        # Apply date range filters if present
-        start_date = self.request.query_params.get('start_date')
-        end_date = self.request.query_params.get('end_date')
-        if start_date:
-            queryset = queryset.filter(checkin_time__date__gte=start_date)
-        if end_date:
-            queryset = queryset.filter(checkin_time__date__lte=end_date)
+        # If user is admin/super admin, show all visitors for their tenant
+        profile = getattr(user, 'profile', None)
+        if profile and profile.role in ['SUPER_ADMIN', 'ADMIN']:
+            if profile.role == 'ADMIN' and profile.location:
+                return Visitor.objects.filter(location=profile.location)
+            return Visitor.objects.filter(location__tenant=tenant)
+        
+        # For hosts, only show their visitors
+        host_profile = getattr(user, 'host_profile', None)
+        if host_profile:
+            return Visitor.objects.filter(host=host_profile)
             
-        return queryset
+        return Visitor.objects.none()
 
     def perform_create(self, serializer):
         # Check against Watchlist

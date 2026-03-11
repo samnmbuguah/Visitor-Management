@@ -247,7 +247,9 @@ class AssetViewSet(viewsets.ModelViewSet):
     ordering_fields = ['name', 'purchase_date', 'last_maintenance_date']
 
     def get_queryset(self):
-        tenant = get_user_tenant(self.request.user)
+        user = self.request.user
+        tenant = get_user_tenant(user)
+        print(f"[ASSET QS] Action: {self.action}, User: {user}, Tenant: {tenant}")
         if not tenant:
             return Asset.objects.none()
         return Asset.objects.select_related('location', 'asset_type').filter(tenant=tenant)
@@ -267,6 +269,7 @@ class AssetViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['get'])
     def qr_code(self, request, pk=None):
         """Generate QR code for the asset"""
+        print(f"[ASSET QR] Action: qr_code, User: {request.user}")
         asset = self.get_object()
         
         # Create QR code
