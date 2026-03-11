@@ -52,6 +52,13 @@ export default function TabsLayout() {
                     tabBarIcon: ({ color }) => <Building color={color} size={24} />,
                 }}
             />
+            <Tabs.Screen
+                name="profile"
+                options={{
+                    title: 'Profile',
+                    tabBarIcon: ({ color }) => <Settings color={color} size={24} />,
+                }}
+            />
         </Tabs>
     );
 }

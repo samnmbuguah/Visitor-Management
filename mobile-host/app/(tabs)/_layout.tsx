@@ -1,5 +1,5 @@
 import { Tabs } from 'expo-router';
-import { Bell, UserPlus, History, Package } from 'lucide-react-native';
+import { Bell, UserPlus, Package, User } from 'lucide-react-native';
 
 export default function TabsLayout() {
     return (
@@ -36,6 +36,13 @@ export default function TabsLayout() {
                 options={{
                     title: 'My Parcels',
                     tabBarIcon: ({ color }) => <Package color={color} size={24} />,
+                }}
+            />
+            <Tabs.Screen
+                name="profile"
+                options={{
+                    title: 'Profile',
+                    tabBarIcon: ({ color }) => <User color={color} size={24} />,
                 }}
             />
         </Tabs>

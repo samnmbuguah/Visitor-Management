@@ -76,7 +76,7 @@ const MaintenanceScreen = () => {
 
   const fetchLocations = async () => {
     try {
-      const response = await client.get('/visitors/locations/');
+      const response = await client.get('/locations/');
       setLocations(response.data.results || response.data);
     } catch (error) {
       console.error('Error fetching locations:', error);
