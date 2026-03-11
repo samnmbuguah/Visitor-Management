@@ -14,7 +14,9 @@ const client = axios.create({
 // But we'll keep the base client structure for consistency
 client.interceptors.request.use(async (config) => {
     const token = await SecureStore.getItemAsync('kiosk_token');
-    if (token) {
+    // Only send token if it exists and looks like a real JWT (has dots)
+    // Avoid sending 'kiosk_authenticated' dummy token which triggers 401 on backend
+    if (token && token.includes('.')) {
         config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
