@@ -9,7 +9,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Modal, ModalContent, ModalTitle } from '@/components/ui/modal';
 import { AdminPage } from '@/components/ProtectedPage';
-import { FileText, Calendar, DollarSign, Users, Plus, Search, Filter, Edit, Eye, Download } from 'lucide-react';
+import { FileText, Calendar, DollarSign, Users, Plus, Search, Filter, Edit, Eye, Download, Trash2 } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
 
 import { useLeases, useTenants, useCreateLease, useDeleteLease } from '@/hooks/useData';
 import { toast } from 'react-hot-toast';
@@ -30,10 +31,15 @@ function LeasesPageContent() {
   const { data: leases = [], isLoading: loading } = useLeases();
   const { data: tenants = [] } = useTenants();
   const createLeaseMutation = useCreateLease();
+  const deleteLeaseMutation = useDeleteLease();
+  const queryClient = useQueryClient();
   
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showViewModal, setShowViewModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [selectedLease, setSelectedLease] = useState<Lease | null>(null);
   
   const [formData, setFormData] = useState({
     unit_number: '',
@@ -63,7 +69,7 @@ function LeasesPageContent() {
 
   const totalMonthlyRevenue = leases
     .filter(l => l.status === 'ACTIVE')
-    .reduce((sum, lease) => sum + lease.monthly_rent, 0);
+    .reduce((sum, lease) => sum + Number(lease.monthly_rent), 0);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-6">
@@ -132,7 +138,7 @@ function LeasesPageContent() {
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Monthly Revenue</p>
                 <p className="text-2xl font-bold">
-                  ${totalMonthlyRevenue.toLocaleString()}
+                  ${totalMonthlyRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </p>
               </div>
               <div className="p-3 bg-green-100 rounded-lg">
@@ -198,7 +204,7 @@ function LeasesPageContent() {
                     <p className="font-medium">{lease.tenant_name}</p>
                   </TableCell>
                   <TableCell>
-                    <p className="font-bold">${Number(lease.monthly_rent).toLocaleString()}</p>
+                    <p className="font-bold">${Number(lease.monthly_rent).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                   </TableCell>
                   <TableCell>
                     <div>
@@ -213,11 +219,17 @@ function LeasesPageContent() {
                   </TableCell>
                   <TableCell>
                     <div className="flex gap-2">
-                      <Button variant="outline" size="sm">
+                      <Button variant="outline" size="sm" onClick={() => {
+                        setSelectedLease(lease);
+                        setShowViewModal(true);
+                      }}>
                         <Eye size={14} />
                       </Button>
-                      <Button variant="outline" size="sm">
-                        <Edit size={14} />
+                      <Button variant="outline" size="sm" className="text-destructive" onClick={() => {
+                        setSelectedLease(lease);
+                        setShowDeleteModal(true);
+                      }}>
+                        <Trash2 size={14} />
                       </Button>
                     </div>
                   </TableCell>
@@ -296,6 +308,7 @@ function LeasesPageContent() {
                   try {
                     await createLeaseMutation.mutateAsync(formData);
                     toast.success('Lease created successfully');
+                    queryClient.invalidateQueries({ queryKey: ['leases'] });
                     setShowCreateModal(false);
                     setFormData({
                       unit_number: '',
@@ -316,6 +329,85 @@ function LeasesPageContent() {
             </div>
           </div>
         </div>
+        </ModalContent>
+      </Modal>
+
+      {/* View Lease Modal */}
+      <Modal open={showViewModal} onOpenChange={setShowViewModal}>
+        <ModalContent>
+          <div className="space-y-6">
+            <ModalTitle className="text-2xl font-bold">Lease Details</ModalTitle>
+            {selectedLease && (
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4 bg-slate-50 p-4 rounded-lg">
+                  <div>
+                    <label className="text-xs text-muted-foreground uppercase font-bold">Unit Number</label>
+                    <p className="font-medium text-lg">{selectedLease.unit_number}</p>
+                  </div>
+                  <div>
+                    <label className="text-xs text-muted-foreground uppercase font-bold">Status</label>
+                    <div><Badge className={getStatusColor(selectedLease.status)}>{selectedLease.status_display || selectedLease.status}</Badge></div>
+                  </div>
+                  <div>
+                    <label className="text-xs text-muted-foreground uppercase font-bold">Tenant</label>
+                    <p>{selectedLease.tenant_name}</p>
+                  </div>
+                  <div>
+                    <label className="text-xs text-muted-foreground uppercase font-bold">Monthly Rent</label>
+                    <p className="font-bold text-green-700">
+                      ${Number(selectedLease.monthly_rent).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </p>
+                  </div>
+                  <div>
+                    <label className="text-xs text-muted-foreground uppercase font-bold">Lease Period</label>
+                    <p>{selectedLease.start_date} to {selectedLease.end_date}</p>
+                  </div>
+                  <div>
+                    <label className="text-xs text-muted-foreground uppercase font-bold">Created</label>
+                    <p>{new Date(selectedLease.created_at).toLocaleDateString()}</p>
+                  </div>
+                </div>
+                <div className="flex justify-end pt-2">
+                  <Button onClick={() => setShowViewModal(false)}>Close</Button>
+                </div>
+              </div>
+            )}
+          </div>
+        </ModalContent>
+      </Modal>
+
+      {/* Delete Confirmation Modal */}
+      <Modal open={showDeleteModal} onOpenChange={setShowDeleteModal}>
+        <ModalContent>
+          <div className="space-y-6">
+            <ModalTitle className="text-2xl font-bold text-red-600">Delete Lease</ModalTitle>
+            {selectedLease && (
+              <div className="space-y-4">
+                <p>Are you sure you want to delete the lease for unit <span className="font-bold">{selectedLease.unit_number}</span>?</p>
+                <p className="text-sm text-muted-foreground">This action cannot be undone.</p>
+                
+                <div className="flex justify-end gap-3 pt-4">
+                  <Button variant="outline" onClick={() => setShowDeleteModal(false)}>Cancel</Button>
+                  <Button 
+                    variant="destructive"
+                    onClick={() => {
+                      deleteLeaseMutation.mutate(selectedLease.id, {
+                        onSuccess: () => {
+                          toast.success('Lease deleted successfully');
+                          queryClient.invalidateQueries({ queryKey: ['leases'] });
+                          setShowDeleteModal(false);
+                        },
+                        onError: () => toast.error('Failed to delete lease')
+                      });
+                    }}
+                    disabled={deleteLeaseMutation.isLoading}
+                  >
+                    {deleteLeaseMutation.isLoading ? 'Deleting...' : 'Delete'}
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
         </ModalContent>
       </Modal>
     </div>
