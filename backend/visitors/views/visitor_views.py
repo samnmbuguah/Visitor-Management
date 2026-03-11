@@ -68,7 +68,7 @@ class VisitorViewSet(viewsets.ModelViewSet):
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     
     def get_permissions(self):
-        if self.action in ['create', 'search']:
+        if self.action in ['create', 'search', 'active', 'checkout']:
             return [AllowAny()]
         return [IsAuthenticated()]
 
@@ -89,7 +89,7 @@ class VisitorViewSet(viewsets.ModelViewSet):
         if not tenant:
             # For anonymous Kiosk search/create, we allow access but might need filtering
             # For now, allow all if it's AllowAny actions
-            if self.action in ['create', 'search']:
+            if self.action in ['create', 'search', 'active', 'checkout']:
                 return Visitor.objects.all()
             return Visitor.objects.none()
         
@@ -291,12 +291,5 @@ class VisitorViewSet(viewsets.ModelViewSet):
         today = timezone.now().date()
         queryset = self.get_queryset().filter(checkin_time__date=today)
         serializer = VisitorSerializer(queryset, many=True)
-        return Response(serializer.data)
-
-    @action(detail=False, methods=['get'])
-    def active(self, request):
-        """Get list of currently active (checked-in) visitors."""
-        queryset = self.get_queryset().filter(status='CHECKED_IN')
-        serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
 
