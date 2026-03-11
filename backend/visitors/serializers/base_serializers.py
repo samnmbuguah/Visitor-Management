@@ -143,13 +143,50 @@ class VisitorSerializer(serializers.ModelSerializer):
 
 class VisitorCreateSerializer(serializers.ModelSerializer):
     """Serializer for creating visitors."""
+    token = serializers.UUIDField(required=False, write_only=True)
+
     class Meta:
         model = Visitor
         fields = ['id', 'name', 'email', 'phone', 'company', 'number_plate', 'host', 'visitor_type', 'purpose', 'expected_duration', 'photo',
-                  'location', 'kiosk', 'status', 'nda_accepted', 'signature']
+                  'location', 'kiosk', 'status', 'nda_accepted', 'signature', 'token']
         read_only_fields = ['id']
+        extra_kwargs = {
+            'name': {'required': False},
+            'email': {'required': False},
+            'phone': {'required': False},
+            'location': {'required': False},
+            'host': {'required': False},
+        }
 
     def validate(self, attrs):
+        token = attrs.get('token')
+        if token:
+            try:
+                pre_reg = PreRegistration.objects.get(token=token, status='PENDING')
+                # Pre-fill data if not provided
+                attrs['name'] = attrs.get('name') or pre_reg.visitor_name
+                attrs['email'] = attrs.get('email') or pre_reg.visitor_email
+                attrs['phone'] = attrs.get('phone') or pre_reg.visitor_phone
+                attrs['company'] = attrs.get('company') or pre_reg.visitor_company
+                attrs['number_plate'] = attrs.get('number_plate') or pre_reg.visitor_number_plate
+                attrs['host'] = attrs.get('host') or pre_reg.host
+                attrs['location'] = attrs.get('location') or pre_reg.location
+                attrs['visitor_type'] = attrs.get('visitor_type') or pre_reg.visitor_type
+                attrs['purpose'] = attrs.get('purpose') or pre_reg.purpose
+                attrs['expected_duration'] = attrs.get('expected_duration') or pre_reg.expected_duration
+                attrs['pre_registration'] = pre_reg
+            except PreRegistration.DoesNotExist:
+                raise serializers.ValidationError({'token': 'Invalid or expired pre-registration token'})
+        else:
+            # Traditional check-in: require core fields
+            required_fields = ['name', 'email', 'location', 'host']
+            errors = {}
+            for field in required_fields:
+                if not attrs.get(field):
+                    errors[field] = "This field is required for traditional check-in."
+            if errors:
+                raise serializers.ValidationError(errors)
+
         attrs = super().validate(attrs)
 
         location = attrs.get('location')
@@ -168,17 +205,30 @@ class VisitorCreateSerializer(serializers.ModelSerializer):
         return attrs
 
     def create(self, validated_data):
+        token = validated_data.pop('token', None)
+        pre_reg = validated_data.pop('pre_registration', None)
+        
         nda_accepted = validated_data.get('nda_accepted')
         signature = validated_data.get('signature')
 
         if nda_accepted and signature:
             validated_data['nda_signed_at'] = timezone.now()
 
-        # Force status to PENDING for receptionist registration
-        # This overrides the model default of CHECKED_IN
-        validated_data['status'] = 'PENDING'
+        # Link pre-registration if provided
+        if pre_reg:
+            validated_data['pre_registration'] = pre_reg
 
-        return super().create(validated_data)
+        # Set status to PENDING if not already specified (e.g. by ViewSet)
+        if 'status' not in validated_data:
+            validated_data['status'] = 'PENDING'
+
+        visitor = super().create(validated_data)
+
+        if pre_reg:
+            pre_reg.status = 'USED'
+            pre_reg.save()
+
+        return visitor
 
 
 class VisitorSearchSerializer(serializers.ModelSerializer):

@@ -105,7 +105,12 @@ class VisitorViewSet(viewsets.ModelViewSet):
         
         # Handle Watchlist Rejection
         reject_reason = None
-        status_val = 'CHECKED_IN'  # Default
+        
+        # Determine initial status based on location settings
+        if location and getattr(location, 'require_visitor_approval', False):
+            status_val = 'PENDING'
+        else:
+            status_val = 'CHECKED_IN'
         
         # TODO: Implement watchlist service when available
         # For now, skip watchlist check
