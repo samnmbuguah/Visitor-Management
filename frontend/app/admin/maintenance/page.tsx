@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { Modal, ModalContent } from '@/components/ui/modal';
+import { Modal, ModalContent, ModalTitle } from '@/components/ui/modal';
 import { Wrench, AlertTriangle, Clock, CheckCircle, Camera, Plus, Filter } from 'lucide-react';
 import { AdminPage } from '@/components/ProtectedPage';
 import { 
@@ -291,7 +291,7 @@ function MaintenancePageContent() {
       <Modal open={showCreateModal} onOpenChange={setShowCreateModal}>
         <ModalContent>
           <div className="space-y-6">
-          <h2 className="text-2xl font-bold">New Maintenance Request</h2>
+          <ModalTitle className="text-2xl font-bold">New Maintenance Request</ModalTitle>
           
           <div className="space-y-4">
             <div>
@@ -370,6 +370,87 @@ function MaintenancePageContent() {
             </Button>
           </div>
         </div>
+        </ModalContent>
+      </Modal>
+
+      {/* View Details / Photo Modal */}
+      <Modal open={showPhotoModal} onOpenChange={setShowPhotoModal}>
+        <ModalContent className="max-w-2xl">
+          {selectedRequest && (
+            <div className="space-y-6">
+              <div>
+                <ModalTitle className="text-2xl font-bold mb-2">{selectedRequest.title}</ModalTitle>
+                <div className="flex items-center gap-2 mb-4">
+                  <Badge variant={getPriorityColor(selectedRequest.priority)}>
+                    {selectedRequest.priority} Priority
+                  </Badge>
+                  <Badge variant={getStatusColor(selectedRequest.status)}>
+                    {selectedRequest.status.replace('_', ' ')}
+                  </Badge>
+                </div>
+                <p className="text-muted-foreground whitespace-pre-wrap">
+                  {selectedRequest.description}
+                </p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 text-sm bg-muted/50 p-4 rounded-lg">
+                <div>
+                  <span className="font-semibold block text-muted-foreground mb-1">Location</span>
+                  <span>{selectedRequest.location?.name}</span>
+                </div>
+                <div>
+                  <span className="font-semibold block text-muted-foreground mb-1">Category</span>
+                  <span>{selectedRequest.category?.name}</span>
+                </div>
+                <div>
+                  <span className="font-semibold block text-muted-foreground mb-1">Requested By</span>
+                  <span>{selectedRequest.host?.name}</span>
+                </div>
+                <div>
+                  <span className="font-semibold block text-muted-foreground mb-1">Date</span>
+                  <span>{new Date(selectedRequest.requested_at).toLocaleDateString()}</span>
+                </div>
+                {selectedRequest.assigned_to && (
+                  <div className="col-span-2">
+                    <span className="font-semibold block text-muted-foreground mb-1">Assigned To</span>
+                    <span>{selectedRequest.assigned_to.name}</span>
+                  </div>
+                )}
+              </div>
+
+              {selectedRequest.photos && selectedRequest.photos.length > 0 ? (
+                <div>
+                  <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                    <Camera className="h-5 w-5" />
+                    Attached Photos
+                  </h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    {selectedRequest.photos.map((photo) => (
+                      <div key={photo.id} className="space-y-2">
+                        <img 
+                          src={photo.photo} 
+                          alt={photo.caption || 'Maintenance photo'} 
+                          className="w-full h-48 object-cover rounded-lg border"
+                        />
+                        {photo.caption && (
+                          <p className="text-sm text-center text-muted-foreground">{photo.caption}</p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center p-8 bg-muted/50 rounded-lg text-muted-foreground flex flex-col items-center justify-center">
+                  <Camera className="h-8 w-8 mb-2 opacity-50" />
+                  <p>No photos attached to this request</p>
+                </div>
+              )}
+
+              <div className="flex justify-end pt-4">
+                <Button onClick={() => setShowPhotoModal(false)}>Close</Button>
+              </div>
+            </div>
+          )}
         </ModalContent>
       </Modal>
     </div>

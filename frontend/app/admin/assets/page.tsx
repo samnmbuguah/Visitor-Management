@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { Modal, ModalContent } from '@/components/ui/modal';
+import { Modal, ModalContent, ModalTitle } from '@/components/ui/modal';
 import { Building, QrCode, CheckCircle, AlertTriangle, Wrench, Plus, Filter, Search } from 'lucide-react';
 import { AdminPage } from '@/components/ProtectedPage';
 import { 
@@ -354,7 +354,7 @@ function AssetsPageContent() {
       <Modal open={showCreateModal} onOpenChange={setShowCreateModal}>
         <ModalContent>
           <div className="space-y-6">
-          <h2 className="text-2xl font-bold">New Asset</h2>
+          <ModalTitle className="text-2xl font-bold">New Asset</ModalTitle>
           
           <div className="grid gap-4 md:grid-cols-2">
             <div>
@@ -491,7 +491,7 @@ function AssetsPageContent() {
           {selectedAsset && (
             <div className="space-y-6">
             <div className="flex items-center justify-between">
-              <h2 className="text-2xl font-bold">{selectedAsset.name}</h2>
+              <ModalTitle className="text-2xl font-bold">{selectedAsset.name}</ModalTitle>
               <Button
                 variant="outline"
                 onClick={() => generateQRCode(selectedAsset.id)}
@@ -589,7 +589,7 @@ function AssetsPageContent() {
       <Modal open={showQRModal} onOpenChange={setShowQRModal}>
         <ModalContent>
           <div className="space-y-6 text-center">
-          <h2 className="text-2xl font-bold">QR Code</h2>
+          <ModalTitle className="text-2xl font-bold">QR Code</ModalTitle>
           
           {qrCodeData ? (
             <div className="space-y-4">
