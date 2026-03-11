@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
-import { LogOut, LayoutDashboard, UserCheck, Settings, Bell, ShieldCheck, Mail, Menu, X, User, Wrench, Building, Users } from 'lucide-react';
+import { LogOut, LayoutDashboard, UserCheck, Settings, Bell, ShieldCheck, Mail, Menu, X, User, Wrench, Building, Users, Shield, Camera } from 'lucide-react';
 
 export default function Navigation() {
     const { user, logout } = useAuth();
@@ -15,12 +15,15 @@ export default function Navigation() {
 
     const navItems = [
         { href: '/admin', label: 'Dashboard', icon: LayoutDashboard, roles: ['SUPER_ADMIN', 'ADMIN'] },
+        { href: '/admin/cctv', label: 'CCTV', icon: Shield, roles: ['SUPER_ADMIN', 'ADMIN'] },
+        { href: '/admin/cameras', label: 'Cameras', icon: Camera, roles: ['SUPER_ADMIN', 'ADMIN'] },
         { href: '/admin/maintenance', label: 'Maintenance', icon: Wrench, roles: ['SUPER_ADMIN', 'ADMIN'] },
         { href: '/admin/assets', label: 'Assets', icon: Building, roles: ['SUPER_ADMIN', 'ADMIN'] },
         { href: '/admin/tenants', label: 'Tenants', icon: Users, roles: ['SUPER_ADMIN'] },
         { href: '/admin/leases', label: 'Leases', icon: Mail, roles: ['SUPER_ADMIN'] },
         { href: '/host', label: 'Property Manager', icon: UserCheck, roles: ['HOST'] },
         { href: '/receptionist', label: 'Receptionist', icon: UserCheck, roles: ['RECEPTIONIST'] },
+        { href: '/profile', label: 'Profile', icon: User, roles: ['SUPER_ADMIN', 'ADMIN', 'HOST', 'RECEPTIONIST'] },
     ];
 
     const filteredItems = navItems.filter(item => item.roles.includes(user.role));
