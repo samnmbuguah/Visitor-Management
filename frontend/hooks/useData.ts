@@ -158,3 +158,9 @@ export function useDeleteLease() {
     (id: number) => APIService.propertyManagement.deleteLease(id)
   );
 }
+
+export function useCreateTenant() {
+  return useAuthenticatedMutation(
+    APIService.visitors.createTenant
+  );
+}

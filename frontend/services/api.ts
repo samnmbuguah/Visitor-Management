@@ -143,6 +143,11 @@ export class VisitorsAPI {
     return response.data.results || response.data;
   }
 
+  static async createTenant(data: any) {
+    const response = await api.post('/tenants/', data);
+    return response.data;
+  }
+
   static async createInvite(data: any) {
     const response = await api.post('/pre-registrations/', data);
     return response.data;

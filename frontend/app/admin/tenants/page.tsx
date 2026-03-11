@@ -7,11 +7,12 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Modal } from '@/components/ui/modal';
+import { Modal, ModalContent, ModalTitle } from '@/components/ui/modal';
 import { AdminPage } from '@/components/ProtectedPage';
 import { Users, Building, Plus, Search, Filter, Edit, Trash2, Eye } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
 
-import { useTenants } from '@/hooks/useData';
+import { useTenants, useCreateTenant } from '@/hooks/useData';
 
 interface Tenant {
   id: number;
@@ -22,11 +23,45 @@ interface Tenant {
 }
 
 function TenantsPageContent() {
+  const queryClient = useQueryClient();
   const { data: tenants = [], isLoading: loading } = useTenants();
+  const createMutation = useCreateTenant();
+  
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showViewModal, setShowViewModal] = useState(false);
   const [selectedTenant, setSelectedTenant] = useState<Tenant | null>(null);
+
+  const [newTenant, setNewTenant] = useState({
+    name: '',
+    slug: '',
+    subdomain: '',
+    billing_email: '',
+    status: 'ACTIVE',
+    tier: 'STARTER'
+  });
+
+  const handleCreateTenant = () => {
+    if (!newTenant.name || !newTenant.slug) return;
+    
+    createMutation.mutate(newTenant, {
+      onSuccess: () => {
+        setShowCreateModal(false);
+        setNewTenant({
+          name: '',
+          slug: '',
+          subdomain: '',
+          billing_email: '',
+          status: 'ACTIVE',
+          tier: 'STARTER'
+        });
+        queryClient.invalidateQueries({ queryKey: ['tenants'] });
+      },
+      onError: (err) => console.error("Error creating tenant:", err)
+    });
+  };
 
   const filteredTenants = tenants.filter((tenant: Tenant) => {
     const matchesSearch = tenant.name.toLowerCase().includes(searchQuery.toLowerCase());
@@ -193,13 +228,16 @@ function TenantsPageContent() {
                   </TableCell>
                   <TableCell>
                     <div className="flex gap-2">
-                      <Button variant="outline" size="sm" onClick={() => setSelectedTenant(tenant)}>
+                      <Button variant="outline" size="sm" onClick={() => {
+                        setSelectedTenant(tenant);
+                        setShowViewModal(true);
+                      }}>
                         <Eye size={14} />
                       </Button>
-                      <Button variant="outline" size="sm">
-                        <Edit size={14} />
-                      </Button>
-                      <Button variant="outline" size="sm" className="text-destructive">
+                      <Button variant="outline" size="sm" className="text-destructive" onClick={() => {
+                        setSelectedTenant(tenant);
+                        setShowDeleteModal(true);
+                      }}>
                         <Trash2 size={14} />
                       </Button>
                     </div>
@@ -212,32 +250,121 @@ function TenantsPageContent() {
       </Card>
 
       {/* Create Tenant Modal */}
-      <Modal isOpen={showCreateModal} onClose={() => setShowCreateModal(false)}>
-        <div className="p-6">
-          <h2 className="text-xl font-bold mb-4">Create New Tenant</h2>
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium mb-2">Tenant Name</label>
-              <Input placeholder="Enter tenant name" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-2">Email</label>
-              <Input type="email" placeholder="admin@company.com" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-2">Phone</label>
-              <Input placeholder="+1-555-0123" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-2">Address</label>
-              <Input placeholder="123 Business St, City, State 12345" />
-            </div>
-            <div className="flex gap-3 pt-4">
-              <Button onClick={() => setShowCreateModal(false)}>Cancel</Button>
-              <Button>Create Tenant</Button>
+      <Modal open={showCreateModal} onOpenChange={setShowCreateModal}>
+        <ModalContent>
+          <div className="space-y-6">
+            <ModalTitle className="text-2xl font-bold">Create New Tenant</ModalTitle>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-2">Tenant Name *</label>
+                <Input 
+                  placeholder="Acme Corp" 
+                  value={newTenant.name}
+                  onChange={(e) => setNewTenant({...newTenant, name: e.target.value})}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2">Slug *</label>
+                  <Input 
+                    placeholder="acme-corp" 
+                    value={newTenant.slug}
+                    onChange={(e) => setNewTenant({...newTenant, slug: e.target.value})}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">Subdomain</label>
+                  <Input 
+                    placeholder="acme" 
+                    value={newTenant.subdomain}
+                    onChange={(e) => setNewTenant({...newTenant, subdomain: e.target.value})}
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2">Billing Email</label>
+                <Input 
+                  type="email" 
+                  placeholder="billing@acmecorp.com" 
+                  value={newTenant.billing_email}
+                  onChange={(e) => setNewTenant({...newTenant, billing_email: e.target.value})}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2">Status</label>
+                  <Select value={newTenant.status} onValueChange={(val) => setNewTenant({...newTenant, status: val})}>
+                    <SelectTrigger><SelectValue/></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="ACTIVE">Active</SelectItem>
+                      <SelectItem value="TRIAL">Trial</SelectItem>
+                      <SelectItem value="INACTIVE">Inactive</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">Tier</label>
+                  <Select value={newTenant.tier} onValueChange={(val) => setNewTenant({...newTenant, tier: val})}>
+                    <SelectTrigger><SelectValue/></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="STARTER">Starter</SelectItem>
+                      <SelectItem value="PROFESSIONAL">Professional</SelectItem>
+                      <SelectItem value="ENTERPRISE">Enterprise</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="flex justify-end gap-3 pt-4">
+                <Button variant="outline" onClick={() => setShowCreateModal(false)}>Cancel</Button>
+                <Button onClick={handleCreateTenant} disabled={createMutation.isLoading || !newTenant.name || !newTenant.slug}>
+                  {createMutation.isLoading ? 'Creating...' : 'Create Tenant'}
+                </Button>
+              </div>
             </div>
           </div>
-        </div>
+        </ModalContent>
+      </Modal>
+
+      {/* View Tenant Modal */}
+      <Modal open={showViewModal} onOpenChange={setShowViewModal}>
+        <ModalContent>
+          <div className="space-y-6">
+            <ModalTitle className="text-2xl font-bold">Tenant Details</ModalTitle>
+            {selectedTenant && (
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4 bg-slate-50 p-4 rounded-lg">
+                  <div>
+                    <label className="text-xs text-muted-foreground uppercase font-bold">Name</label>
+                    <p className="font-medium text-lg">{selectedTenant.name}</p>
+                  </div>
+                  <div>
+                    <label className="text-xs text-muted-foreground uppercase font-bold">Status</label>
+                    <div><Badge className={getOneStatusColor(selectedTenant.status)}>{selectedTenant.status}</Badge></div>
+                  </div>
+                  <div>
+                    <label className="text-xs text-muted-foreground uppercase font-bold">Slug</label>
+                    <p>{selectedTenant.slug}</p>
+                  </div>
+                  <div>
+                    <label className="text-xs text-muted-foreground uppercase font-bold">Billing Email</label>
+                    <p>{selectedTenant.billing_email || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <label className="text-xs text-muted-foreground uppercase font-bold">Tier</label>
+                    <p>{selectedTenant.tier || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <label className="text-xs text-muted-foreground uppercase font-bold">Created</label>
+                    <p>{new Date(selectedTenant.created_at).toLocaleDateString()}</p>
+                  </div>
+                </div>
+                <div className="flex justify-end pt-2">
+                  <Button onClick={() => setShowViewModal(false)}>Close</Button>
+                </div>
+              </div>
+            )}
+          </div>
+        </ModalContent>
       </Modal>
     </div>
   );
