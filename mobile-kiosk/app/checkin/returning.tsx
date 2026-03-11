@@ -11,16 +11,17 @@ export default function ReturningVisitorScreen() {
     const [loading, setLoading] = useState(false);
 
     const handleSearch = async () => {
-        if (!query.trim()) {
-            Alert.alert('Error', 'Please enter a name, email, or phone number');
+        if (!query.trim() || query.trim().length < 3) {
+            Alert.alert('Error', 'Please enter at least 3 characters to search');
             return;
         }
 
         setLoading(true);
         try {
             const data = await searchVisitor(query);
-            setResults(data);
-            if (data.length === 0) {
+            const searchResults = data.results || data;
+            setResults(searchResults);
+            if (searchResults.length === 0) {
                 Alert.alert('Not Found', 'No returning visitor found with that information. Please register as a new visitor.');
             }
         } catch (error) {
