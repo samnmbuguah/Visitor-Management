@@ -1,7 +1,8 @@
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 
-const API_URL = 'http://213.199.50.129:8001/api';
+// API URL: Use env var if set, otherwise default to host machine IP
+const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://213.199.50.129:8001/api';
 
 const client = axios.create({
     baseURL: API_URL,
