@@ -148,6 +148,12 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # Push Notification Settings
 FCM_SERVER_KEY = 'test_fcm_server_key_for_development_only'
 
+# Authentication Backends
+AUTHENTICATION_BACKENDS = [
+    'visitors.auth_backends.EmailOrUsernameModelBackend',
+    'django.contrib.auth.backends.ModelBackend',
+]
+
 # Stripe Payment Settings
 STRIPE_SECRET_KEY = 'sk_test_51234567890abcdef1234567890abcdef'  # Test key
 STRIPE_PUBLISHABLE_KEY = 'pk_test_51234567890abcdef1234567890abcdef'
