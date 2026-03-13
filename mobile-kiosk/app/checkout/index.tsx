@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, Alert, ActivityIndicator, FlatList } from 'react-native';
+import { StyleSheet, View, Text, TextInput, TouchableOpacity, Alert, ActivityIndicator, FlatList } from 'react-native';
 import { useRouter } from 'expo-router';
 import { getActiveVisitors, checkOutVisitor } from '../../src/api/visitors';
-import { ArrowLeft, LogOut, User, Check } from 'lucide-react-native';
+import { ArrowLeft, LogOut, User, Check, Search } from 'lucide-react-native';
 
 export default function CheckoutScreen() {
     const [visitors, setVisitors] = useState<any[]>([]);
+    const [searchQuery, setSearchQuery] = useState('');
     const [loading, setLoading] = useState(true);
     const [actionLoading, setActionLoading] = useState(false);
     const router = useRouter();
@@ -24,6 +25,12 @@ export default function CheckoutScreen() {
             setLoading(false);
         }
     };
+
+    const filteredVisitors = visitors.filter(v =>
+        v.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        v.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        v.company?.toLowerCase().includes(searchQuery.toLowerCase())
+    );
 
     const handleCheckout = (visitor: any) => {
         Alert.alert(
@@ -62,6 +69,7 @@ export default function CheckoutScreen() {
             </View>
             <View style={styles.visitorInfo}>
                 <Text style={styles.visitorName}>{item.name}</Text>
+                <Text style={styles.visitorDetail}>{item.company || 'No company'}</Text>
                 <Text style={styles.visitorTime}>Checked in: {new Date(item.checkin_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</Text>
             </View>
             <LogOut color="#94a3b8" size={20} />
@@ -81,21 +89,43 @@ export default function CheckoutScreen() {
                 <View style={styles.infoBox}>
                     <LogOut color="#f43f5e" size={40} style={styles.icon} />
                     <Text style={styles.title}>Leaving us?</Text>
-                    <Text style={styles.subtitle}>Select your name from the list to check out</Text>
+                    <Text style={styles.subtitle}>Search and select your name to check out</Text>
+                </View>
+
+                {/* Search bar */}
+                <View style={styles.searchContainer}>
+                    <Search color="#64748b" size={20} style={styles.searchIcon} />
+                    <TextInput
+                        style={styles.searchInput}
+                        placeholder="Search by name, email, or company..."
+                        placeholderTextColor="#64748b"
+                        value={searchQuery}
+                        onChangeText={setSearchQuery}
+                        autoCapitalize="none"
+                    />
                 </View>
 
                 {loading ? (
                     <ActivityIndicator color="#6366f1" size="large" style={{ marginTop: 50 }} />
                 ) : (
                     <FlatList
-                        data={visitors}
+                        data={filteredVisitors}
                         renderItem={renderVisitor}
                         keyExtractor={(item) => item.id.toString()}
                         contentContainerStyle={styles.listContainer}
                         ListEmptyComponent={
                             <View style={styles.emptyContainer}>
-                                <Check color="#10b981" size={48} />
-                                <Text style={styles.emptyText}>No visitors currently checked in.</Text>
+                                {searchQuery ? (
+                                    <>
+                                        <Search color="#64748b" size={48} />
+                                        <Text style={styles.emptyText}>No visitors match "{searchQuery}"</Text>
+                                    </>
+                                ) : (
+                                    <>
+                                        <Check color="#10b981" size={48} />
+                                        <Text style={styles.emptyText}>No visitors currently checked in.</Text>
+                                    </>
+                                )}
                             </View>
                         }
                     />
@@ -137,7 +167,7 @@ const styles = StyleSheet.create({
     },
     infoBox: {
         alignItems: 'center',
-        marginBottom: 30,
+        marginBottom: 20,
         marginTop: 20,
     },
     icon: {
@@ -153,6 +183,26 @@ const styles = StyleSheet.create({
         fontSize: 18,
         color: '#94a3b8',
         textAlign: 'center',
+    },
+    searchContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#1e293b',
+        borderRadius: 16,
+        paddingHorizontal: 15,
+        height: 56,
+        borderWidth: 1,
+        borderColor: '#334155',
+        marginBottom: 20,
+    },
+    searchIcon: {
+        marginRight: 12,
+    },
+    searchInput: {
+        flex: 1,
+        color: '#fff',
+        fontSize: 16,
+        height: '100%',
     },
     listContainer: {
         paddingBottom: 40,
@@ -184,9 +234,14 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         color: '#fff',
     },
-    visitorTime: {
+    visitorDetail: {
         fontSize: 14,
         color: '#94a3b8',
+        marginTop: 2,
+    },
+    visitorTime: {
+        fontSize: 13,
+        color: '#64748b',
         marginTop: 4,
     },
     emptyContainer: {

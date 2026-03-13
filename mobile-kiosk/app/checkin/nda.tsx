@@ -26,8 +26,8 @@ export default function NDAScreen() {
             });
             Alert.alert(
                 'Check-In Successful',
-                'Thank you! Please wait for host approval if required.',
-                [{ text: 'OK', onPress: () => router.replace('/') }]
+                'Thank you! Your host has been notified. Please wait for approval.',
+                [{ text: 'OK', onPress: () => router.replace('/checkin/waiting') }]
             );
         } catch (error: any) {
             Alert.alert('Error', error.response?.data?.detail || 'Failed to complete check-in');

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, ImageBackground } from 'react-native';
+import { StyleSheet, View, Text, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
-import { QrCode, UserPlus, LogOut, Lock } from 'lucide-react-native';
+import { QrCode, UserPlus, LogOut, Lock, Settings } from 'lucide-react-native';
 import { KioskAuth } from '../src/utils/auth';
 
 export default function WelcomeScreen() {
@@ -49,12 +49,24 @@ export default function WelcomeScreen() {
     }
 
     if (!isAuthenticated) {
-        return null; // Will redirect to auth screen
+        return null;
     }
 
     return (
         <View style={styles.container}>
             <View style={styles.overlay}>
+                {/* Header with Lock & Settings icons */}
+                <View style={styles.topBar}>
+                    <TouchableOpacity style={styles.topBarButton} onPress={handleLock}>
+                        <Lock color="#94a3b8" size={20} />
+                        <Text style={styles.topBarText}>Lock</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.topBarButton} onPress={() => router.push('/settings')}>
+                        <Settings color="#94a3b8" size={20} />
+                        <Text style={styles.topBarText}>Settings</Text>
+                    </TouchableOpacity>
+                </View>
+
                 <View style={styles.menu}>
                     <TouchableOpacity
                         style={[styles.menuButton, styles.primaryButton]}
@@ -90,17 +102,6 @@ export default function WelcomeScreen() {
                     </TouchableOpacity>
 
                     <TouchableOpacity
-                        style={[styles.menuButton, styles.logoutButton]}
-                        onPress={handleLock}
-                    >
-                        <Lock color="#fff" size={32} />
-                        <View style={styles.buttonInfo}>
-                            <Text style={styles.buttonTitle}>Lock Kiosk</Text>
-                            <Text style={styles.buttonDesc}>Secure the kiosk interface</Text>
-                        </View>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
                         style={[styles.menuButton, styles.secondaryButton]}
                         onPress={() => router.push('/checkout')}
                     >
@@ -108,6 +109,17 @@ export default function WelcomeScreen() {
                         <View style={styles.buttonInfo}>
                             <Text style={styles.buttonTitle}>Check-Out</Text>
                             <Text style={styles.buttonDesc}>Leave the premises</Text>
+                        </View>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                        style={[styles.menuButton, styles.secondaryButton]}
+                        onPress={() => router.push('/checkin/waiting')}
+                    >
+                        <Clock color="#fff" size={32} />
+                        <View style={styles.buttonInfo}>
+                            <Text style={styles.buttonTitle}>Waiting Room</Text>
+                            <Text style={styles.buttonDesc}>Check your approval status</Text>
                         </View>
                     </TouchableOpacity>
                 </View>
@@ -130,18 +142,29 @@ const styles = StyleSheet.create({
         padding: 30,
         justifyContent: 'center',
     },
-    logo: {
-        width: 100,
-        height: 100,
-        borderRadius: 30,
-        backgroundColor: '#6366f1',
-        justifyContent: 'center',
+    topBar: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        position: 'absolute',
+        top: 50,
+        left: 30,
+        right: 30,
+    },
+    topBarButton: {
+        flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: 20,
-        shadowColor: '#6366f1',
-        shadowOpacity: 0.5,
-        shadowRadius: 20,
-        elevation: 10,
+        backgroundColor: '#1e293b',
+        paddingHorizontal: 16,
+        paddingVertical: 10,
+        borderRadius: 12,
+        gap: 8,
+        borderWidth: 1,
+        borderColor: '#334155',
+    },
+    topBarText: {
+        color: '#94a3b8',
+        fontSize: 14,
+        fontWeight: '600',
     },
     menu: {
         gap: 16,
@@ -192,8 +215,5 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         backgroundColor: '#0f172a',
-    },
-    logoutButton: {
-        backgroundColor: '#dc2626',
     },
 });

@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { StyleSheet, View, Text, TextInput, TouchableOpacity, ScrollView, Alert, ActivityIndicator, Image, Platform, KeyboardAvoidingView } from 'react-native';
+import { StyleSheet, View, Text, TextInput, TouchableOpacity, ScrollView, Alert, ActivityIndicator, Image, Platform, KeyboardAvoidingView, FlatList } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Camera, CameraView, useCameraPermissions } from 'expo-camera';
 import { getLocations, getHosts } from '../../src/api/visitors';
-import { ArrowLeft, User, Mail, Phone, Building, UserCheck, Camera as CameraIcon, CheckCircle2, RefreshCw, Clock } from 'lucide-react-native';
+import { ArrowLeft, User, Mail, Phone, Building, UserCheck, Camera as CameraIcon, CheckCircle2, RefreshCw, Clock, Search, X } from 'lucide-react-native';
 
 export default function CheckinForm() {
     const params = useLocalSearchParams();
@@ -16,6 +16,11 @@ export default function CheckinForm() {
     const [showCamera, setShowCamera] = useState(false);
     const cameraRef = useRef<any>(null);
 
+    // Host search state
+    const [hostSearchQuery, setHostSearchQuery] = useState('');
+    const [showHostDropdown, setShowHostDropdown] = useState(false);
+    const [selectedHost, setSelectedHost] = useState<any>(null);
+
     const [formData, setFormData] = useState({
         name: params.name?.toString() || '',
         email: params.email?.toString() || '',
@@ -25,7 +30,7 @@ export default function CheckinForm() {
         location: '',
         host: '',
         photo: '',
-        expected_duration: '60', // Default 60 mins
+        expected_duration: '60',
     });
 
     useEffect(() => {
@@ -49,12 +54,34 @@ export default function CheckinForm() {
 
     const handleLocationChange = async (locId: string) => {
         setFormData(prev => ({ ...prev, location: locId, host: '' }));
+        setSelectedHost(null);
+        setHostSearchQuery('');
         try {
             const hst = await getHosts(parseInt(locId));
             setHosts(hst);
         } catch (error) {
             console.error('Error loading hosts:', error);
         }
+    };
+
+    // Filtered hosts based on search query
+    const filteredHosts = hosts.filter(h =>
+        h.name.toLowerCase().includes(hostSearchQuery.toLowerCase()) ||
+        (h.department && h.department.toLowerCase().includes(hostSearchQuery.toLowerCase()))
+    );
+
+    const selectHost = (host: any) => {
+        setSelectedHost(host);
+        setFormData(prev => ({ ...prev, host: host.id.toString() }));
+        setHostSearchQuery(host.name);
+        setShowHostDropdown(false);
+    };
+
+    const clearHostSelection = () => {
+        setSelectedHost(null);
+        setFormData(prev => ({ ...prev, host: '' }));
+        setHostSearchQuery('');
+        setShowHostDropdown(false);
     };
 
     const takePicture = async () => {
@@ -86,12 +113,6 @@ export default function CheckinForm() {
             return;
         }
 
-        if (!formData.photo) {
-            Alert.alert('Photo Required', 'Please take a photo for your visitor badge.');
-            return;
-        }
-
-        // Pass data to next step (NDA)
         router.push({
             pathname: '/checkin/nda',
             params: { ...formData }
@@ -144,6 +165,7 @@ export default function CheckinForm() {
 
             <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps='handled'>
                 <View style={styles.formContainer}>
+                    {/* Photo - Optional */}
                     {formData.photo ? (
                         <View style={styles.photoPreviewContainer}>
                             <Image source={{ uri: formData.photo }} style={styles.photoPreview} />
@@ -158,7 +180,7 @@ export default function CheckinForm() {
                                 <CameraIcon color="#6366f1" size={32} />
                             </View>
                             <Text style={styles.photoText}>Tap to take visitor photo</Text>
-                            <Text style={styles.photoSubtext}>Required for security badge</Text>
+                            <Text style={styles.photoSubtext}>Optional — for security badge</Text>
                         </TouchableOpacity>
                     )}
 
@@ -213,25 +235,58 @@ export default function CheckinForm() {
 
                     <Text style={styles.sectionTitle}>Visit Details</Text>
 
-                    <View style={styles.inputGroup}>
-                        <UserCheck color="#64748b" size={20} style={styles.inputIcon} />
-                        <View style={styles.pickerContainer}>
-                            {/* Simplified picker for AI demo, usually use @react-native-picker/picker */}
-                            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                                {hosts.map(host => (
-                                    <TouchableOpacity
-                                        key={host.id}
-                                        style={[styles.chip, formData.host === host.id.toString() && styles.activeChip]}
-                                        onPress={() => setFormData({ ...formData, host: host.id.toString() })}
-                                    >
-                                        <Text style={[styles.chipText, formData.host === host.id.toString() && styles.activeChipText]}>
-                                            {host.name}
-                                        </Text>
-                                    </TouchableOpacity>
-                                ))}
-                            </ScrollView>
-                            {hosts.length === 0 && <Text style={styles.errorText}>No hosts available for this location</Text>}
+                    {/* Searchable Host Selector */}
+                    <View style={styles.hostSearchContainer}>
+                        <View style={styles.inputGroup}>
+                            <Search color="#64748b" size={20} style={styles.inputIcon} />
+                            <TextInput
+                                style={styles.input}
+                                placeholder="Search for host by name..."
+                                placeholderTextColor="#64748b"
+                                value={hostSearchQuery}
+                                onChangeText={(text) => {
+                                    setHostSearchQuery(text);
+                                    setShowHostDropdown(text.length > 0);
+                                    if (selectedHost && text !== selectedHost.name) {
+                                        setSelectedHost(null);
+                                        setFormData(prev => ({ ...prev, host: '' }));
+                                    }
+                                }}
+                                onFocus={() => setShowHostDropdown(true)}
+                            />
+                            {selectedHost && (
+                                <TouchableOpacity onPress={clearHostSelection} style={styles.clearButton}>
+                                    <X color="#94a3b8" size={18} />
+                                </TouchableOpacity>
+                            )}
                         </View>
+                        {selectedHost && (
+                            <View style={styles.selectedHostBadge}>
+                                <CheckCircle2 color="#10b981" size={16} />
+                                <Text style={styles.selectedHostText}>{selectedHost.name} — {selectedHost.department || 'No dept'}</Text>
+                            </View>
+                        )}
+                        {showHostDropdown && !selectedHost && (
+                            <View style={styles.hostDropdown}>
+                                {filteredHosts.length === 0 ? (
+                                    <Text style={styles.noResultsText}>No hosts found</Text>
+                                ) : (
+                                    filteredHosts.slice(0, 5).map(host => (
+                                        <TouchableOpacity
+                                            key={host.id}
+                                            style={styles.hostDropdownItem}
+                                            onPress={() => selectHost(host)}
+                                        >
+                                            <UserCheck color="#6366f1" size={18} />
+                                            <View style={styles.hostDropdownInfo}>
+                                                <Text style={styles.hostDropdownName}>{host.name}</Text>
+                                                <Text style={styles.hostDropdownDept}>{host.department || 'No department'}</Text>
+                                            </View>
+                                        </TouchableOpacity>
+                                    ))
+                                )}
+                            </View>
+                        )}
                     </View>
 
                     <View style={styles.inputGroup}>
@@ -391,26 +446,65 @@ const styles = StyleSheet.create({
         marginBottom: 30,
         textAlignVertical: 'top',
     },
-    pickerContainer: {
-        flex: 1,
-        paddingVertical: 10,
+    // Host search styles
+    hostSearchContainer: {
+        marginBottom: 0,
+        zIndex: 10,
     },
-    chip: {
-        paddingHorizontal: 15,
-        paddingVertical: 8,
+    clearButton: {
+        padding: 8,
+    },
+    selectedHostBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#10b98120',
         borderRadius: 10,
-        backgroundColor: '#334155',
-        marginRight: 10,
+        paddingHorizontal: 14,
+        paddingVertical: 8,
+        marginBottom: 20,
+        marginTop: -10,
+        gap: 8,
     },
-    activeChip: {
-        backgroundColor: '#6366f1',
-    },
-    chipText: {
-        color: '#94a3b8',
+    selectedHostText: {
+        color: '#10b981',
+        fontSize: 14,
         fontWeight: '600',
     },
-    activeChipText: {
+    hostDropdown: {
+        backgroundColor: '#1e293b',
+        borderRadius: 16,
+        borderWidth: 1,
+        borderColor: '#334155',
+        marginTop: -12,
+        marginBottom: 20,
+        overflow: 'hidden',
+    },
+    hostDropdownItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: 16,
+        borderBottomWidth: 1,
+        borderBottomColor: '#334155',
+        gap: 12,
+    },
+    hostDropdownInfo: {
+        flex: 1,
+    },
+    hostDropdownName: {
         color: '#fff',
+        fontSize: 16,
+        fontWeight: '600',
+    },
+    hostDropdownDept: {
+        color: '#64748b',
+        fontSize: 13,
+        marginTop: 2,
+    },
+    noResultsText: {
+        color: '#64748b',
+        fontSize: 14,
+        textAlign: 'center',
+        padding: 20,
     },
     nextButton: {
         backgroundColor: '#6366f1',
@@ -433,7 +527,6 @@ const styles = StyleSheet.create({
         color: '#ef4444',
         fontSize: 12,
     },
-    // Camera styles
     camera: {
         flex: 1,
     },
