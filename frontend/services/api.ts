@@ -118,23 +118,23 @@ export class PropertyManagementAPI {
 
 // Visitors API Service (for locations)
 export class VisitorsAPI {
-  static async getLocations() {
-    const response = await api.get('/locations/');
+  static async getLocations(params?: any) {
+    const response = await api.get('/locations/', { params });
     return response.data.results || response.data;
   }
 
-  static async getHosts() {
-    const response = await api.get('/hosts/');
+  static async getHosts(params?: any) {
+    const response = await api.get('/hosts/', { params });
     return response.data.results || response.data;
   }
 
-  static async getVisitors() {
-    const response = await api.get('/visitors/');
+  static async getVisitors(params?: any) {
+    const response = await api.get('/visitors/', { params });
     return response.data.results || response.data;
   }
 
-  static async getInvites() {
-    const response = await api.get('/pre-registrations/');
+  static async getInvites(params?: any) {
+    const response = await api.get('/pre-registrations/', { params });
     return response.data.results || response.data;
   }
 

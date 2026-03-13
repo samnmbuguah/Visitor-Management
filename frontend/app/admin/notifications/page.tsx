@@ -12,7 +12,8 @@ import {
     deleteNotificationTemplate,
     getLocations,
     NotificationTemplate,
-    NotificationLog
+    NotificationLog,
+    Location
 } from '@/lib/api';
 
 const TEMPLATE_TYPES = [
@@ -261,7 +262,7 @@ export default function NotificationsPage() {
                                     className="premium-select"
                                 >
                                     <option value="">All Locations (Global)</option>
-                                    {locations.map(loc => (
+                                    {locations.map((loc: Location) => (
                                         <option key={loc.id} value={loc.id}>{loc.name}</option>
                                     ))}
                                 </select>
@@ -326,7 +327,7 @@ export default function NotificationsPage() {
                             </div>
                         ) : (
                             <div className="space-y-4">
-                                {templates.map(template => (
+                                {templates.map((template: NotificationTemplate) => (
                                     <div key={template.id} className="p-4 rounded-xl bg-white/5 border border-white/10">
                                         <div className="flex items-start justify-between">
                                             <div className="flex-1">
@@ -394,7 +395,7 @@ export default function NotificationsPage() {
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {logs.map(log => (
+                                        {logs.map((log: NotificationLog) => (
                                             <tr key={log.id} className="border-b border-white/5">
                                                 <td className="py-3 text-gray-400 text-sm">
                                                     {new Date(log.sent_at).toLocaleString()}

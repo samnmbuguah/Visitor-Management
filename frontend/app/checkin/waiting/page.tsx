@@ -1,15 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { getVisitors } from '@/lib/api'; // We might need a getVisitorById specific endpoint or just use list with ID filter? 
-// Current api.ts doesn't have getVisitorById, but standard ModelViewSet supports GET /visitors/{id}/
-// API client generic 'get' can be used or I can add getVisitor to api.ts.
-// For now I'll use list with params or just direct axios if needed, but api.ts is better.
-// Let's add getVisitor to api.ts? No, I'll just use the existing api instance.
 import api from '@/lib/api';
 
-export default function WaitingPage() {
+function WaitingPageContent() {
     const searchParams = useSearchParams();
     const router = useRouter();
     const visitorId = searchParams.get('id');
@@ -27,7 +22,6 @@ export default function WaitingPage() {
                 if (visitor.status === 'CHECKED_IN') {
                     router.push('/checkin/success');
                 } else if (visitor.status === 'REJECTED') {
-                    // router.push('/checkin/rejected');
                     alert('Your visit request was rejected.');
                     router.push('/');
                 }
@@ -53,5 +47,20 @@ export default function WaitingPage() {
                 </div>
             </div>
         </main>
+    );
+}
+
+export default function WaitingPage() {
+    return (
+        <Suspense fallback={
+            <main className="min-h-screen flex items-center justify-center p-8">
+                <div className="animated-bg" />
+                <div className="glass-card p-12 max-w-lg w-full text-center text-white">
+                    Loading your visit status...
+                </div>
+            </main>
+        }>
+            <WaitingPageContent />
+        </Suspense>
     );
 }

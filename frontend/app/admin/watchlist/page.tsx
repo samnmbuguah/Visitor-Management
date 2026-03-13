@@ -37,7 +37,7 @@ export default function WatchlistPage() {
         }
     };
 
-    const filteredEntries = entries?.filter(entry =>
+    const filteredEntries = entries?.filter((entry: WatchlistEntry) =>
         (entry.name && entry.name.toLowerCase().includes(searchQuery.toLowerCase())) ||
         (entry.email && entry.email.toLowerCase().includes(searchQuery.toLowerCase())) ||
         (entry.reason && entry.reason.toLowerCase().includes(searchQuery.toLowerCase()))
@@ -75,7 +75,7 @@ export default function WatchlistPage() {
                 <div className="text-center py-10 text-gray-400">Loading watchlist...</div>
             ) : (
                 <div className="grid grid-cols-1 gap-4">
-                    {filteredEntries?.map((entry) => (
+                    {filteredEntries?.map((entry: WatchlistEntry) => (
                         <Card key={entry.id} className="p-4 flex items-center justify-between bg-white/5 border-red-500/20 hover:border-red-500/40 transition-colors">
                             <div className="flex items-center gap-4">
                                 <div className="p-3 bg-red-500/10 rounded-full text-red-400">

@@ -90,13 +90,13 @@ export const useAppStore = create<AppState>()(
         hasPermission: (permission) => {
           const { user } = get();
           if (!user) return false;
-          return PERMISSION_MATRIX[user.role as keyof typeof PERMISSION_MATRIX]?.includes(permission as any) || false;
+          return (PERMISSION_MATRIX[user.role as keyof typeof PERMISSION_MATRIX] as readonly string[])?.includes(permission as any) || false;
         },
 
         canAccessFeature: (feature) => {
           const { user } = get();
           if (!user) return false;
-          return FEATURE_ACCESS[user.role as keyof typeof FEATURE_ACCESS]?.includes(feature as any) || false;
+          return (FEATURE_ACCESS[user.role as keyof typeof FEATURE_ACCESS] as readonly string[])?.includes(feature as any) || false;
         },
       }),
       {

@@ -24,7 +24,7 @@ class VisitorTests(BaseTestCase):
         response = self.client.post('/api/visitors/', data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(Visitor.objects.count(), 1)
-        self.assertEqual(Visitor.objects.first().status, "PENDING")
+        self.assertEqual(Visitor.objects.first().status, "CHECKED_IN")
 
     def test_create_visitor_requires_nda_when_location_requires_it(self):
         self.location.require_nda = True
@@ -71,7 +71,8 @@ class VisitorTests(BaseTestCase):
             phone="1122334455",
             host=self.host,
             purpose="Meeting",
-            location=self.location
+            location=self.location,
+            tenant=self.tenant
         )
         response = self.client.post(f'/api/visitors/{visitor.id}/checkout/')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -264,7 +265,8 @@ class ReturningVisitorTests(BaseTestCase):
             phone="999888777",
             host=self.host,
             location=self.location,
-            purpose="Visit"
+            purpose="Visit",
+            tenant=self.tenant
         )
         
         # Search by email

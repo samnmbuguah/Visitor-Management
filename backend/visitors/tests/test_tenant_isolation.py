@@ -31,13 +31,15 @@ class TenantIsolationTests(BaseTestCase):
         
         # Data for Tenant 1
         self.visitor1 = Visitor.objects.create(
-            name="Visitor T1", email="v1@t1.com", host=self.host, location=self.location, status='PENDING'
+            name="Visitor T1", email="v1@t1.com", phone="1111111111",
+            host=self.host, location=self.location, tenant=self.t1, status='PENDING'
         )
         
         # Data for Tenant 2
         self.host2 = Host.objects.create(name="Host T2", email="h2@t2.com", location=self.location2, tenant=self.t2)
         self.visitor2 = Visitor.objects.create(
-            name="Visitor T2", email="v2@t2.com", host=self.host2, location=self.location2, status='PENDING'
+            name="Visitor T2", email="v2@t2.com", phone="2222222222",
+            host=self.host2, location=self.location2, tenant=self.t2, status='PENDING'
         )
 
     def login_as(self, user):

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { StyleSheet, View, Text, TouchableOpacity, ImageBackground } from 'react-native';
 import { useRouter } from 'expo-router';
-import { QrCode, UserPlus, LogOut } from 'lucide-react-native';
+import { QrCode, UserPlus, LogOut, Lock } from 'lucide-react-native';
 import { KioskAuth } from '../src/utils/auth';
 
 export default function WelcomeScreen() {
@@ -20,6 +20,13 @@ export default function WelcomeScreen() {
             
             if (!authenticated) {
                 router.replace('/auth');
+                return;
+            }
+
+            const locked = await KioskAuth.isLocked();
+            if (locked) {
+                router.replace('/lock');
+                return;
             }
         } catch (error) {
             router.replace('/auth');
@@ -28,9 +35,9 @@ export default function WelcomeScreen() {
         }
     };
 
-    const handleLogout = async () => {
-        await KioskAuth.logout();
-        router.replace('/auth');
+    const handleLock = async () => {
+        await KioskAuth.setLocked(true);
+        router.replace('/lock');
     };
 
     if (loading) {
@@ -84,12 +91,12 @@ export default function WelcomeScreen() {
 
                     <TouchableOpacity
                         style={[styles.menuButton, styles.logoutButton]}
-                        onPress={handleLogout}
+                        onPress={handleLock}
                     >
-                        <LogOut color="#fff" size={32} />
+                        <Lock color="#fff" size={32} />
                         <View style={styles.buttonInfo}>
                             <Text style={styles.buttonTitle}>Lock Kiosk</Text>
-                            <Text style={styles.buttonDesc}>Return to authentication</Text>
+                            <Text style={styles.buttonDesc}>Secure the kiosk interface</Text>
                         </View>
                     </TouchableOpacity>
 

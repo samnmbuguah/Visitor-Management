@@ -4,10 +4,10 @@ import React from 'react';
 import { AuthProvider } from '@/context/AuthContext';
 import { Toaster } from 'react-hot-toast';
 import { StateProvider } from './StateProvider';
-import { useTheme } from '@/store';
+import { useThemeManagement } from '@/store';
 
 function ThemeWrapper({ children }: { children: React.ReactNode }) {
-    const { theme, setTheme } = useTheme();
+    const { theme, setTheme } = useThemeManagement();
 
     React.useEffect(() => {
         document.documentElement.setAttribute('data-theme', theme);

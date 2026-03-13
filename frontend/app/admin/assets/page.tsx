@@ -477,8 +477,8 @@ function AssetsPageContent() {
             <Button variant="outline" onClick={() => setShowCreateModal(false)}>
               Cancel
             </Button>
-            <Button onClick={createAsset}>
-              Create Asset
+            <Button onClick={createAsset} disabled={createMutation.isPending}>
+              {createMutation.isPending ? 'Creating...' : 'Create Asset'}
             </Button>
           </div>
         </div>

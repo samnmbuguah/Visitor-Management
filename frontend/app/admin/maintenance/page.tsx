@@ -40,8 +40,8 @@ function MaintenancePageContent() {
   
   // Use enhanced hooks with better caching
   const { data: requests = [], isLoading: requestsLoading } = useEnhancedMaintenanceRequests();
-  const { data: categories = [], isLoading: categoriesLoading } = useEnhancedMaintenanceCategories();
-  const { data: locations = [], isLoading: locationsLoading } = useEnhancedLocations();
+  const { data: categories = [] as any, isLoading: categoriesLoading } = useEnhancedMaintenanceCategories();
+  const { data: locations = [] as any, isLoading: locationsLoading } = useEnhancedLocations();
   
   const createMutation = useEnhancedCreateMaintenanceRequest();
   const updateStatusMutation = useEnhancedUpdateMaintenanceRequestStatus();
@@ -194,7 +194,7 @@ function MaintenancePageContent() {
 
       {/* Requests Grid */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {filteredRequests.map((request) => (
+        {filteredRequests.map((request: MaintenanceRequest) => (
           <Card key={request.id} className="hover:shadow-lg transition-shadow">
             <CardHeader className="pb-3">
               <div className="flex items-start justify-between">
@@ -365,8 +365,8 @@ function MaintenancePageContent() {
             <Button variant="outline" onClick={() => setShowCreateModal(false)}>
               Cancel
             </Button>
-            <Button onClick={createRequest}>
-              Create Request
+            <Button onClick={createRequest} disabled={createMutation.isPending}>
+              {createMutation.isPending ? 'Creating...' : 'Create Request'}
             </Button>
           </div>
         </div>
@@ -425,7 +425,7 @@ function MaintenancePageContent() {
                     Attached Photos
                   </h3>
                   <div className="grid grid-cols-2 gap-4">
-                    {selectedRequest.photos.map((photo) => (
+                    {selectedRequest.photos.map((photo: any) => (
                       <div key={photo.id} className="space-y-2">
                         <img 
                           src={photo.photo} 

@@ -1,102 +1,163 @@
-import React, { useState } from 'react';
-import { StyleSheet, View, Text, TextInput, TouchableOpacity, Alert, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { StyleSheet, View, Text, TextInput, TouchableOpacity, Alert, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { KioskAuth } from '../src/utils/auth';
-import { Lock, Eye, EyeOff } from 'lucide-react-native';
+import { login } from '../src/api/auth';
+import { Lock, Eye, EyeOff, Mail, Key } from 'lucide-react-native';
 
 export default function AuthScreen() {
+    const [credentials, setCredentials] = useState({
+        email: '',
+        password: '',
+    });
     const [pin, setPin] = useState('');
-    const [showPin, setShowPin] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [needsPin, setNeedsPin] = useState(false);
     const router = useRouter();
 
-    const handleAuth = async () => {
-        if (!pin) {
-            Alert.alert('Error', 'Please enter PIN');
+    useEffect(() => {
+        const checkAuth = async () => {
+            const authed = await KioskAuth.isAuthenticated();
+            if (authed) {
+                const storedPin = await KioskAuth.getPin();
+                if (!storedPin) {
+                    setNeedsPin(true);
+                } else {
+                    router.replace('/');
+                }
+            }
+        };
+        checkAuth();
+    }, []);
+
+    const handleLogin = async () => {
+        if (!credentials.email || !credentials.password) {
+            Alert.alert('Error', 'Please enter email and password');
             return;
         }
 
         setLoading(true);
         try {
-            const isValid = await KioskAuth.verifyPin(pin);
+            const data = await login({
+                email: credentials.email,
+                password: credentials.password
+            });
             
-            if (isValid) {
-                // Set as authenticated
-                await KioskAuth.setAuthenticated('kiosk_authenticated');
-                
-                // If using default PIN, suggest setting a new one
-                if (KioskAuth.isDefaultPin(pin)) {
-                    Alert.alert(
-                        'Security Notice', 
-                        'You are using the default PIN. Consider changing it for better security.',
-                        [
-                            { text: 'Continue', onPress: () => router.replace('/') },
-                            { text: 'Change PIN', onPress: () => router.push('/settings') }
-                        ]
-                    );
+            if (data.access) {
+                await KioskAuth.setAuthenticated(data.access);
+                const storedPin = await KioskAuth.getPin();
+                if (!storedPin) {
+                    setNeedsPin(true);
                 } else {
                     router.replace('/');
                 }
             } else {
-                Alert.alert('Authentication Failed', 'Invalid PIN');
+                Alert.alert('Login Failed', 'Invalid credentials');
             }
-        } catch (error) {
-            Alert.alert('Error', 'Authentication failed');
+        } catch (error: any) {
+            const errorMsg = error.response?.data?.detail || error.message || 'Authentication failed';
+            Alert.alert('Error', errorMsg);
         } finally {
             setLoading(false);
         }
     };
+
+    const handleSetPin = async () => {
+        if (pin.length < 4) {
+            Alert.alert('Error', 'PIN must be at least 4 digits');
+            return;
+        }
+        await KioskAuth.setPin(pin);
+        Alert.alert('PIN Set', 'Your security PIN has been set successfully.');
+        router.replace('/');
+    };
+
+    if (needsPin) {
+        return (
+            <View style={styles.container}>
+                <View style={styles.card}>
+                    <View style={styles.iconContainer}>
+                        <Lock color="#fff" size={40} />
+                    </View>
+                    <Text style={styles.title}>Set Kiosk PIN</Text>
+                    <Text style={styles.subtitle}>Create a PIN to lock/unlock this kiosk</Text>
+                    
+                    <View style={styles.inputContainer}>
+                        <TextInput
+                            style={styles.input}
+                            placeholder="Enter 4-digit PIN"
+                            value={pin}
+                            onChangeText={setPin}
+                            secureTextEntry
+                            keyboardType="numeric"
+                            maxLength={10}
+                        />
+                    </View>
+
+                    <TouchableOpacity style={styles.button} onPress={handleSetPin}>
+                        <Text style={styles.buttonText}>Set PIN & Continue</Text>
+                    </TouchableOpacity>
+                </View>
+            </View>
+        );
+    }
 
     return (
         <KeyboardAvoidingView
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
             style={styles.container}
         >
-            <View style={styles.card}>
-                <View style={styles.iconContainer}>
-                    <Lock color="#fff" size={40} />
-                </View>
-                <Text style={styles.title}>Kiosk Authentication</Text>
-                <Text style={styles.subtitle}>Enter PIN to access visitor management</Text>
+            <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', width: '100%' }}>
+                <View style={styles.card}>
+                    <View style={styles.iconContainer}>
+                        <Lock color="#fff" size={40} />
+                    </View>
+                    <Text style={styles.title}>Kiosk Login</Text>
+                    <Text style={styles.subtitle}>Sign in with your host/admin credentials</Text>
 
-                <View style={styles.inputContainer}>
-                    <TextInput
-                        style={styles.input}
-                        placeholder="Enter PIN"
-                        value={pin}
-                        onChangeText={setPin}
-                        secureTextEntry={!showPin}
-                        keyboardType="numeric"
-                        maxLength={10}
-                        autoFocus
-                    />
+                    <View style={styles.inputContainer}>
+                        <Mail color="#666" size={20} style={{ marginRight: 10 }} />
+                        <TextInput
+                            style={styles.input}
+                            placeholder="Email Address"
+                            value={credentials.email}
+                            onChangeText={(text) => setCredentials(prev => ({ ...prev, email: text }))}
+                            autoCapitalize="none"
+                            keyboardType="email-address"
+                        />
+                    </View>
+
+                    <View style={styles.inputContainer}>
+                        <Key color="#666" size={20} style={{ marginRight: 10 }} />
+                        <TextInput
+                            style={styles.input}
+                            placeholder="Password"
+                            value={credentials.password}
+                            onChangeText={(text) => setCredentials(prev => ({ ...prev, password: text }))}
+                            secureTextEntry={!showPassword}
+                        />
+                        <TouchableOpacity
+                            style={styles.eyeButton}
+                            onPress={() => setShowPassword(!showPassword)}
+                        >
+                            {showPassword ? <EyeOff color="#666" size={20} /> : <Eye color="#666" size={20} />}
+                        </TouchableOpacity>
+                    </View>
+
                     <TouchableOpacity
-                        style={styles.eyeButton}
-                        onPress={() => setShowPin(!showPin)}
+                        style={[styles.button, loading && styles.buttonDisabled]}
+                        onPress={handleLogin}
+                        disabled={loading}
                     >
-                        {showPin ? <EyeOff color="#666" size={20} /> : <Eye color="#666" size={20} />}
+                        {loading ? (
+                            <ActivityIndicator color="#fff" />
+                        ) : (
+                            <Text style={styles.buttonText}>Sign In</Text>
+                        )}
                     </TouchableOpacity>
                 </View>
-
-                <TouchableOpacity
-                    style={[styles.button, loading && styles.buttonDisabled]}
-                    onPress={handleAuth}
-                    disabled={loading}
-                >
-                    {loading ? (
-                        <ActivityIndicator color="#fff" />
-                    ) : (
-                        <Text style={styles.buttonText}>Unlock Kiosk</Text>
-                    )}
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                    style={styles.settingsButton}
-                    onPress={() => router.push('/settings')}
-                >
-                    <Text style={styles.settingsButtonText}>Settings</Text>
-                </TouchableOpacity>
-            </View>
+            </ScrollView>
         </KeyboardAvoidingView>
     );
 }

@@ -14,12 +14,10 @@ class LocationViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.AllowAny]
 
     def get_queryset(self):
-        """Filter locations by user's tenant, or allow all for Kiosks."""
+        """Filter locations by user's tenant."""
         tenant = get_user_tenant(self.request.user)
         if not tenant:
-            # For Kiosk initialization/selection, we allow listing all locations
-            # In a real multi-tenant app, this would be more restricted
-            return Location.objects.all()
+            return Location.objects.none()
         return Location.objects.filter(tenant=tenant)
 
 
@@ -30,7 +28,11 @@ class KioskViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        queryset = Kiosk.objects.all()
+        tenant = get_user_tenant(self.request.user)
+        if not tenant:
+            return Kiosk.objects.none()
+            
+        queryset = Kiosk.objects.filter(tenant=tenant)
 
         location_id = self.request.query_params.get('location')
         if location_id:

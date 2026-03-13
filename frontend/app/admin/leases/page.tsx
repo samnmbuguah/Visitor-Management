@@ -68,8 +68,8 @@ function LeasesPageContent() {
   };
 
   const totalMonthlyRevenue = leases
-    .filter(l => l.status === 'ACTIVE')
-    .reduce((sum, lease) => sum + Number(lease.monthly_rent), 0);
+    .filter((l: Lease) => l.status === 'ACTIVE')
+    .reduce((sum: number, lease: Lease) => sum + Number(lease.monthly_rent), 0);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-6">
@@ -108,7 +108,7 @@ function LeasesPageContent() {
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Active Leases</p>
                 <p className="text-2xl font-bold text-green-600">
-                  {leases.filter(l => l.status === 'ACTIVE').length}
+                  {leases.filter((l: Lease) => l.status === 'ACTIVE').length}
                 </p>
               </div>
               <div className="p-3 bg-green-100 rounded-lg">
@@ -123,7 +123,7 @@ function LeasesPageContent() {
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Expiring Soon</p>
                 <p className="text-2xl font-bold text-yellow-600">
-                  {leases.filter(l => l.status === 'EXPIRING').length}
+                  {leases.filter((l: Lease) => l.status === 'EXPIRING').length}
                 </p>
               </div>
               <div className="p-3 bg-yellow-100 rounded-lg">
@@ -322,9 +322,9 @@ function LeasesPageContent() {
                     toast.error('Failed to create lease');
                   }
                 }}
-                disabled={createLeaseMutation.isLoading}
+                disabled={createLeaseMutation.isPending}
               >
-                {createLeaseMutation.isLoading ? 'Creating...' : 'Create Lease'}
+                {createLeaseMutation.isPending ? 'Creating...' : 'Create Lease'}
               </Button>
             </div>
           </div>
@@ -400,9 +400,9 @@ function LeasesPageContent() {
                         onError: () => toast.error('Failed to delete lease')
                       });
                     }}
-                    disabled={deleteLeaseMutation.isLoading}
+                    disabled={deleteLeaseMutation.isPending}
                   >
-                    {deleteLeaseMutation.isLoading ? 'Deleting...' : 'Delete'}
+                    {deleteLeaseMutation.isPending ? 'Deleting...' : 'Delete'}
                   </Button>
                 </div>
               </div>

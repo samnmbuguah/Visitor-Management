@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
-import { Users, UserCheck, LogOut, QrCode, Search, User, Mail, Phone, Building, Plus, X } from 'lucide-react';
+import { Users, UserCheck, LogOut, QrCode, Search, User, Mail, Phone, Building, Plus, X, Clock } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -84,7 +84,7 @@ function ReceptionistPageContent() {
             phone: visitorData.phone,
             company: visitorData.company,
             purpose: visitorData.purpose,
-            visitor_type: visitorData.visitor_type,
+            visitor_type: visitorData.visitor_type ? parseInt(visitorData.visitor_type) : undefined,
             expected_duration: visitorData.expected_duration ? parseInt(visitorData.expected_duration) : null,
             host: parseInt(visitorData.host),
             location: parseInt(visitorData.location),

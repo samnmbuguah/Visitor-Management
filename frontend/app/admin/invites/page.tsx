@@ -165,7 +165,11 @@ function CreateInviteModal({ onClose, onSuccess }: { onClose: () => void, onSucc
             onSuccess();
         },
     });
-
+    const [formData, setFormData] = useState({
+        visitor_name: '',
+        visitor_email: '',
+        visitor_phone: '',
+        visitor_company: '',
         host: '',
         location: '',
         expected_arrival: '',

@@ -6,7 +6,7 @@ import { APIService } from '@/services/api';
 // Enhanced query configuration with better caching
 const DEFAULT_QUERY_CONFIG = {
   staleTime: 5 * 60 * 1000, // 5 minutes
-  cacheTime: 10 * 60 * 1000, // 10 minutes
+  gcTime: 10 * 60 * 1000, // 10 minutes
   retry: 3,
   retryDelay: (attemptIndex: number) => Math.min(1000 * 2 ** attemptIndex, 30000),
 };
@@ -26,7 +26,7 @@ export function useEnhancedQuery<T>(
   options?: {
     enabled?: boolean;
     staleTime?: number;
-    cacheTime?: number;
+    gcTime?: number;
     onSuccess?: (data: T) => void;
     onError?: (error: any) => void;
     refetchOnWindowFocus?: boolean;
@@ -40,18 +40,10 @@ export function useEnhancedQuery<T>(
     queryFn,
     enabled: !offlineMode && (options?.enabled !== false),
     staleTime: options?.staleTime || DEFAULT_QUERY_CONFIG.staleTime,
-    cacheTime: options?.cacheTime || DEFAULT_QUERY_CONFIG.cacheTime,
+    gcTime: options?.gcTime || DEFAULT_QUERY_CONFIG.gcTime,
     retry: offlineMode ? false : DEFAULT_QUERY_CONFIG.retry,
     retryDelay: DEFAULT_QUERY_CONFIG.retryDelay,
     refetchOnWindowFocus: options?.refetchOnWindowFocus ?? !offlineMode,
-    onSuccess: (data) => {
-      options?.onSuccess?.(data);
-    },
-    onError: (error) => {
-      if (!offlineMode) {
-        options?.onError?.(error);
-      }
-    },
   });
 }
 
@@ -145,7 +137,7 @@ export function useEnhancedMaintenanceCategories() {
     () => APIService.propertyManagement.getMaintenanceCategories(),
     {
       staleTime: 30 * 60 * 1000, // 30 minutes - categories rarely change
-      cacheTime: 60 * 60 * 1000, // 1 hour cache
+      gcTime: 60 * 60 * 1000, // 1 hour cache
     }
   );
 }
@@ -167,7 +159,7 @@ export function useEnhancedLocations() {
     () => APIService.visitors.getLocations(),
     {
       staleTime: 30 * 60 * 1000, // 30 minutes - locations change rarely
-      cacheTime: 60 * 60 * 1000, // 1 hour cache
+      gcTime: 60 * 60 * 1000, // 1 hour cache
     }
   );
 }
@@ -249,7 +241,7 @@ export function useEnhancedHosts(locationId?: number) {
     () => APIService.visitors.getHosts(locationId),
     {
       staleTime: 15 * 60 * 1000, // 15 minutes
-      cacheTime: 30 * 60 * 1000,
+      gcTime: 30 * 60 * 1000,
     }
   );
 }

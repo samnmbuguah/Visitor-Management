@@ -9,7 +9,6 @@ const nextConfig: NextConfig = {
   },
   // Disable caching during development
   experimental: {
-    isrMemoryCacheSize: 0,
   },
 };
 

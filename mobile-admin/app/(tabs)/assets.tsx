@@ -153,7 +153,7 @@ const AssetsScreen = () => {
         },
         {
           text: 'OK',
-          onPress: async (date) => {
+          onPress: async (date: string | undefined) => {
             if (!date) return;
             try {
               await client.post(`${API_BASE}/assets/${assetId}/checkout/`, {

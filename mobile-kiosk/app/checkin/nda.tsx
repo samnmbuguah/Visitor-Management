@@ -5,10 +5,15 @@ import SignatureScreen from 'react-native-signature-canvas';
 import { checkInVisitor } from '../../src/api/visitors';
 import { ArrowLeft, Check } from 'lucide-react-native';
 
+const signatureStyle = `
+    .m-signature-pad--footer {display: none; margin: 0px;}
+    body,html {height: 100%;}
+  `;
+
 export default function NDAScreen() {
     const router = useRouter();
     const params = useLocalSearchParams();
-    const ref = useRef<any>();
+    const ref = useRef<any>(null);
     const [loading, setLoading] = useState(false);
 
     const handleOK = async (signature: string) => {
@@ -74,7 +79,7 @@ export default function NDAScreen() {
                         descriptionText="Sign here"
                         clearText="Clear"
                         confirmText="Save"
-                        webStyle={styles.signatureStyle}
+                        webStyle={signatureStyle}
                     />
                 </View>
 
@@ -157,10 +162,6 @@ const styles = StyleSheet.create({
         overflow: 'hidden',
         height: 200,
     },
-    signatureStyle: `
-    .m-signature-pad--footer {display: none; margin: 0px;}
-    body,html {height: 100%;}
-  `,
     actions: {
         flexDirection: 'row',
         justifyContent: 'space-between',

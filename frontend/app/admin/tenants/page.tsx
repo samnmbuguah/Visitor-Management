@@ -19,6 +19,11 @@ interface Tenant {
   name: string;
   slug: string;
   is_active: boolean;
+  status: string;
+  locations_count: number;
+  users_count: number;
+  billing_email?: string;
+  tier?: string;
   created_at: string;
 }
 
@@ -116,7 +121,7 @@ function TenantsPageContent() {
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Active</p>
                 <p className="text-2xl font-bold text-green-600">
-                  {tenants.filter(t => t.status === 'ACTIVE').length}
+                  {tenants.filter((t: any) => t.status === 'ACTIVE').length}
                 </p>
               </div>
               <div className="p-3 bg-green-100 rounded-lg">
@@ -131,7 +136,7 @@ function TenantsPageContent() {
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Total Locations</p>
                 <p className="text-2xl font-bold">
-                  {tenants.reduce((sum, t) => sum + t.locations_count, 0)}
+                  {tenants.reduce((sum: number, t: any) => sum + t.locations_count, 0)}
                 </p>
               </div>
               <div className="p-3 bg-purple-100 rounded-lg">
@@ -146,7 +151,7 @@ function TenantsPageContent() {
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Total Users</p>
                 <p className="text-2xl font-bold">
-                  {tenants.reduce((sum, t) => sum + t.users_count, 0)}
+                  {tenants.reduce((sum: number, t: any) => sum + t.users_count, 0)}
                 </p>
               </div>
               <div className="p-3 bg-orange-100 rounded-lg">
@@ -316,8 +321,8 @@ function TenantsPageContent() {
               </div>
               <div className="flex justify-end gap-3 pt-4">
                 <Button variant="outline" onClick={() => setShowCreateModal(false)}>Cancel</Button>
-                <Button onClick={handleCreateTenant} disabled={createMutation.isLoading || !newTenant.name || !newTenant.slug}>
-                  {createMutation.isLoading ? 'Creating...' : 'Create Tenant'}
+                <Button onClick={handleCreateTenant} disabled={createMutation.isPending || !newTenant.name || !newTenant.slug}>
+                  {createMutation.isPending ? 'Creating...' : 'Create Tenant'}
                 </Button>
               </div>
             </div>

@@ -66,8 +66,8 @@ export default function AdminPage() {
         );
     }
 
-    const activeVisitors = visitors.filter(v => v.status === 'CHECKED_IN');
-    const pendingVisitors = visitors.filter(v => v.status === 'PENDING');
+    const activeVisitors = visitors.filter((v: Visitor) => v.status === 'CHECKED_IN');
+    const pendingVisitors = visitors.filter((v: Visitor) => v.status === 'PENDING');
 
     return (
         <main className="min-h-screen bg-background pb-20">
@@ -95,7 +95,7 @@ export default function AdminPage() {
                                 className="premium-input pl-12 pr-10 py-3.5 bg-white/5 border-white/10 hover:bg-white/10 cursor-pointer appearance-none min-w-[200px]"
                             >
                                 <option value="">Global Network</option>
-                                {locations.map(loc => (
+                                {locations.map((loc: Location) => (
                                     <option key={loc.id} value={loc.id}>{loc.name}</option>
                                 ))}
                             </select>
@@ -173,7 +173,7 @@ export default function AdminPage() {
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                {activeVisitors.map(visitor => (
+                                                {activeVisitors.map((visitor: Visitor) => (
                                                     <tr key={visitor.id} className="border-t border-white/5 hover:bg-white/[0.02] transition-colors group">
                                                         <td className="px-8 py-6">
                                                             <div className="flex items-center gap-4">
@@ -235,7 +235,7 @@ export default function AdminPage() {
                                         <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Clear Authorization</p>
                                     </div>
                                 ) : (
-                                    pendingVisitors.map(visitor => (
+                                    pendingVisitors.map((visitor: Visitor) => (
                                         <PendingRequestCard key={visitor.id} visitor={visitor} />
                                     ))
                                 )}
@@ -356,7 +356,7 @@ function VisitorsTab({
                             </tr>
                         </thead>
                         <tbody>
-                            {activeVisitors.map(visitor => (
+                            {activeVisitors.map((visitor: Visitor) => (
                                 <tr key={visitor.id} className="border-b border-white/5">
                                     <td className="py-3">
                                         {visitor.photo ? (
@@ -397,7 +397,7 @@ function VisitorsTab({
                             </tr>
                         </thead>
                         <tbody>
-                            {checkedOutVisitors.slice(0, 20).map(visitor => (
+                            {checkedOutVisitors.slice(0, 20).map((visitor: Visitor) => (
                                 <tr key={visitor.id} className="border-b border-white/5 opacity-60">
                                     <td className="py-3 text-white">{visitor.name}</td>
                                     <td className="py-3 text-gray-300">{visitor.email}</td>
@@ -497,7 +497,7 @@ function HostsTab({ hosts, loading }: { hosts: Host[]; loading: boolean }) {
                             </tr>
                         </thead>
                         <tbody>
-                            {hosts.map(host => (
+                            {hosts.map((host: Host) => (
                                 <tr key={host.id} className="border-b border-white/5">
                                     <td className="py-3 text-white">{host.name}</td>
                                     <td className="py-3 text-gray-300">{host.email}</td>

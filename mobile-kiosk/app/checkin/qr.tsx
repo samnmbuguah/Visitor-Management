@@ -100,6 +100,11 @@ const styles = StyleSheet.create({
         fontWeight: '600',
         textAlign: 'center',
     },
+    text: {
+        color: '#fff',
+        fontSize: 16,
+        textAlign: 'center',
+    },
     permissionButton: {
         backgroundColor: '#6366f1',
         padding: 20,

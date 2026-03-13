@@ -10,7 +10,7 @@ const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       staleTime: 5 * 60 * 1000, // 5 minutes
-      cacheTime: 10 * 60 * 1000, // 10 minutes
+      gcTime: 10 * 60 * 1000, // 10 minutes
       retry: 3,
       retryDelay: (attemptIndex: number) => Math.min(1000 * 2 ** attemptIndex, 30000),
       refetchOnWindowFocus: false,
@@ -151,10 +151,10 @@ export function usePerformanceMonitor() {
     
     return {
       totalQueries: queries.length,
-      activeQueries: queries.filter(q => q.state.status === 'fetching').length,
+      activeQueries: queries.filter(q => q.state.fetchStatus === 'fetching').length,
       errorQueries: queries.filter(q => q.state.status === 'error').length,
       staleQueries: queries.filter(q => q.isStale()).length,
-      cacheSize: cache.size,
+      cacheSize: queries.length,
     };
   };
 
