@@ -60,6 +60,7 @@ class Command(BaseCommand):
         self.stdout.write("Tenant Admin: admin@acmecorp.com")
         self.stdout.write("Receptionist: receptionist@acmecorp.com")
         self.stdout.write("Host (Employee): host@acmecorp.com")
+        self.stdout.write("Host (Dwight): dwight@acmecorp.com")
         self.stdout.write("Kiosk Account: kiosk@acmecorp.com")
 
     def clean_data(self):
@@ -129,6 +130,7 @@ class Command(BaseCommand):
             ("manager", "John", "Smith", "MANAGER"),
             ("receptionist", "Pam", "Beesly", "RECEPTIONIST"),
             ("host", "Jim", "Halpert", "HOST"),
+            ("dwight", "Dwight", "Schrute", "HOST"),
             ("kiosk", "Lobby", "Kiosk", "KIOSK")
         ]
 
@@ -167,10 +169,10 @@ class Command(BaseCommand):
             defaults={'name': "Jim Halpert", 'department': "Sales", 'phone': "+15550100", 'location': loc_hq, 'user': created_users["host"]}
         )
         
-        # Second host (no user login, just for data variety)
+        # Second host profile
         host_dwight, _ = Host.objects.get_or_create(
-            tenant=tenant, email="dwight@acmecorp.com",
-            defaults={'name': "Dwight Schrute", 'department': "Sales", 'phone': "+15550101", 'location': loc_hq}
+            tenant=tenant, email=created_users["dwight"].email,
+            defaults={'name': "Dwight Schrute", 'department': "Sales", 'phone': "+15550101", 'location': loc_hq, 'user': created_users["dwight"]}
         )
         
         hosts = [host_profile, host_dwight]
