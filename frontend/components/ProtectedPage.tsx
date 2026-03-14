@@ -68,3 +68,29 @@ export function SuperAdminPage({ children, fallback }: SuperAdminPageProps) {
     </ProtectedPage>
   );
 }
+
+interface HostPageProps {
+  children: ReactNode;
+  fallback?: ReactNode;
+}
+
+export function HostPage({ children, fallback }: HostPageProps) {
+  return (
+    <ProtectedPage requiredRole="HOST" fallback={fallback}>
+      {children}
+    </ProtectedPage>
+  );
+}
+
+interface ReceptionistPageProps {
+  children: ReactNode;
+  fallback?: ReactNode;
+}
+
+export function ReceptionistPage({ children, fallback }: ReceptionistPageProps) {
+  return (
+    <ProtectedPage requiredRole="RECEPTIONIST" fallback={fallback}>
+      {children}
+    </ProtectedPage>
+  );
+}

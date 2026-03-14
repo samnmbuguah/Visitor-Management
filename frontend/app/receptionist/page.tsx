@@ -374,8 +374,12 @@ function ReceptionistPageContent() {
     );
 }
 
+import { ReceptionistPage as ReceptionistPageWrapper } from '@/components/ProtectedPage';
+
 export default function ReceptionistPage() {
     return (
-        <ReceptionistPageContent />
+        <ReceptionistPageWrapper>
+            <ReceptionistPageContent />
+        </ReceptionistPageWrapper>
     );
 }

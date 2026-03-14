@@ -28,16 +28,20 @@ import {
     ShieldCheck
 } from 'lucide-react';
 
-export default function AdminPage() {
+import { AdminPage } from '@/components/ProtectedPage';
+
+export default function AdminPortal() {
+    return (
+        <AdminPage>
+            <AdminContent />
+        </AdminPage>
+    );
+}
+
+function AdminContent() {
     const { user, loading } = useAuth();
     const router = useRouter();
     const [selectedLocation, setSelectedLocation] = useState<number | undefined>(undefined);
-
-    useEffect(() => {
-        if (!loading && (!user || (user.role !== 'ADMIN' && user.role !== 'SUPER_ADMIN'))) {
-            router.push('/login');
-        }
-    }, [user, loading, router]);
 
     // Fetch data
     const { data: stats, isLoading: statsLoading } = useQuery({

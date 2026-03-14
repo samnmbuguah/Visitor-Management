@@ -23,7 +23,17 @@ import {
     Send
 } from 'lucide-react';
 
-export default function HostPage() {
+import { HostPage as HostPageWrapper } from '@/components/ProtectedPage';
+
+export default function HostPortal() {
+    return (
+        <HostPageWrapper>
+            <HostPageContent />
+        </HostPageWrapper>
+    );
+}
+
+function HostPageContent() {
     const { user, loading, logout } = useAuth();
     const router = useRouter();
     const queryClient = useQueryClient();
@@ -40,17 +50,6 @@ export default function HostPage() {
         purpose: '',
         expected_duration: ''
     });
-
-    useEffect(() => {
-        if (!loading && (!user || user.role !== 'HOST')) {
-            // If they are admin, they can stay, but let's assume hosts only
-            if (user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN') {
-                router.push('/admin');
-            } else if (!user) {
-                router.push('/login');
-            }
-        }
-    }, [user, loading, router]);
 
     const { data: visitors = [], isLoading } = useQuery({
         queryKey: ['myVisitors'],
