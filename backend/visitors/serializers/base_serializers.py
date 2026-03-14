@@ -39,10 +39,11 @@ class UserProfileSerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True)
     location_name = serializers.CharField(source='location.name', read_only=True)
     host_id = serializers.IntegerField(source='user.host_profile.id', read_only=True)
+    host_location_id = serializers.IntegerField(source='user.host_profile.location_id', read_only=True)
 
     class Meta:
         model = UserProfile
-        fields = ['id', 'user', 'role', 'location', 'location_name', 'host_id', 'phone', 'is_admin', 'is_super_admin', 'created_at']
+        fields = ['id', 'user', 'role', 'location', 'location_name', 'host_id', 'host_location_id', 'phone', 'is_admin', 'is_super_admin', 'created_at']
         read_only_fields = ['id', 'created_at', 'is_admin', 'is_super_admin']
 
 

@@ -57,7 +57,7 @@ export default function InvitesScreen() {
                 expected_arrival: isoDateTime,
                 expected_duration: expectedDuration ? parseInt(expectedDuration) : null,
                 host: userProfile.host_id,
-                location: userProfile.location,
+                location: userProfile.location || userProfile.host_location_id,
             });
             Alert.alert('Success', 'Invite sent successfully');
             setName('');
