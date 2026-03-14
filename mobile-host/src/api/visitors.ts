@@ -21,12 +21,6 @@ export const getMyVisitors = async () => {
 };
 
 export const createInvite = async (data: any) => {
-    // Add default host and location if not provided
-    const payload = {
-        host: 1, // Default to Sarah Host (id=1)
-        location: 1, // Default to Main Office (id=1)
-        ...data,
-    };
-    const response = await client.post('/pre-registrations/', payload);
+    const response = await client.post('/pre-registrations/', data);
     return response.data;
 };

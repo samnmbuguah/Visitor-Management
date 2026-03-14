@@ -14,6 +14,7 @@ export default function AuthScreen() {
     const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
     const [needsPin, setNeedsPin] = useState(false);
+    const [error, setError] = useState<string | null>(null);
     const router = useRouter();
 
     useEffect(() => {
@@ -33,11 +34,12 @@ export default function AuthScreen() {
 
     const handleLogin = async () => {
         if (!credentials.email || !credentials.password) {
-            Alert.alert('Error', 'Please enter email and password');
+            setError('Please enter email and password');
             return;
         }
 
         setLoading(true);
+        setError(null);
         try {
             const data = await login({
                 email: credentials.email,
@@ -53,11 +55,11 @@ export default function AuthScreen() {
                     router.replace('/');
                 }
             } else {
-                Alert.alert('Login Failed', 'Invalid credentials');
+                setError('Invalid credentials');
             }
         } catch (error: any) {
             const errorMsg = error.response?.data?.detail || error.message || 'Authentication failed';
-            Alert.alert('Error', errorMsg);
+            setError(errorMsg);
         } finally {
             setLoading(false);
         }
@@ -122,7 +124,10 @@ export default function AuthScreen() {
                             style={styles.input}
                             placeholder="Email Address"
                             value={credentials.email}
-                            onChangeText={(text) => setCredentials(prev => ({ ...prev, email: text }))}
+                            onChangeText={(text) => {
+                                setCredentials(prev => ({ ...prev, email: text }));
+                                if (error) setError(null);
+                            }}
                             autoCapitalize="none"
                             keyboardType="email-address"
                         />
@@ -134,7 +139,10 @@ export default function AuthScreen() {
                             style={styles.input}
                             placeholder="Password"
                             value={credentials.password}
-                            onChangeText={(text) => setCredentials(prev => ({ ...prev, password: text }))}
+                            onChangeText={(text) => {
+                                setCredentials(prev => ({ ...prev, password: text }));
+                                if (error) setError(null);
+                            }}
                             secureTextEntry={!showPassword}
                         />
                         <TouchableOpacity
@@ -144,6 +152,12 @@ export default function AuthScreen() {
                             {showPassword ? <EyeOff color="#666" size={20} /> : <Eye color="#666" size={20} />}
                         </TouchableOpacity>
                     </View>
+
+                    {error && (
+                        <View style={styles.errorContainer}>
+                            <Text style={styles.errorText}>{error}</Text>
+                        </View>
+                    )}
 
                     <TouchableOpacity
                         style={[styles.button, loading && styles.buttonDisabled]}
@@ -244,5 +258,19 @@ const styles = StyleSheet.create({
         color: '#667eea',
         fontSize: 14,
         fontWeight: '600',
+    },
+    errorContainer: {
+        backgroundColor: '#fee2e2',
+        padding: 12,
+        borderRadius: 10,
+        marginBottom: 20,
+        borderWidth: 1,
+        borderColor: '#fca5a5',
+    },
+    errorText: {
+        color: '#b91c1c',
+        fontSize: 14,
+        textAlign: 'center',
+        fontWeight: '500',
     },
 });

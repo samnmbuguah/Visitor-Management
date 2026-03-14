@@ -95,12 +95,19 @@ class VisitorViewSet(viewsets.ModelViewSet):
                 return Visitor.objects.all()
             return Visitor.objects.none()
         
-        # If user is admin/super admin, show all visitors for their tenant
+        # Handle different roles
         profile = getattr(user, 'profile', None)
-        if profile and profile.role in ['SUPER_ADMIN', 'ADMIN']:
-            if profile.role == 'ADMIN' and profile.location:
-                return Visitor.objects.filter(location=profile.location)
-            return Visitor.objects.filter(location__tenant=tenant)
+        if profile:
+            if profile.role in ['SUPER_ADMIN', 'ADMIN']:
+                if profile.role == 'ADMIN' and profile.location:
+                    return Visitor.objects.filter(location=profile.location)
+                return Visitor.objects.filter(location__tenant=tenant)
+            
+            # Kiosks and Receptionists see all visitors for their location or tenant
+            if profile.role in ['KIOSK', 'RECEPTIONIST', 'MANAGER', 'SECURITY']:
+                if profile.location:
+                    return Visitor.objects.filter(location=profile.location)
+                return Visitor.objects.filter(location__tenant=tenant)
         
         # For hosts, only show their visitors
         host_profile = getattr(user, 'host_profile', None)

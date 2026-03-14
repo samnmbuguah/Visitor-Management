@@ -38,10 +38,11 @@ class UserProfileSerializer(serializers.ModelSerializer):
     """Serializer for user profiles with role information."""
     user = UserSerializer(read_only=True)
     location_name = serializers.CharField(source='location.name', read_only=True)
+    host_id = serializers.IntegerField(source='user.host_profile.id', read_only=True)
 
     class Meta:
         model = UserProfile
-        fields = ['id', 'user', 'role', 'location', 'location_name', 'phone', 'is_admin', 'is_super_admin', 'created_at']
+        fields = ['id', 'user', 'role', 'location', 'location_name', 'host_id', 'phone', 'is_admin', 'is_super_admin', 'created_at']
         read_only_fields = ['id', 'created_at', 'is_admin', 'is_super_admin']
 
 
@@ -144,11 +145,14 @@ class VisitorSerializer(serializers.ModelSerializer):
 class VisitorCreateSerializer(serializers.ModelSerializer):
     """Serializer for creating visitors."""
     token = serializers.UUIDField(required=False, write_only=True)
-
+    host_name = serializers.CharField(source='host.name', read_only=True)
+    location_name = serializers.CharField(source='location.name', read_only=True)
+    visitor_type_name = serializers.CharField(source='visitor_type.name', read_only=True)
+    
     class Meta:
         model = Visitor
-        fields = ['id', 'name', 'email', 'phone', 'company', 'number_plate', 'host', 'visitor_type', 'purpose', 'expected_duration', 'photo',
-                  'location', 'kiosk', 'status', 'nda_accepted', 'signature', 'token']
+        fields = ['id', 'name', 'email', 'phone', 'company', 'number_plate', 'host', 'host_name', 'visitor_type', 'visitor_type_name', 'purpose', 'expected_duration', 'photo',
+                  'location', 'location_name', 'kiosk', 'status', 'nda_accepted', 'signature', 'token']
         read_only_fields = ['id']
         extra_kwargs = {
             'name': {'required': False},

@@ -23,4 +23,18 @@ client.interceptors.request.use(async (config) => {
     return config;
 });
 
+// Response interceptor to handle 401s
+client.interceptors.response.use(
+    (response) => response,
+    async (error) => {
+        if (error.response?.status === 401) {
+            console.warn('Unauthorized request, clearing session...');
+            await SecureStore.deleteItemAsync('kiosk_token');
+            // We can't easily redirect from here without access to router
+            // But clearing the token will trigger redirect on the next check
+        }
+        return Promise.reject(error);
+    }
+);
+
 export default client;

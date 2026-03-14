@@ -12,14 +12,26 @@ export default function CheckoutScreen() {
     const router = useRouter();
 
     useEffect(() => {
+        checkAuth();
         fetchActiveVisitors();
     }, []);
+
+    const checkAuth = async () => {
+        const authenticated = await KioskAuth.isAuthenticated();
+        if (!authenticated) {
+            router.replace('/auth');
+        }
+    };
 
     const fetchActiveVisitors = async () => {
         try {
             const data = await getActiveVisitors();
             setVisitors(data.results || data);
-        } catch (error) {
+        } catch (error: any) {
+            if (error.response?.status === 401) {
+                router.replace('/auth');
+                return;
+            }
             Alert.alert('Error', 'Failed to fetch active visitors');
         } finally {
             setLoading(false);

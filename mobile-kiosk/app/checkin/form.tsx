@@ -34,6 +34,13 @@ export default function CheckinForm() {
     });
 
     useEffect(() => {
+        const checkAuth = async () => {
+            const authenticated = await KioskAuth.isAuthenticated();
+            if (!authenticated) {
+                router.replace('/auth');
+            }
+        };
+
         const loadInitialData = async () => {
             try {
                 const locs = await getLocations();
@@ -43,12 +50,17 @@ export default function CheckinForm() {
                     const hst = await getHosts(locs[0].id);
                     setHosts(hst);
                 }
-            } catch (error) {
+            } catch (error: any) {
+                if (error.response?.status === 401) {
+                    router.replace('/auth');
+                    return;
+                }
                 console.error('Error loading data:', error);
             } finally {
                 setLoading(false);
             }
         };
+        checkAuth();
         loadInitialData();
     }, []);
 

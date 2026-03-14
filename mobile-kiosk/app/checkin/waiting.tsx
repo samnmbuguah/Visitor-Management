@@ -10,16 +10,28 @@ export default function WaitingRoomScreen() {
     const router = useRouter();
 
     useEffect(() => {
+        checkAuth();
         fetchPendingVisitors();
         const interval = setInterval(fetchPendingVisitors, 10000); // Auto-refresh every 10s
         return () => clearInterval(interval);
     }, []);
 
+    const checkAuth = async () => {
+        const authenticated = await KioskAuth.isAuthenticated();
+        if (!authenticated) {
+            router.replace('/auth');
+        }
+    };
+
     const fetchPendingVisitors = async () => {
         try {
             const response = await client.get('/visitors/?status=PENDING');
             setPendingVisitors(response.data.results || response.data);
-        } catch (error) {
+        } catch (error: any) {
+            if (error.response?.status === 401) {
+                router.replace('/auth');
+                return;
+            }
             console.error('Error fetching pending visitors:', error);
         } finally {
             setLoading(false);

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { StyleSheet, View, Text, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
-import { QrCode, UserPlus, LogOut, Lock, Settings } from 'lucide-react-native';
+import { QrCode, UserPlus, LogOut, Lock, Settings, Clock } from 'lucide-react-native';
 import { KioskAuth } from '../src/utils/auth';
 
 export default function WelcomeScreen() {

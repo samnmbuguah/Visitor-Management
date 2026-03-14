@@ -10,15 +10,17 @@ export default function LoginScreen() {
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
     const router = useRouter();
 
     const handleLogin = async () => {
         if (!username || !password) {
-            Alert.alert('Error', 'Please fill in all fields');
+            setError('Please fill in all fields');
             return;
         }
 
         setLoading(true);
+        setError(null);
         try {
             await login(username, password);
             
@@ -28,9 +30,9 @@ export default function LoginScreen() {
             router.replace('/(tabs)');
         } catch (error: any) {
             if (error.message.includes('Access denied')) {
-                Alert.alert('Access Denied', error.message);
+                setError(error.message);
             } else {
-                Alert.alert('Login Failed', error.response?.data?.detail || 'Invalid credentials');
+                setError(error.response?.data?.detail || 'Invalid credentials');
             }
         } finally {
             setLoading(false);
@@ -53,7 +55,10 @@ export default function LoginScreen() {
                     style={styles.input}
                     placeholder="Username"
                     value={username}
-                    onChangeText={setUsername}
+                    onChangeText={(text) => {
+                        setUsername(text);
+                        if (error) setError(null);
+                    }}
                     autoCapitalize="none"
                 />
                 <View style={styles.passwordContainer}>
@@ -61,7 +66,10 @@ export default function LoginScreen() {
                         style={styles.passwordInput}
                         placeholder="Password"
                         value={password}
-                        onChangeText={setPassword}
+                        onChangeText={(text) => {
+                            setPassword(text);
+                            if (error) setError(null);
+                        }}
                         secureTextEntry={!showPassword}
                     />
                     <TouchableOpacity
@@ -75,6 +83,12 @@ export default function LoginScreen() {
                         )}
                     </TouchableOpacity>
                 </View>
+
+                {error && (
+                    <View style={styles.errorContainer}>
+                        <Text style={styles.errorText}>{error}</Text>
+                    </View>
+                )}
 
                 <TouchableOpacity
                     style={[styles.button, loading && styles.buttonDisabled]}
@@ -176,5 +190,20 @@ const styles = StyleSheet.create({
         color: '#fff',
         fontSize: 18,
         fontWeight: 'bold',
+    },
+    errorContainer: {
+        backgroundColor: '#fee2e2',
+        padding: 12,
+        borderRadius: 10,
+        marginBottom: 15,
+        width: '100%',
+        borderWidth: 1,
+        borderColor: '#fca5a5',
+    },
+    errorText: {
+        color: '#b91c1c',
+        fontSize: 14,
+        textAlign: 'center',
+        fontWeight: '500',
     },
 });

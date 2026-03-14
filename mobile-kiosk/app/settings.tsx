@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { StyleSheet, View, Text, TextInput, TouchableOpacity, Alert, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { KioskAuth } from '../src/utils/auth';
-import { ArrowLeft, Save, Lock, Smartphone } from 'lucide-react-native';
+import { ArrowLeft, Save, Lock, Smartphone, LogOut } from 'lucide-react-native';
 
 export default function SettingsScreen() {
     const [currentPin, setCurrentPin] = useState('');
@@ -45,6 +45,24 @@ export default function SettingsScreen() {
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleLogout = async () => {
+        Alert.alert(
+            'Logout',
+            'Are you sure you want to log out of this kiosk? This will require re-authentication with employee credentials.',
+            [
+                { text: 'Cancel', style: 'cancel' },
+                { 
+                    text: 'Logout', 
+                    style: 'destructive',
+                    onPress: async () => {
+                        await KioskAuth.logout();
+                        router.replace('/auth');
+                    }
+                }
+            ]
+        );
     };
 
     return (
@@ -131,6 +149,11 @@ export default function SettingsScreen() {
                         <Text style={styles.infoValue}>{Platform.OS.toUpperCase()}</Text>
                     </View>
                 </View>
+
+                <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+                    <LogOut color="#ef4444" size={20} style={styles.buttonIcon} />
+                    <Text style={styles.logoutButtonText}>Log Out Kiosk</Text>
+                </TouchableOpacity>
             </ScrollView>
         </View>
     );
@@ -230,5 +253,22 @@ const styles = StyleSheet.create({
         color: '#fff',
         fontSize: 14,
         fontWeight: '600',
+    },
+    logoutButton: {
+        flexDirection: 'row',
+        backgroundColor: '#ef444420',
+        height: 56,
+        borderRadius: 12,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginTop: 20,
+        marginBottom: 40,
+        borderWidth: 1,
+        borderColor: '#ef4444',
+    },
+    logoutButtonText: {
+        color: '#ef4444',
+        fontSize: 16,
+        fontWeight: 'bold',
     },
 });

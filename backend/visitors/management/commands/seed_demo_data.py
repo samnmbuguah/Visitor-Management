@@ -14,6 +14,7 @@ from visitors.models import (
 from visitors.tenant_models import (
     Tenant, TenantUser, SubscriptionPlan, Subscription, TenantSettings
 )
+from django.core.management import call_command
 
 # Optional Advanced Models
 try:
@@ -45,6 +46,10 @@ class Command(BaseCommand):
         # Populate operational data
         self.seed_visitors_and_invites(tenant, locations, hosts, kiosks)
         self.seed_watchlist_and_parcels(tenant, locations, hosts)
+        
+        # Seed Property Management data for the demo tenant
+        self.stdout.write("Seeding Property Management data...")
+        call_command('seed_property_management_data', tenants=1, locations=2, requests=10)
         
         # Populate advanced modules
         if HAS_SECURITY:
@@ -144,8 +149,6 @@ class Command(BaseCommand):
             
             # Map role string to choices
             profile_role = getattr(UserRole, role, UserRole.HOST) if hasattr(UserRole, role) else UserRole.HOST
-            if role == "OWNER" or role == "MANAGER" or role == "KIOSK":
-                profile_role = UserRole.HOST # Fallback for profile since it uses UserRole
 
             UserProfile.objects.get_or_create(user=u, defaults={'role': profile_role})
             TenantUser.objects.get_or_create(tenant=tenant, user=u, defaults={'role': role})
@@ -162,6 +165,11 @@ class Command(BaseCommand):
         # 4. Kiosks
         kiosk_main, _ = Kiosk.objects.get_or_create(tenant=tenant, name="Main Entrance Kiosk", defaults={'location': loc_hq})
         kiosks = [kiosk_main]
+        
+        # Assign location to kiosk user profile
+        kiosk_profile = created_users["kiosk"].profile
+        kiosk_profile.location = loc_hq
+        kiosk_profile.save()
 
         # 5. Hosts
         host_profile, _ = Host.objects.get_or_create(

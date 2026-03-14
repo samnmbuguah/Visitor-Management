@@ -23,9 +23,8 @@ client.interceptors.response.use(
   (response) => response,
   async (error) => {
     if (error.response?.status === 401) {
-      console.error('[AUTH] 401 Unauthorized:', error.config.url);
-      const token = await SecureStore.getItemAsync('userToken');
-      console.log('[AUTH] Current token exists:', !!token);
+      console.warn('[AUTH] 401 Unauthorized, clearing session...');
+      await SecureStore.deleteItemAsync('userToken');
     }
     return Promise.reject(error);
   }

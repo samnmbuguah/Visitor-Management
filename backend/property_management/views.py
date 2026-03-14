@@ -50,6 +50,8 @@ class MaintenanceCategoryViewSet(viewsets.ModelViewSet):
     ordering_fields = ['name', 'created_at']
 
     def get_queryset(self):
+        if self.request.user.is_superuser:
+            return MaintenanceCategory.objects.all()
         tenant = get_user_tenant(self.request.user)
         if not tenant:
             return MaintenanceCategory.objects.none()
@@ -73,6 +75,8 @@ class VendorViewSet(viewsets.ModelViewSet):
     ordering_fields = ['name', 'rating', 'created_at']
 
     def get_queryset(self):
+        if self.request.user.is_superuser:
+            return Vendor.objects.all().prefetch_related('specialties')
         tenant = get_user_tenant(self.request.user)
         if not tenant:
             return Vendor.objects.none()
@@ -111,6 +115,8 @@ class MaintenanceRequestViewSet(viewsets.ModelViewSet):
     ordering_fields = ['requested_at', 'priority', 'status']
 
     def get_queryset(self):
+        if self.request.user.is_superuser:
+            return MaintenanceRequest.objects.all().select_related('location', 'category', 'assigned_to')
         tenant = get_user_tenant(self.request.user)
         if not tenant:
             return MaintenanceRequest.objects.none()
@@ -213,6 +219,8 @@ class WorkOrderViewSet(viewsets.ModelViewSet):
     ordering_fields = ['created_at', 'work_order_number']
 
     def get_queryset(self):
+        if self.request.user.is_superuser:
+            return WorkOrder.objects.all()
         tenant = get_user_tenant(self.request.user)
         if not tenant:
             return WorkOrder.objects.none()
@@ -227,6 +235,8 @@ class AssetTypeViewSet(viewsets.ModelViewSet):
     search_fields = ['name']
 
     def get_queryset(self):
+        if self.request.user.is_superuser:
+            return AssetType.objects.all()
         tenant = get_user_tenant(self.request.user)
         if not tenant:
             return AssetType.objects.none()
@@ -248,6 +258,8 @@ class AssetViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
+        if user.is_superuser:
+            return Asset.objects.select_related('location', 'asset_type').all()
         tenant = get_user_tenant(user)
         print(f"[ASSET QS] Action: {self.action}, User: {user}, Tenant: {tenant}")
         if not tenant:
@@ -355,6 +367,8 @@ class MaintenanceScheduleViewSet(viewsets.ModelViewSet):
     ordering_fields = ['scheduled_date', 'created_at']
 
     def get_queryset(self):
+        if self.request.user.is_superuser:
+            return MaintenanceSchedule.objects.all()
         tenant = get_user_tenant(self.request.user)
         if not tenant:
             return MaintenanceSchedule.objects.none()
@@ -381,6 +395,8 @@ class AssetCheckoutViewSet(viewsets.ModelViewSet):
     ordering_fields = ['checked_out_at', 'expected_return_at']
 
     def get_queryset(self):
+        if self.request.user.is_superuser:
+            return AssetCheckout.objects.all()
         tenant = get_user_tenant(self.request.user)
         if not tenant:
             return AssetCheckout.objects.none()
@@ -407,6 +423,8 @@ class CostCenterViewSet(viewsets.ModelViewSet):
     ordering_fields = ['code', 'name', 'current_spend']
 
     def get_queryset(self):
+        if self.request.user.is_superuser:
+            return CostCenter.objects.all()
         tenant = get_user_tenant(self.request.user)
         if not tenant:
             return CostCenter.objects.none()
@@ -452,6 +470,8 @@ class MaintenanceExpenseViewSet(viewsets.ModelViewSet):
     ordering_fields = ['created_at', 'amount', 'invoice_date']
 
     def get_queryset(self):
+        if self.request.user.is_superuser:
+            return MaintenanceExpense.objects.all()
         tenant = get_user_tenant(self.request.user)
         if not tenant:
             return MaintenanceExpense.objects.none()
@@ -587,6 +607,8 @@ class LeaseViewSet(viewsets.ModelViewSet):
     ordering_fields = ['start_date', 'end_date', 'monthly_rent']
 
     def get_queryset(self):
+        if self.request.user.is_superuser:
+            return Lease.objects.select_related('tenant').all()
         tenant = get_user_tenant(self.request.user)
         if not tenant:
             return Lease.objects.none()

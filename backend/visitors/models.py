@@ -10,6 +10,9 @@ class UserRole(models.TextChoices):
     ADMIN = 'ADMIN', 'Admin'
     RECEPTIONIST = 'RECEPTIONIST', 'Receptionist'
     HOST = 'HOST', 'Host'
+    KIOSK = 'KIOSK', 'Kiosk'
+    MANAGER = 'MANAGER', 'Manager'
+    SECURITY = 'SECURITY', 'Security'
 
 
 class Location(models.Model):

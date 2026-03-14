@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { StyleSheet, View, Text, TextInput, TouchableOpacity, ScrollView, Alert, ActivityIndicator, Platform, KeyboardAvoidingView } from 'react-native';
 import { createInvite } from '../../src/api/visitors';
+import { getProfile } from '../../src/api/auth';
 import { UserPlus, Calendar, Clock } from 'lucide-react-native';
 
 // For native date/time pickers, you'd normally use:
@@ -17,10 +18,30 @@ export default function InvitesScreen() {
     const [time, setTime] = useState('');
     const [expectedDuration, setExpectedDuration] = useState('');
     const [loading, setLoading] = useState(false);
+    const [userProfile, setUserProfile] = useState<any>(null);
+
+    React.useEffect(() => {
+        fetchProfile();
+    }, []);
+
+    const fetchProfile = async () => {
+        try {
+            const profile = await getProfile();
+            setUserProfile(profile);
+        } catch (error) {
+            console.error('Failed to fetch profile', error);
+        }
+    };
 
     const handleInvite = async () => {
         if (!name || !email || !date || !time) {
             Alert.alert('Error', 'Please fill in Name, Email, and Expected Arrival (date and time)');
+            return;
+        }
+
+        if (!userProfile) {
+            Alert.alert('Error', 'User profile not loaded. Please try again.');
+            fetchProfile();
             return;
         }
 
@@ -35,6 +56,8 @@ export default function InvitesScreen() {
                 visitor_company: company,
                 expected_arrival: isoDateTime,
                 expected_duration: expectedDuration ? parseInt(expectedDuration) : null,
+                host: userProfile.host_id,
+                location: userProfile.location,
             });
             Alert.alert('Success', 'Invite sent successfully');
             setName('');

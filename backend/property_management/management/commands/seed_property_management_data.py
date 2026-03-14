@@ -24,7 +24,7 @@ from visitors.models import Tenant, Location, Host, UserProfile
 from property_management.models import (
     MaintenanceCategory, Vendor, MaintenanceRequest, MaintenancePhoto,
     WorkOrder, AssetType, Asset, MaintenanceSchedule, AssetCheckout,
-    CostCenter, MaintenanceExpense, PriorityLevel, MaintenanceStatus, AssetStatus
+    CostCenter, MaintenanceExpense, PriorityLevel, MaintenanceStatus, AssetStatus, Lease
 )
 
 
@@ -83,13 +83,14 @@ class Command(BaseCommand):
         schedules = self.create_maintenance_schedules(assets, vendors)
         expenses = self.create_maintenance_expenses(work_orders, cost_centers)
         checkouts = self.create_asset_checkouts(assets, users)
+        leases = self.create_leases(tenants)
 
         # Create historical data
         self.create_historical_data(assets, maintenance_requests, work_orders)
 
         # Print summary
         self.print_summary(tenants, locations, hosts, categories, vendors, 
-                          assets, maintenance_requests, work_orders, cost_centers)
+                          assets, maintenance_requests, work_orders, cost_centers, leases)
 
         self.stdout.write(self.style.SUCCESS('Property management data seeding completed successfully!'))
 
@@ -100,7 +101,7 @@ class Command(BaseCommand):
         models_to_clear = [
             MaintenanceExpense, AssetCheckout, MaintenanceSchedule, WorkOrder,
             MaintenancePhoto, MaintenanceRequest, Asset, AssetType, Vendor,
-            CostCenter, MaintenanceCategory
+            CostCenter, MaintenanceCategory, Lease
         ]
         
         for model in models_to_clear:
@@ -735,8 +736,39 @@ class Command(BaseCommand):
                 request.completed_at = timezone.now() - timedelta(days=random.randint(1, 90))
                 request.save()
 
+    def create_leases(self, tenants):
+        """Create lease records for each tenant"""
+        self.stdout.write('Creating leases...')
+        
+        leases = []
+        for tenant in tenants:
+            # Create 1-3 leases per tenant
+            for i in range(random.randint(1, 3)):
+                start_date = date.today() - timedelta(days=random.randint(30, 730))
+                end_date = start_date + timedelta(days=365 * random.randint(1, 5))
+                
+                status = 'ACTIVE'
+                if end_date < date.today():
+                    status = 'EXPIRED'
+                elif end_date < date.today() + timedelta(days=90):
+                    status = 'EXPIRING'
+                
+                lease = Lease.objects.create(
+                    tenant=tenant,
+                    unit_number=f"UNIT-{random.randint(100, 999)}",
+                    monthly_rent=random.randint(1000, 5000),
+                    start_date=start_date,
+                    end_date=end_date,
+                    status=status,
+                    notes=f"Lease agreement for {tenant.name}"
+                )
+                leases.append(lease)
+                self.stdout.write(f'  Created lease: {lease.unit_number} for {tenant.name}')
+        
+        return leases
+
     def print_summary(self, tenants, locations, hosts, categories, vendors, 
-                      assets, maintenance_requests, work_orders, cost_centers):
+                      assets, maintenance_requests, work_orders, cost_centers, leases):
         """Print summary of created data"""
         self.stdout.write('\n' + '=' * 50)
         self.stdout.write('DATA SEEDING SUMMARY')
@@ -750,4 +782,5 @@ class Command(BaseCommand):
         self.stdout.write(f'Maintenance Requests: {len(maintenance_requests)}')
         self.stdout.write(f'Work Orders: {len(work_orders)}')
         self.stdout.write(f'Cost Centers: {len(cost_centers)}')
+        self.stdout.write(f'Leases: {len(leases)}')
         self.stdout.write('=' * 50)
