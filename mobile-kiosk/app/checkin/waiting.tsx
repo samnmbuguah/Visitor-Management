@@ -3,6 +3,7 @@ import { StyleSheet, View, Text, TouchableOpacity, FlatList, ActivityIndicator, 
 import { useRouter } from 'expo-router';
 import client from '../../src/api/client';
 import { ArrowLeft, Clock, User, CheckCircle2, RefreshCw } from 'lucide-react-native';
+import { KioskAuth } from '../../src/utils/auth';
 
 export default function WaitingRoomScreen() {
     const [pendingVisitors, setPendingVisitors] = useState<any[]>([]);

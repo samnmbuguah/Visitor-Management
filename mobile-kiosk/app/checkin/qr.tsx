@@ -36,8 +36,16 @@ export default function QRScannerScreen() {
                 { text: 'Finish', onPress: () => router.replace('/') }
             ]);
         } catch (error: any) {
-            Alert.alert('Scan Failed', 'This QR code is invalid or has already been used.');
-            setScanned(false);
+            if (error.response?.data?.nda_accepted) {
+                // Requires NDA, redirect to NDA screen with the token
+                router.push({
+                    pathname: '/checkin/nda',
+                    params: { token: data }
+                });
+            } else {
+                Alert.alert('Scan Failed', 'This QR code is invalid or has already been used.');
+                setScanned(false);
+            }
         }
     };
 

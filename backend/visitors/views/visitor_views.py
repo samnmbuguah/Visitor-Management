@@ -116,6 +116,14 @@ class VisitorViewSet(viewsets.ModelViewSet):
             
         return Visitor.objects.none()
 
+    def create(self, request, *args, **kwargs):
+        print(f"[VISITOR] Create data: {request.data}")
+        serializer = self.get_serializer(data=request.data)
+        if not serializer.is_valid():
+            print(f"[VISITOR] Validation failed: {serializer.errors}")
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return super().create(request, *args, **kwargs)
+
     def perform_create(self, serializer):
         # Check against Watchlist
         from django.db.models import Q

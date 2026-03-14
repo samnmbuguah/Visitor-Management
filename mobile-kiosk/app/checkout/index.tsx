@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { StyleSheet, View, Text, TextInput, TouchableOpacity, Alert, ActivityIndicator, FlatList } from 'react-native';
 import { useRouter } from 'expo-router';
 import { getActiveVisitors, checkOutVisitor } from '../../src/api/visitors';
+import { KioskAuth } from '../../src/utils/auth';
 import { ArrowLeft, LogOut, User, Check, Search } from 'lucide-react-native';
 
 export default function CheckoutScreen() {

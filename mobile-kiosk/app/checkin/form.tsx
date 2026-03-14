@@ -3,6 +3,7 @@ import { StyleSheet, View, Text, TextInput, TouchableOpacity, ScrollView, Alert,
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Camera, CameraView, useCameraPermissions } from 'expo-camera';
 import { getLocations, getHosts } from '../../src/api/visitors';
+import { KioskAuth } from '../../src/utils/auth';
 import { ArrowLeft, User, Mail, Phone, Building, UserCheck, Camera as CameraIcon, CheckCircle2, RefreshCw, Clock, Search, X } from 'lucide-react-native';
 
 export default function CheckinForm() {
