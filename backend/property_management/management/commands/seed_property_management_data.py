@@ -199,7 +199,7 @@ class Command(BaseCommand):
             ('admin', 'Administrator', 'ADMIN'),
             ('manager', 'Manager', 'MANAGER'),
             ('host', 'Host', 'HOST'),
-            ('kiosk', 'Kiosk', 'KIOSK')
+            ('reception', 'Reception', 'RECEPTIONIST')
         ]
 
         for tenant in tenants:

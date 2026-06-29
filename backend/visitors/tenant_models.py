@@ -91,7 +91,7 @@ class TenantUser(models.Model):
         ('ADMIN', 'Admin'),
         ('MANAGER', 'Manager'),
         ('HOST', 'Host'),
-        ('KIOSK', 'Kiosk'),
+        ('RECEPTIONIST', 'Receptionist'),
     ]
     
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)

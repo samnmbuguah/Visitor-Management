@@ -167,8 +167,8 @@ class Command(BaseCommand):
             users.append(host_user)
         
         # Kiosk user
-        kiosk_user = self.create_user_with_profile(f"{tenant.name} Kiosk", f"kiosk@{tenant.subdomain}.com", 'KIOSK', tenant)
-        users.append(kiosk_user)
+        reception_user = self.create_user_with_profile(f"{tenant.name} Reception", f"reception@{tenant.subdomain}.com", 'RECEPTIONIST', tenant)
+        users.append(reception_user)
         
         return users
 

@@ -135,8 +135,7 @@ class Command(BaseCommand):
             ("manager", "John", "Smith", "MANAGER"),
             ("receptionist", "Pam", "Beesly", "RECEPTIONIST"),
             ("host", "Jim", "Halpert", "HOST"),
-            ("dwight", "Dwight", "Schrute", "HOST"),
-            ("kiosk", "Lobby", "Kiosk", "KIOSK")
+            ("dwight", "Dwight", "Schrute", "HOST")
         ]
 
         created_users = {}

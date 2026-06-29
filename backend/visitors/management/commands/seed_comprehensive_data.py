@@ -202,7 +202,7 @@ class Command(BaseCommand):
             users.append(user)
             
             # Assign roles
-            roles = ['ADMIN', 'MANAGER', 'HOST', 'HOST', 'HOST', 'KIOSK']
+            roles = ['ADMIN', 'MANAGER', 'HOST', 'HOST', 'HOST', 'RECEPTIONIST']
             role = roles[i % len(roles)]
             
             TenantUser.objects.create(

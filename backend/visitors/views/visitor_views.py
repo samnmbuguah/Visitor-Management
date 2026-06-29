@@ -104,7 +104,7 @@ class VisitorViewSet(viewsets.ModelViewSet):
                 return Visitor.objects.filter(location__tenant=tenant)
             
             # Kiosks and Receptionists see all visitors for their location or tenant
-            if profile.role in ['KIOSK', 'RECEPTIONIST', 'MANAGER', 'SECURITY']:
+            if profile.role in ['RECEPTIONIST', 'MANAGER', 'SECURITY']:
                 if profile.location:
                     return Visitor.objects.filter(location=profile.location)
                 return Visitor.objects.filter(location__tenant=tenant)
