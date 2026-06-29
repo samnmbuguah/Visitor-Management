@@ -1,19 +1,23 @@
 import axios from 'axios';
 
 const getApiUrl = () => {
+    // Use explicit env var if set (e.g. https://pmapi.213-199-50-129.sslip.io/api)
+    if (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_API_BASE_URL) {
+        return process.env.NEXT_PUBLIC_API_BASE_URL;
+    }
     if (typeof window !== 'undefined') {
-        // Check if we're in development mode AND accessing via localhost/127.0.0.1
         const isDevelopment = process.env.NODE_ENV === 'development';
-        const isLocalAccess = window.location.hostname === 'localhost' || 
+        const isLocalAccess = window.location.hostname === 'localhost' ||
                             window.location.hostname === '127.0.0.1';
-        
-        // Use localhost only if we're in development AND accessing locally
+
         if (isDevelopment && isLocalAccess) {
             return 'http://localhost:8001/api';
         }
-        
-        // Otherwise, use the same hostname as the frontend (external IP or domain)
-        return `http://${window.location.hostname}:8001/api`;
+
+        // Use HTTPS via the dedicated API subdomain (Caddy reverse proxy on port 443)
+        const parts = window.location.hostname.split('.');
+        parts[0] = 'pmapi';
+        return `https://${parts.join('.')}/api`;
     }
     return 'http://localhost:8001/api';
 };
