@@ -45,6 +45,10 @@ const PERMISSION_MATRIX = {
   ],
   RECEPTIONIST: [
     'visitors.checkin', 'visitors.checkout', 'visitors.search'
+  ],
+  MANAGER: [
+    'dashboard.view', 'locations.view', 'leases.view',
+    'maintenance.view', 'assets.view', 'reports.view'
   ]
 } as const;
 
@@ -53,7 +57,8 @@ const FEATURE_ACCESS = {
   SUPER_ADMIN: ['admin', 'maintenance', 'assets', 'invites', 'users', 'settings', 'reports'],
   ADMIN: ['admin', 'maintenance', 'assets', 'invites', 'reports'],
   HOST: ['host', 'visitors', 'notifications'],
-  RECEPTIONIST: ['receptionist', 'checkin', 'checkout']
+  RECEPTIONIST: ['receptionist', 'checkin', 'checkout'],
+  MANAGER: ['admin', 'analytics', 'reports', 'leases']
 } as const;
 
 // Create the store

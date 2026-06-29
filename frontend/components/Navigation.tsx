@@ -14,16 +14,16 @@ export default function Navigation() {
     if (!user) return null;
 
     const navItems = [
-        { href: '/admin', label: 'Dashboard', icon: LayoutDashboard, roles: ['SUPER_ADMIN', 'ADMIN'] },
+        { href: '/admin', label: 'Dashboard', icon: LayoutDashboard, roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER'] },
         { href: '/admin/cctv', label: 'CCTV', icon: Shield, roles: ['SUPER_ADMIN', 'ADMIN'] },
         { href: '/admin/cameras', label: 'Cameras', icon: Camera, roles: ['SUPER_ADMIN', 'ADMIN'] },
-        { href: '/admin/maintenance', label: 'Maintenance', icon: Wrench, roles: ['SUPER_ADMIN', 'ADMIN'] },
-        { href: '/admin/assets', label: 'Assets', icon: Building, roles: ['SUPER_ADMIN', 'ADMIN'] },
+        { href: '/admin/maintenance', label: 'Maintenance', icon: Wrench, roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER'] },
+        { href: '/admin/assets', label: 'Assets', icon: Building, roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER'] },
         { href: '/admin/tenants', label: 'Tenants', icon: Users, roles: ['SUPER_ADMIN'] },
-        { href: '/admin/leases', label: 'Leases', icon: Mail, roles: ['SUPER_ADMIN'] },
+        { href: '/admin/leases', label: 'Leases', icon: Mail, roles: ['SUPER_ADMIN', 'MANAGER'] },
         { href: '/host', label: 'Property Manager', icon: UserCheck, roles: ['HOST'] },
         { href: '/receptionist', label: 'Receptionist', icon: UserCheck, roles: ['RECEPTIONIST'] },
-        { href: '/profile', label: 'Profile', icon: User, roles: ['SUPER_ADMIN', 'ADMIN', 'HOST', 'RECEPTIONIST'] },
+        { href: '/profile', label: 'Profile', icon: User, roles: ['SUPER_ADMIN', 'ADMIN', 'HOST', 'RECEPTIONIST', 'MANAGER'] },
     ];
 
     const filteredItems = navItems.filter(item => item.roles.includes(user.role));

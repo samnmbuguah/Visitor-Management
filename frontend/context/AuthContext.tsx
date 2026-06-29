@@ -35,15 +35,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setToken(token);
         const userData = getUserFromToken(token);
         setUser(userData);
-        if (userData?.role === 'SUPER_ADMIN' || userData?.role === 'ADMIN') {
-            router.push('/admin');
-        } else if (userData?.role === 'HOST') {
-            router.push('/host');
-        } else if (userData?.role === 'RECEPTIONIST') {
-            router.push('/receptionist');
-        } else {
-            router.push('/');
-        }
+    if (userData?.role === 'SUPER_ADMIN' || userData?.role === 'ADMIN' || userData?.role === 'MANAGER') {
+        router.push('/admin');
+    } else if (userData?.role === 'HOST') {
+        router.push('/host');
+    } else if (userData?.role === 'RECEPTIONIST') {
+        router.push('/receptionist');
+    } else {
+        router.push('/');
+    }
     };
 
     const logout = () => {

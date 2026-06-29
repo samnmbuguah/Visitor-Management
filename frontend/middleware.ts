@@ -9,10 +9,10 @@ export function middleware(request: NextRequest) {
 
   // Define protected routes and their required roles
   const protectedRoutes = [
-    { path: '/admin', roles: ['SUPER_ADMIN', 'ADMIN'] },
+    { path: '/admin', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER'] },
     { path: '/host', roles: ['HOST', 'SUPER_ADMIN', 'ADMIN'] },
     { path: '/receptionist', roles: ['RECEPTIONIST', 'SUPER_ADMIN', 'ADMIN'] },
-    { path: '/profile', roles: ['SUPER_ADMIN', 'ADMIN', 'HOST', 'RECEPTIONIST'] },
+    { path: '/profile', roles: ['SUPER_ADMIN', 'ADMIN', 'HOST', 'RECEPTIONIST', 'MANAGER'] },
   ];
 
   const currentProtectedroute = protectedRoutes.find(route => pathname.startsWith(route.path));
@@ -40,7 +40,7 @@ export function middleware(request: NextRequest) {
         // Redirect to their default dashboard if they are on a wrong page
         if (userRole === 'HOST') return NextResponse.redirect(new URL('/host', request.url));
         if (userRole === 'RECEPTIONIST') return NextResponse.redirect(new URL('/receptionist', request.url));
-        if (userRole === 'ADMIN' || userRole === 'SUPER_ADMIN') return NextResponse.redirect(new URL('/admin', request.url));
+        if (userRole === 'ADMIN' || userRole === 'SUPER_ADMIN' || userRole === 'MANAGER') return NextResponse.redirect(new URL('/admin', request.url));
         
         return NextResponse.redirect(new URL('/login', request.url));
       }
@@ -58,6 +58,7 @@ export function middleware(request: NextRequest) {
         const userRole = payload.role;
         if (userRole === 'HOST') return NextResponse.redirect(new URL('/host', request.url));
         if (userRole === 'RECEPTIONIST') return NextResponse.redirect(new URL('/receptionist', request.url));
+        if (userRole === 'MANAGER') return NextResponse.redirect(new URL('/admin', request.url));
         return NextResponse.redirect(new URL('/admin', request.url));
       }
     } catch (e) {

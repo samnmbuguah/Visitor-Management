@@ -7,7 +7,7 @@ export interface UserPayload {
     user_id: number;
     username: string;
     email: string;
-    role: 'SUPER_ADMIN' | 'ADMIN' | 'HOST' | 'RECEPTIONIST';
+    role: 'SUPER_ADMIN' | 'ADMIN' | 'HOST' | 'RECEPTIONIST' | 'MANAGER';
     exp: number;
 }
 
