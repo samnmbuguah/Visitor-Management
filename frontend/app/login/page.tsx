@@ -131,6 +131,16 @@ export default function LoginPage() {
                     <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em]">Secure Session</span>
                     <span className="h-px bg-white/5 flex-1"></span>
                 </div>
+
+                <div className="mt-6 text-center">
+                    <a
+                        href="/demo-guide.pdf"
+                        target="_blank"
+                        className="text-xs text-muted-foreground hover:text-primary transition-colors underline underline-offset-2"
+                    >
+                        Download Demo Guide (PDF)
+                    </a>
+                </div>
             </div>
         </main>
     );
