@@ -1,0 +1,40 @@
+# Property Management - Caddy reverse proxy configuration.
+#
+# HOW TO USE:
+# These entries are designed to be added to the existing Caddyfile at:
+#   /home/samuel/Development/Odoo/config/Caddyfile
+#
+# After adding them, reload Caddy:
+#   docker exec odoo-caddy-1 caddy reload --config /etc/caddy/Caddyfile
+#
+# You must also connect Caddy to this project's Docker network:
+#   docker network connect property_management_default odoo-caddy-1
+#
+# Available subdomains (all resolve to 213.199.50.129 via sslip.io):
+#   pm.213-199-50-129.sslip.io        → Next.js web frontend
+#   pmapi.213-199-50-129.sslip.io     → Django REST API
+#   pmadmin.213-199-50-129.sslip.io   → Mobile Admin (Expo dev server)
+#   pmhost.213-199-50-129.sslip.io    → Mobile Host (Expo dev server)
+#   pmkiosk.213-199-50-129.sslip.io   → Mobile Kiosk (Expo dev server)
+
+pm.213-199-50-129.sslip.io {
+    encode gzip zstd
+    reverse_proxy web:3000
+}
+
+pmapi.213-199-50-129.sslip.io {
+    encode gzip zstd
+    reverse_proxy backend:8001
+}
+
+pmadmin.213-199-50-129.sslip.io {
+    reverse_proxy mobile_admin:8084
+}
+
+pmhost.213-199-50-129.sslip.io {
+    reverse_proxy mobile_host:8085
+}
+
+pmkiosk.213-199-50-129.sslip.io {
+    reverse_proxy mobile_kiosk:8086
+}
