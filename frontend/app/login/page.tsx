@@ -18,17 +18,10 @@ export default function LoginPage() {
         setIsLoading(true);
 
         try {
-            console.log('Attempting login with:', credentials.username);
             const res = await APIService.auth.login(credentials.username, credentials.password);
-            console.log('Login response:', res);
             login(res.access);
-            console.log('Login successful, token set');
         } catch (err: any) {
-            console.error('Login error details:', err);
-            console.error('Error response:', err.response);
-            console.error('Error status:', err.response?.status);
-            console.error('Error data:', err.response?.data);
-            setError(err.response?.data?.detail || 'Invalid username or password');
+            setError(err.response?.data?.detail || err.response?.data?.message || 'Invalid username or password');
         } finally {
             setIsLoading(false);
         }

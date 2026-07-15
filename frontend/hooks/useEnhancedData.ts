@@ -2,6 +2,7 @@ import React from 'react';
 import { useQuery, useMutation, useQueryClient, QueryKey } from '@tanstack/react-query';
 import { useAppStore } from '@/store';
 import { APIService } from '@/services/api';
+import { logger } from '@/lib/logger';
 
 // Enhanced query configuration with better caching
 const DEFAULT_QUERY_CONFIG = {
@@ -15,7 +16,7 @@ const DEFAULT_QUERY_CONFIG = {
 const DEFAULT_MUTATION_CONFIG = {
   retry: 1,
   onError: (error: any) => {
-    console.error('Mutation error:', error);
+    logger.error('Mutation error:', error);
   },
 };
 
@@ -170,7 +171,7 @@ export function useEnhancedCreateMaintenanceRequest() {
     APIService.propertyManagement.createMaintenanceRequest,
     {
       onSuccess: () => {
-        console.log('Maintenance request created successfully');
+        logger.debug('Maintenance request created successfully');
       },
       invalidateQueries: [['maintenance-requests']],
       optimisticUpdate: {
@@ -189,7 +190,7 @@ export function useEnhancedUpdateMaintenanceRequestStatus() {
       APIService.propertyManagement.updateMaintenanceRequestStatus(id, status),
     {
       onSuccess: () => {
-        console.log('Maintenance request status updated successfully');
+        logger.debug('Maintenance request status updated successfully');
       },
       invalidateQueries: [['maintenance-requests']],
       optimisticUpdate: {
@@ -210,7 +211,7 @@ export function useEnhancedCreateAsset() {
     APIService.propertyManagement.createAsset,
     {
       onSuccess: () => {
-        console.log('Asset created successfully');
+        logger.debug('Asset created successfully');
       },
       invalidateQueries: [['assets']],
       optimisticUpdate: {
@@ -320,7 +321,7 @@ export function useDataValidation() {
       schema.parse(data);
       return true;
     } catch (error) {
-      console.error('Data validation error:', error);
+      logger.error('Data validation error:', error);
       return false;
     }
   };

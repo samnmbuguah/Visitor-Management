@@ -1,6 +1,7 @@
 import './globals.css';
 import { Providers } from '@/components/Providers';
 import Navigation from '@/components/Navigation';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 export const metadata = {
   title: 'Property Management | Premium Platform',
@@ -15,10 +16,12 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className="antialiased" suppressHydrationWarning>
-        <Providers>
-          <Navigation />
-          {children}
-        </Providers>
+        <ErrorBoundary>
+          <Providers>
+            <Navigation />
+            {children}
+          </Providers>
+        </ErrorBoundary>
       </body>
     </html>
   );

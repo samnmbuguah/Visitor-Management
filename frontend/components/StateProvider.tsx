@@ -4,6 +4,7 @@ import React, { createContext, useContext, useEffect, ReactNode } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { useAppStore } from '@/store';
+import { logger } from '@/lib/logger';
 
 // Create a client
 const queryClient = new QueryClient({
@@ -38,7 +39,7 @@ export function StateProvider({ children }: StateProviderProps) {
   useEffect(() => {
     // Handle online/offline events
     const handleOnline = () => {
-      console.log('App is online');
+      logger.debug('App is online');
       // Refetch all active queries when coming back online
       queryClient.refetchQueries({
         predicate: (query) => {
@@ -49,7 +50,7 @@ export function StateProvider({ children }: StateProviderProps) {
     };
 
     const handleOffline = () => {
-      console.log('App is offline');
+      logger.debug('App is offline');
     };
 
     window.addEventListener('online', handleOnline);
@@ -199,11 +200,10 @@ export function useErrorHandler() {
   const queryClient = useQueryClient();
 
   const handleError = (error: Error, context?: string) => {
-    console.error(`State Management Error${context ? ` in ${context}` : ''}:`, error);
-    
-    // Log error details for debugging
+    logger.error(`State Management Error${context ? ` in ${context}` : ''}:`, error);
+
     if (process.env.NODE_ENV === 'development') {
-      console.trace('Error stack trace:', error);
+      logger.debug('Error stack trace:', error);
     }
 
     // Invalidate potentially corrupted queries
