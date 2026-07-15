@@ -1,40 +1,67 @@
-# Property Management - Caddy reverse proxy configuration.
-#
-# HOW TO USE:
-# These entries are designed to be added to the existing Caddyfile at:
-#   /home/samuel/Development/Odoo/config/Caddyfile
-#
-# After adding them, reload Caddy:
-#   docker exec odoo-caddy-1 caddy reload --config /etc/caddy/Caddyfile
-#
-# You must also connect Caddy to this project's Docker network:
-#   docker network connect property_management_default odoo-caddy-1
-#
-# Available subdomains (all resolve to 213.199.50.129 via sslip.io):
-#   pm.213-199-50-129.sslip.io        → Next.js web frontend
-#   pmapi.213-199-50-129.sslip.io     → Django REST API
-#   pmadmin.213-199-50-129.sslip.io   → Mobile Admin (Expo dev server)
-#   pmhost.213-199-50-129.sslip.io    → Mobile Host (Expo dev server)
-#   pmkiosk.213-199-50-129.sslip.io   → Mobile Kiosk (Expo dev server)
+# Global security headers
+(headers_common) {
+    header {
+        # Security
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "DENY"
+        X-XSS-Protection "1; mode=block"
+        Referrer-Policy "strict-origin-when-cross-origin"
+        Permissions-Policy "camera=(self), microphone=(), geolocation=(), payment=()"
 
-pm.213-199-50-129.sslip.io {
+        # HSTS (1 year, include subdomains)
+        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+    }
+}
+
+(headers_api) {
+    header {
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "DENY"
+        X-XSS-Protection "1; mode=block"
+        Referrer-Policy "no-referrer"
+        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+        Cache-Control "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0"
+    }
+}
+
+pm.{$DOMAIN:213-199-50-129.sslip.io} {
     encode gzip zstd
+    import headers_common
+
+    # CSP for web frontend
+    header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://pmapi.*; frame-ancestors 'none'; base-uri 'self'"
+
     reverse_proxy web:3000
 }
 
-pmapi.213-199-50-129.sslip.io {
+pmapi.{$DOMAIN:213-199-50-129.sslip.io} {
     encode gzip zstd
+    import headers_api
+
+    # CORS headers for API
+    header Access-Control-Allow-Origin "*"
+    header Access-Control-Allow-Methods "GET, POST, PUT, PATCH, DELETE, OPTIONS"
+    header Access-Control-Allow-Headers "Content-Type, Authorization, X-Requested-With"
+    header Access-Control-Allow-Credentials "true"
+    header Access-Control-Max-Age "86400"
+
     reverse_proxy backend:8001
 }
 
-pmadmin.213-199-50-129.sslip.io {
+pmadmin.{$DOMAIN:213-199-50-129.sslip.io} {
+    import headers_common
+    header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://pmapi.*; frame-ancestors 'none'; base-uri 'self'"
     reverse_proxy mobile_admin:8084
 }
 
-pmhost.213-199-50-129.sslip.io {
+pmhost.{$DOMAIN:213-199-50-129.sslip.io} {
+    import headers_common
+    header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://pmapi.*; frame-ancestors 'none'; base-uri 'self'"
     reverse_proxy mobile_host:8085
 }
 
-pmkiosk.213-199-50-129.sslip.io {
+pmkiosk.{$DOMAIN:213-199-50-129.sslip.io} {
+    import headers_common
+    header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' https://pmapi.*; frame-ancestors 'none'; base-uri 'self'"
     reverse_proxy mobile_kiosk:8086
 }
