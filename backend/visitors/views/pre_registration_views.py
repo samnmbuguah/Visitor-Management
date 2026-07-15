@@ -43,21 +43,19 @@ class PreRegistrationViewSet(viewsets.ModelViewSet):
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         if not serializer.is_valid():
-            print(f"[PRE_REG] Validation failed: {serializer.errors}")
+            logger.warning("Pre-reg validation failed: %s", serializer.errors)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         return super().create(request, *args, **kwargs)
 
     def perform_create(self, serializer):
-        # Create the invite
         pre_reg = serializer.save()
-        print(f"[PRE_REG] Created invite {pre_reg.id} for {pre_reg.visitor_email} by {self.request.user}")
-        
-        # Send email with QR code
+        logger.info("Created invite %s for %s by %s", pre_reg.id, pre_reg.visitor_email, self.request.user)
+
         try:
             NotificationService.send_invite(pre_reg)
-            print(f"[PRE_REG] Sent invite email to {pre_reg.visitor_email}")
+            logger.info("Sent invite email to %s", pre_reg.visitor_email)
         except Exception as e:
-            print(f"[PRE_REG] Failed to send invite email: {e}")
+            logger.error("Failed to send invite email: %s", e)
 
     @action(detail=False, methods=['post'])
     def scan(self, request):
@@ -74,8 +72,9 @@ class PreRegistrationViewSet(viewsets.ModelViewSet):
             return Response({'error': 'Invalid token'}, status=status.HTTP_404_NOT_FOUND)
             
         if pre_reg.status != 'PENDING':
-            return Response({'error': f'Invite is {pre_reg.status.lower()}'}, status=status.HTTP_400_BAD_REQUEST)
-            
+            return Response({'error': 'Invite is ' + pre_reg.status.lower()}, status=status.HTTP_400_BAD_REQUEST)
+
+
         serializer = self.get_serializer(pre_reg)
         return Response(serializer.data)
 
@@ -85,14 +84,13 @@ class PreRegistrationViewSet(viewsets.ModelViewSet):
         Convert a pre-registration into a checked-in visitor.
         """
         pre_reg = self.get_object()
-        
-        logger.info(f"[PRE_REG_CHECKIN] Attempting check-in for invite {pre_reg.id} (status={pre_reg.status}) by {self.request.user}")
-        
+
+        logger.info("Check-in attempt for invite %s (status=%s) by %s", pre_reg.id, pre_reg.status, self.request.user)
+
         if pre_reg.status != 'PENDING':
-            logger.info(f"[PRE_REG_CHECKIN] Failed: invite not pending (status={pre_reg.status})")
-            return Response({'error': f'Invite is {pre_reg.status.lower()}'}, status=status.HTTP_400_BAD_REQUEST)
+            logger.info("Check-in failed: invite %s not pending (status=%s)", pre_reg.id, pre_reg.status)
+            return Response({'error': 'Invite is ' + pre_reg.status.lower()}, status=status.HTTP_400_BAD_REQUEST)
             
-        # Create visitor
         try:
             visitor = Visitor.objects.create(
                 name=pre_reg.visitor_name,
@@ -102,32 +100,30 @@ class PreRegistrationViewSet(viewsets.ModelViewSet):
                 number_plate=pre_reg.visitor_number_plate,
                 host=pre_reg.host,
                 location=pre_reg.location,
-                purpose="Pre-registered Visit", # Or allow overriding
+                purpose="Pre-registered Visit",
                 pre_registration=pre_reg,
                 status='CHECKED_IN'
             )
-            logger.info(f"[PRE_REG_CHECKIN] Created visitor {visitor.id} from invite {pre_reg.id}")
+            logger.info("Created visitor %s from invite %s", visitor.id, pre_reg.id)
         except Exception as e:
-            logger.error(f"[PRE_REG_CHECKIN] Failed to create visitor: {e}")
+            logger.error("Failed to create visitor from invite %s: %s", pre_reg.id, e)
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
-            
-        # Update pre-reg status
+
         pre_reg.status = 'USED'
         pre_reg.save()
-        logger.info(f"[PRE_REG_CHECKIN] Marked invite {pre_reg.id} as USED")
-        
-        # Notify host
+        logger.info("Marked invite %s as USED", pre_reg.id)
+
         try:
             NotificationService.notify_host_of_arrival(visitor)
-            logger.info(f"[PRE_REG_CHECKIN] Notified host of arrival for visitor {visitor.id}")
+            logger.info("Notified host of arrival for visitor %s", visitor.id)
         except Exception as e:
-            logger.error(f"[PRE_REG_CHECKIN] Failed to notify host: {e}")
-        
+            logger.error("Failed to notify host for visitor %s: %s", visitor.id, e)
+
         try:
             NotificationService.send_visitor_confirmation(visitor)
-            logger.info(f"[PRE_REG_CHECKIN] Sent confirmation to visitor {visitor.id}")
+            logger.info("Sent confirmation to visitor %s", visitor.id)
         except Exception as e:
-            logger.error(f"[PRE_REG_CHECKIN] Failed to send visitor confirmation: {e}")
+            logger.error("Failed to send confirmation to visitor %s: %s", visitor.id, e)
 
         return Response(VisitorSerializer(visitor).data, status=status.HTTP_201_CREATED)
 

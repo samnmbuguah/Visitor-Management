@@ -261,7 +261,6 @@ class AssetViewSet(viewsets.ModelViewSet):
         if user.is_superuser:
             return Asset.objects.select_related('location', 'asset_type').all()
         tenant = get_user_tenant(user)
-        print(f"[ASSET QS] Action: {self.action}, User: {user}, Tenant: {tenant}")
         if not tenant:
             return Asset.objects.none()
         return Asset.objects.select_related('location', 'asset_type').filter(tenant=tenant)
@@ -281,7 +280,6 @@ class AssetViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['get'])
     def qr_code(self, request, pk=None):
         """Generate QR code for the asset"""
-        print(f"[ASSET QR] Action: qr_code, User: {request.user}")
         asset = self.get_object()
         
         # Create QR code
