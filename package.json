@@ -1,0 +1,26 @@
+{
+  "name": "property_management",
+  "version": "1.0.0",
+  "description": "A comprehensive visitor and property management system built with Django REST Framework backend, Next.js frontend, and React Native mobile applications.",
+  "main": "test_login.js",
+  "scripts": {
+    "test": "cd backend && python3 manage.py test --verbosity=0 2>&1 | tail -5",
+    "lint": "cd backend && ruff check . && cd ../frontend && npm run lint",
+    "prepare": "husky"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/samnmbuguah/property_management.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/samnmbuguah/property_management/issues"
+  },
+  "homepage": "https://github.com/samnmbuguah/property_management#readme",
+  "devDependencies": {
+    "husky": "^9.1.7",
+    "lint-staged": "^17.0.8"
+  }
+}
