@@ -1,3 +1,4 @@
+import logging
 from rest_framework import viewsets, status, filters
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -9,6 +10,8 @@ from ..serializers import VisitorSerializer, VisitorCreateSerializer, VisitorAct
 from ..services.notifications import NotificationService
 from ..utils import get_user_tenant
 from ..permissions import IsSuperAdmin, IsLocationAdmin, IsHost
+
+logger = logging.getLogger(__name__)
 
 
 class HostViewSet(viewsets.ModelViewSet):
@@ -68,7 +71,7 @@ class VisitorViewSet(viewsets.ModelViewSet):
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     
     def get_permissions(self):
-        print(f"[VISITOR] Action: {self.action}, User: {self.request.user}, Auth: {self.request.user.is_authenticated}")
+        logger.debug("Action: %s, User: %s, Auth: %s", self.action, self.request.user, self.request.user.is_authenticated)
         if self.action in ['create', 'search', 'active', 'checkout']:
             return [AllowAny()]
         return [IsAuthenticated()]
@@ -87,45 +90,44 @@ class VisitorViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         user = self.request.user
         tenant = get_user_tenant(user)
-        print(f"[VISITOR QS] Action: {self.action}, User: {user}, Tenant: {tenant}")
+        logger.debug(f"[VISITOR QS] Action: {self.action}, User: {user}, Tenant: {tenant}")
+        
+        base_qs = Visitor.objects.select_related(
+            'host', 'location', 'visitor_type', 'kiosk', 'pre_registration', 'approved_by'
+        )
         
         if not tenant:
-            # For kiosk actions without a user, we allow seeing all visitors for search
             if self.action in ['search', 'active', 'checkout']:
-                return Visitor.objects.all()
+                return base_qs.all()
             return Visitor.objects.none()
         
-        # Handle different roles
         profile = getattr(user, 'profile', None)
         if profile:
             if profile.role in ['SUPER_ADMIN', 'ADMIN']:
                 if profile.role == 'ADMIN' and profile.location:
-                    return Visitor.objects.filter(location=profile.location)
-                return Visitor.objects.filter(location__tenant=tenant)
+                    return base_qs.filter(location=profile.location)
+                return base_qs.filter(location__tenant=tenant)
             
-            # Kiosks and Receptionists see all visitors for their location or tenant
             if profile.role in ['RECEPTIONIST', 'MANAGER', 'SECURITY']:
                 if profile.location:
-                    return Visitor.objects.filter(location=profile.location)
-                return Visitor.objects.filter(location__tenant=tenant)
+                    return base_qs.filter(location=profile.location)
+                return base_qs.filter(location__tenant=tenant)
         
-        # For hosts, only show their visitors
         host_profile = getattr(user, 'host_profile', None)
         if host_profile:
-            return Visitor.objects.filter(host=host_profile)
+            return base_qs.filter(host=host_profile)
             
         return Visitor.objects.none()
 
     def create(self, request, *args, **kwargs):
-        print(f"[VISITOR] Create data: {request.data}")
+        logger.debug("Create data: %s", request.data)
         serializer = self.get_serializer(data=request.data)
         if not serializer.is_valid():
-            print(f"[VISITOR] Validation failed: {serializer.errors}")
+            logger.warning("Validation failed: %s", serializer.errors)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         return super().create(request, *args, **kwargs)
 
     def perform_create(self, serializer):
-        # Check against Watchlist
         from django.db.models import Q
         from ..models import WatchlistEntry
 
@@ -134,77 +136,61 @@ class VisitorViewSet(viewsets.ModelViewSet):
         phone = serializer.validated_data.get('phone')
         location = serializer.validated_data.get('location')
 
-        # Find matches
-        # matches = WatchlistEntry.objects.filter(is_active=True).filter(
-        
-        # Handle Watchlist Rejection
         reject_reason = None
-        
-        # Determine initial status based on location settings
+
         if location and getattr(location, 'require_visitor_approval', False):
             status_val = 'PENDING'
         else:
             status_val = 'CHECKED_IN'
-        
-        # TODO: Implement watchlist service when available
-        # For now, skip watchlist check
+
         watchlist_hit = None
-        
+
         if watchlist_hit:
             status_val = 'REJECTED'
             reject_reason = watchlist_hit.reason
-            print(f"[CREATE] Visitor {serializer.validated_data.get('email', '')} blocked by watchlist: {reject_reason}")
-        
-        visitor = serializer.save(status=status_val)
-        print(f"[CREATE] Created visitor {visitor.id} with status {visitor.status} by {self.request.user}")
+            logger.warning("Visitor %s blocked by watchlist: %s", serializer.validated_data.get('email', ''), reject_reason)
 
-        # Handle Watchlist Rejection
+        visitor = serializer.save(status=status_val)
+        logger.info("Created visitor %s with status %s by %s", visitor.id, visitor.status, self.request.user)
+
         if status_val == 'REJECTED':
-             # Notify Admin?
-             # For now, just stop.
-             print(f"[CREATE] Visitor {visitor.id} rejected due to watchlist")
+             logger.warning("Visitor %s rejected due to watchlist", visitor.id)
              return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-        # Send notification to host
         try:
             if status_val == 'PENDING':
                 NotificationService.notify_host_approval_required(visitor)
-                print(f"[CREATE] Sent approval required notification for visitor {visitor.id}")
+                logger.info("Sent approval required notification for visitor %s", visitor.id)
             else:
                 NotificationService.notify_host_of_arrival(visitor)
-                print(f"[CREATE] Sent arrival notification for visitor {visitor.id}")
+                logger.info("Sent arrival notification for visitor %s", visitor.id)
         except Exception as e:
-            print(f"[CREATE] Failed to send notification for visitor {visitor.id}: {e}")
-        
+            logger.error("Failed to send notification for visitor %s: %s", visitor.id, e)
+
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     @action(detail=True, methods=['post'])
     def checkout(self, request, pk=None):
         """Check out a visitor."""
         visitor = self.get_object()
-        
-        print(f"[CHECKOUT] Attempting checkout for visitor {visitor.id} (status={visitor.status}) by {request.user}")
-        
+
         if visitor.status == 'CHECKED_OUT':
-            print(f"[CHECKOUT] Failed: visitor already checked out (status={visitor.status})")
             return Response(
                 {'error': 'Visitor already checked out'},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        
+
         visitor.checkout_time = timezone.now()
         visitor.status = 'CHECKED_OUT'
         visitor.save()
-        
-        print(f"[CHECKOUT] Checked out visitor {visitor.id}")
-        
-        # Notify host
+
+        logger.info("Checked out visitor %s by %s", visitor.id, request.user)
+
         try:
             NotificationService.send_checkout_notification(visitor)
-            print(f"[CHECKOUT] Sent checkout notification for visitor {visitor.id}")
         except Exception as e:
-            print(f"[CHECKOUT] Failed to send checkout notification for visitor {visitor.id}: {e}")
-        
+            logger.error("Failed to send checkout notification for visitor %s: %s", visitor.id, e)
+
         return Response(VisitorSerializer(visitor).data)
 
     @action(detail=False, methods=['get'])
@@ -212,45 +198,34 @@ class VisitorViewSet(viewsets.ModelViewSet):
         """Search for a returning visitor by email or phone."""
         query = request.query_params.get('query')
         if not query or len(query) < 3:
-             print(f"[SEARCH] Invalid query: '{query}' (too short or empty)")
              return Response({'error': 'Query parameter must be at least 3 characters'}, status=status.HTTP_400_BAD_REQUEST)
-        
-        print(f"[SEARCH] Searching for visitors with query '{query}' by {request.user}")
-        
+
         from django.db.models import Q
         queryset = self.get_queryset().filter(
             Q(email__icontains=query) | Q(phone__icontains=query) | Q(name__icontains=query)
         )
-        
+
         results = VisitorSerializer(queryset, many=True).data
-        print(f"[SEARCH] Found {len(results)} results for query '{query}'")
-        
+        logger.info("Search for '%s': found %s results", query, len(results))
+
         return Response({'results': results})
 
     @action(detail=True, methods=['post'])
     def approve(self, request, pk=None):
         """Approve a pending visitor."""
         visitor = self.get_object()
-        
-        # Log for debugging
-        print(f"[APPROVE] Attempting to approve visitor {visitor.id} (status={visitor.status}) by user {request.user}")
-        
+
         if visitor.status != 'PENDING':
-            print(f"[APPROVE] Failed: visitor not pending (status={visitor.status})")
             return Response({'error': 'Visitor is not pending approval'}, status=status.HTTP_400_BAD_REQUEST)
-        
-        # Check if user is the host of this visitor or is admin/super admin
+
         user = request.user
         profile = getattr(user, 'profile', None)
-        
+
         if profile:
             if profile.role in ['SUPER_ADMIN', 'ADMIN']:
-                # Admins can approve any visitor at their location
                 if profile.role == 'ADMIN' and visitor.location != profile.location:
                     return Response({'error': 'Cannot approve visitor outside your location'}, status=status.HTTP_403_FORBIDDEN)
-                # Admin can approve regardless of host assignment
             elif profile.role == 'HOST':
-                # Hosts can only approve their own visitors
                 user_host_profile = getattr(user, 'host_profile', None)
                 if not user_host_profile or visitor.host != user_host_profile:
                     return Response({'error': 'Cannot approve visitor assigned to another host'}, status=status.HTTP_403_FORBIDDEN)
@@ -258,43 +233,36 @@ class VisitorViewSet(viewsets.ModelViewSet):
                 return Response({'error': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
         else:
             return Response({'error': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
-            
+
         visitor.status = 'CHECKED_IN'
         visitor.approved_by = request.user
         visitor.approved_at = timezone.now()
         visitor.checkin_time = timezone.now()
         visitor.save()
-        
-        print(f"[APPROVE] Approved visitor {visitor.id}")
-        
-        # Notify host (confirmation) and potentially visitor
+
+        logger.info("Approved visitor %s by %s", visitor.id, request.user)
+
         try:
-            # Only notify if visitor has a host
             if visitor.host:
                 NotificationService.notify_host_of_arrival(visitor)
-                print("[APPROVE] Notified host of arrival")
         except Exception as e:
-            print(f"[APPROVE] Failed to notify host: {e}")
-        
+            logger.error("Failed to notify host for visitor %s: %s", visitor.id, e)
+
         return Response(VisitorSerializer(visitor).data)
 
     @action(detail=True, methods=['post'])
     def reject(self, request, pk=None):
         """Reject a pending visitor."""
         visitor = self.get_object()
-        
-        # Log for debugging
-        print(f"[REJECT] Attempting to reject visitor {visitor.id} (status={visitor.status}) by user {request.user}")
-        
+
         if visitor.status != 'PENDING':
-            print(f"[REJECT] Failed: visitor not pending (status={visitor.status})")
             return Response({'error': 'Visitor is not pending approval'}, status=status.HTTP_400_BAD_REQUEST)
-            
+
         visitor.status = 'REJECTED'
         visitor.save()
-        
-        print(f"[REJECT] Rejected visitor {visitor.id}")
-        
+
+        logger.info("Rejected visitor %s by %s", visitor.id, request.user)
+
         return Response(VisitorSerializer(visitor).data)
 
     @action(detail=False, methods=['get'])

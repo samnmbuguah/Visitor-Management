@@ -7,14 +7,18 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth.models import User
 from ..models import UserProfile
 from ..serializers import UserSerializer, UserProfileSerializer, UserRegistrationSerializer, CustomTokenObtainPairSerializer
+from ..throttles import LoginRateThrottle, RegistrationRateThrottle
 
 class CustomTokenObtainPairView(TokenObtainPairView):
     serializer_class = CustomTokenObtainPairSerializer
+    throttle_classes = [LoginRateThrottle]
+
 class RegisterView(generics.CreateAPIView):
     """View for user registration."""
     queryset = User.objects.all()
     serializer_class = UserRegistrationSerializer
     permission_classes = [AllowAny]
+    throttle_classes = [RegistrationRateThrottle]
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
