@@ -359,4 +359,12 @@ export const deleteCamera = (id: string) => api.delete(`/cameras/${id}/`);
 export const getMyProfile = () => api.get('/auth/me/');
 export const updateMyProfile = (data: any) => api.patch('/auth/me/', data);
 
+// AI & LangGraph Agents
+export const aiChatKiosk = (message: string, sessionId?: string) =>
+  api.post('/ai/kiosk-chat/', { message, session_id: sessionId });
+export const aiChatCopilot = (message: string, sessionId?: string) =>
+  api.post('/ai/copilot-chat/', { message, session_id: sessionId });
+export const aiScanCard = (imageBase64: string) =>
+  api.post('/ai/scan-card/', { image: imageBase64 });
+
 export default api;

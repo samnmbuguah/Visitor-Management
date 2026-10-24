@@ -245,6 +245,24 @@ export class TenantsAPI {
   }
 }
 
+// AI Agents API Service (LangGraph & Vision)
+export class AIAgentAPI {
+  static async chatKiosk(message: string, sessionId?: string) {
+    const response = await api.post('/ai/kiosk-chat/', { message, session_id: sessionId });
+    return response.data;
+  }
+
+  static async chatCopilot(message: string, sessionId?: string) {
+    const response = await api.post('/ai/copilot-chat/', { message, session_id: sessionId });
+    return response.data;
+  }
+
+  static async scanCard(imageBase64: string) {
+    const response = await api.post('/ai/scan-card/', { image: imageBase64 });
+    return response.data;
+  }
+}
+
 // Central API Service export
 export const APIService = {
   auth: AuthAPI,
@@ -256,6 +274,7 @@ export const APIService = {
   notifications: NotificationsAPI,
   analytics: AnalyticsAPI,
   tenants: TenantsAPI,
+  ai: AIAgentAPI,
 };
 
 export default APIService;

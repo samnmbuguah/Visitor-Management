@@ -53,7 +53,11 @@ import {
   Phone as PhoneIcon,
   Business as BusinessIcon,
   Person as PersonIcon,
+  SmartToy as AiIcon,
+  Send as SendIcon,
+  Close as CloseIcon,
 } from '@mui/icons-material';
+import { aiChatCopilot } from '@/lib/api';
 import {
   useVisitors,
   useHosts,
@@ -90,6 +94,41 @@ function ReceptionistPageContent() {
   const [inviteCodeSearch, setInviteCodeSearch] = useState('');
   const [inviteLookupResult, setInviteLookupResult] = useState<any | null>(null);
   const [inviteError, setInviteError] = useState<string | null>(null);
+
+  // AI Security Copilot State
+  const [copilotOpen, setCopilotOpen] = useState(false);
+  const [copilotMessages, setCopilotMessages] = useState<Array<{ sender: 'ai' | 'user'; text: string }>>([
+    {
+      sender: 'ai',
+      text: 'Hello! I am your Front Desk & Security AI Copilot. I can audit overstay visitors, summarize occupancy stats, and query visitor history. How can I help you right now?',
+    },
+  ]);
+  const [copilotInput, setCopilotInput] = useState('');
+  const [copilotLoading, setCopilotLoading] = useState(false);
+
+  const handleSendCopilotMessage = async (textToSend?: string) => {
+    const text = textToSend || copilotInput;
+    if (!text.trim() || copilotLoading) return;
+
+    const userText = text.trim();
+    setCopilotInput('');
+    setCopilotMessages((prev) => [...prev, { sender: 'user', text: userText }]);
+    setCopilotLoading(true);
+
+    try {
+      const res = await aiChatCopilot(userText);
+      if (res.data?.reply) {
+        setCopilotMessages((prev) => [...prev, { sender: 'ai', text: res.data.reply }]);
+      }
+    } catch {
+      setCopilotMessages((prev) => [
+        ...prev,
+        { sender: 'ai', text: 'Error communicating with AI Copilot agent.' },
+      ]);
+    } finally {
+      setCopilotLoading(false);
+    }
+  };
 
   // Queries
   const { data: visitorsData = [], isLoading: visitorsLoading, refetch: refetchVisitors } = useVisitors();
@@ -231,6 +270,15 @@ function ReceptionistPageContent() {
               onClick={() => refetchVisitors()}
             >
               Refresh
+            </Button>
+            <Button
+              variant="outlined"
+              color="primary"
+              startIcon={<AiIcon />}
+              onClick={() => setCopilotOpen(true)}
+              sx={{ fontWeight: 700 }}
+            >
+              AI Copilot
             </Button>
             <Button
               variant="contained"
@@ -761,6 +809,113 @@ function ReceptionistPageContent() {
             <Button variant="contained" startIcon={<PrintIcon />} onClick={() => window.print()}>
               Print Badge
             </Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* Front Desk & Security AI Copilot Dialog */}
+        <Dialog
+          open={copilotOpen}
+          onClose={() => setCopilotOpen(false)}
+          maxWidth="sm"
+          fullWidth
+          slotProps={{ paper: { sx: { borderRadius: 4, height: 600, display: 'flex', flexDirection: 'column' } } }}
+        >
+          <DialogTitle sx={{ fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'space-between', pb: 1 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+              <Avatar sx={{ bgcolor: 'secondary.main', width: 38, height: 38 }}>
+                <AiIcon />
+              </Avatar>
+              <Box>
+                <Typography variant="subtitle1" sx={{ fontWeight: 800, lineHeight: 1.2 }}>
+                  Front Desk & Security Copilot
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  Audits, Overstays & Visitor Analytics Assistant
+                </Typography>
+              </Box>
+            </Box>
+            <IconButton onClick={() => setCopilotOpen(false)} size="small">
+              <CloseIcon />
+            </IconButton>
+          </DialogTitle>
+          <DialogContent dividers sx={{ flex: 1, p: 2, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+            {copilotMessages.map((msg, idx) => (
+              <Box
+                key={idx}
+                sx={{
+                  display: 'flex',
+                  justifyContent: msg.sender === 'user' ? 'flex-end' : 'flex-start',
+                }}
+              >
+                <Paper
+                  sx={{
+                    p: 1.8,
+                    borderRadius: 3,
+                    maxWidth: '85%',
+                    bgcolor: msg.sender === 'user' ? 'primary.main' : 'action.hover',
+                    color: msg.sender === 'user' ? 'primary.contrastText' : 'text.primary',
+                    borderBottomRightRadius: msg.sender === 'user' ? 2 : 12,
+                    borderBottomLeftRadius: msg.sender === 'ai' ? 2 : 12,
+                  }}
+                >
+                  <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>
+                    {msg.text}
+                  </Typography>
+                </Paper>
+              </Box>
+            ))}
+            {copilotLoading && (
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, color: 'text.secondary', p: 1 }}>
+                <CircularProgress size={18} />
+                <Typography variant="caption">Copilot is querying visitor logs and audit records...</Typography>
+              </Box>
+            )}
+          </DialogContent>
+
+          {/* Quick Prompts */}
+          <Box sx={{ px: 2, pt: 1, display: 'flex', gap: 0.8, overflowX: 'auto', flexShrink: 0 }}>
+            {[
+              "Are there any visitors overstaying?",
+              "What are the live visitor counts?",
+              "Summarize today's check-ins",
+            ].map((promptText, i) => (
+              <Chip
+                key={i}
+                label={promptText}
+                size="small"
+                onClick={() => handleSendCopilotMessage(promptText)}
+                sx={{ cursor: 'pointer', fontSize: '0.75rem' }}
+              />
+            ))}
+          </Box>
+
+          <DialogActions sx={{ p: 2, borderTop: '1px solid', borderColor: 'divider' }}>
+            <Box
+              component="form"
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleSendCopilotMessage();
+              }}
+              sx={{ width: '100%', display: 'flex', gap: 1 }}
+            >
+              <TextField
+                fullWidth
+                size="small"
+                placeholder="Ask about overstays, occupancy, or specific visitor logs..."
+                value={copilotInput}
+                onChange={(e) => setCopilotInput(e.target.value)}
+                disabled={copilotLoading}
+              />
+              <Button
+                variant="contained"
+                type="submit"
+                disabled={!copilotInput.trim() || copilotLoading}
+                startIcon={<SendIcon />}
+                sx={{ px: 2.5 }}
+              >
+                Ask
+              </Button>
+            </Box>
           </DialogActions>
         </Dialog>
       </Container>

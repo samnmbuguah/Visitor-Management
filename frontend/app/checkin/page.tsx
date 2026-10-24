@@ -43,6 +43,9 @@ import {
   Refresh as RefreshIcon,
   AssignmentTurnedIn as SignIcon,
   Close as CloseIcon,
+  SmartToy as AiIcon,
+  DocumentScanner as ScanCardIcon,
+  Send as SendIcon,
 } from '@mui/icons-material';
 import {
   createVisitor,
@@ -50,6 +53,8 @@ import {
   getLocations,
   scanPreRegistration,
   searchVisitor,
+  aiChatKiosk,
+  aiScanCard,
   Host,
   Location,
 } from '@/lib/api';
@@ -93,6 +98,78 @@ export default function CheckInPage() {
   // NDA Modal
   const [ndaModalOpen, setNdaModalOpen] = useState(false);
   const sigPad = useRef<SignatureCanvas>(null);
+
+  // AI Concierge State (LangGraph Agent)
+  const [aiModalOpen, setAiModalOpen] = useState(false);
+  const [aiSessionId] = useState(() => 'kiosk_' + Math.random().toString(36).substring(2, 9));
+  const [aiMessages, setAiMessages] = useState<Array<{ sender: 'ai' | 'user'; text: string }>>([
+    {
+      sender: 'ai',
+      text: 'Hello! I am your AI Kiosk Concierge powered by LangGraph. I can check you in, look up your invite, or answer questions about guest Wi-Fi and amenities. How may I assist you today?',
+    },
+  ]);
+  const [aiInput, setAiInput] = useState('');
+  const [aiLoading, setAiLoading] = useState(false);
+
+  // AI ID/Business Card Scanner State (Multimodal Vision)
+  const [scanModalOpen, setScanModalOpen] = useState(false);
+  const [scanLoading, setScanLoading] = useState(false);
+  const [scanSuccessMsg, setScanSuccessMsg] = useState('');
+  const cardCamRef = useRef<Webcam>(null);
+
+  const handleSendAiMessage = async (textToSend?: string) => {
+    const msg = textToSend || aiInput;
+    if (!msg.trim() || aiLoading) return;
+
+    const userText = msg.trim();
+    setAiInput('');
+    setAiMessages((prev) => [...prev, { sender: 'user', text: userText }]);
+    setAiLoading(true);
+
+    try {
+      const res = await aiChatKiosk(userText, aiSessionId);
+      if (res.data?.reply) {
+        setAiMessages((prev) => [...prev, { sender: 'ai', text: res.data.reply }]);
+      }
+    } catch {
+      setAiMessages((prev) => [
+        ...prev,
+        { sender: 'ai', text: 'I encountered an error connecting to the concierge agent. Please speak with reception.' },
+      ]);
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  const handleCaptureCardScan = async () => {
+    const imageSrc = cardCamRef.current?.getScreenshot();
+    if (!imageSrc) return;
+
+    setScanLoading(true);
+    setScanSuccessMsg('');
+    try {
+      const res = await aiScanCard(imageSrc);
+      const data = res.data?.data;
+      if (data) {
+        setFormData((prev) => ({
+          ...prev,
+          name: data.name || prev.name,
+          email: data.email || prev.email,
+          phone: data.phone || prev.phone,
+          company: data.company || prev.company,
+        }));
+        setScanSuccessMsg(`Extracted details for ${data.name || 'visitor'}! Form has been auto-filled.`);
+        setTimeout(() => {
+          setScanModalOpen(false);
+          setScanSuccessMsg('');
+        }, 1800);
+      }
+    } catch {
+      alert('Could not extract details from this image. Please try again or type manually.');
+    } finally {
+      setScanLoading(false);
+    }
+  };
 
   useEffect(() => {
     loadData();
@@ -233,28 +310,59 @@ export default function CheckInPage() {
 
         {/* Quick Start Buttons */}
         <Grid container spacing={2} sx={{ mb: 3 }}>
-          <Grid size={{xs: 12, sm: 6}}>
+          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
             <Button
               fullWidth
               variant="outlined"
               size="large"
               startIcon={<QrCodeIcon />}
               onClick={() => setInviteModalOpen(true)}
-              sx={{ py: 1.8, borderRadius: 3, fontWeight: 700 }}
+              sx={{ py: 1.6, borderRadius: 3, fontWeight: 700 }}
             >
-              Have a QR Pass / Invite Code?
+              QR Pass / Invite
             </Button>
           </Grid>
-          <Grid size={{xs: 12, sm: 6}}>
+          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
             <Button
               fullWidth
               variant="outlined"
               size="large"
               startIcon={<SearchIcon />}
               onClick={() => setReturningModalOpen(true)}
-              sx={{ py: 1.8, borderRadius: 3, fontWeight: 700 }}
+              sx={{ py: 1.6, borderRadius: 3, fontWeight: 700 }}
             >
-              Returning Visitor Lookup
+              Returning Lookup
+            </Button>
+          </Grid>
+          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+            <Button
+              fullWidth
+              variant="contained"
+              size="large"
+              startIcon={<AiIcon />}
+              onClick={() => setAiModalOpen(true)}
+              sx={{
+                py: 1.6,
+                borderRadius: 3,
+                fontWeight: 700,
+                background: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)',
+                boxShadow: '0 4px 14px rgba(79, 70, 229, 0.4)',
+              }}
+            >
+              AI Concierge (Chat)
+            </Button>
+          </Grid>
+          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+            <Button
+              fullWidth
+              variant="outlined"
+              size="large"
+              color="secondary"
+              startIcon={<ScanCardIcon />}
+              onClick={() => setScanModalOpen(true)}
+              sx={{ py: 1.6, borderRadius: 3, fontWeight: 700 }}
+            >
+              Scan ID / Card
             </Button>
           </Grid>
         </Grid>
@@ -571,6 +679,153 @@ export default function CheckInPage() {
               }}
             >
               Sign & Proceed
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* AI Kiosk Concierge Dialog (LangGraph Agent) */}
+        <Dialog
+          open={aiModalOpen}
+          onClose={() => setAiModalOpen(false)}
+          maxWidth="sm"
+          fullWidth
+          slotProps={{ paper: { sx: { borderRadius: 4, height: 600, display: 'flex', flexDirection: 'column' } } }}
+        >
+          <DialogTitle sx={{ fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'space-between', pb: 1 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+              <Avatar sx={{ bgcolor: 'primary.main', width: 38, height: 38 }}>
+                <AiIcon />
+              </Avatar>
+              <Box>
+                <Typography variant="subtitle1" sx={{ fontWeight: 800, lineHeight: 1.2 }}>
+                  AI Kiosk Concierge
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  Powered by LangGraph Agent & OpenRouter
+                </Typography>
+              </Box>
+            </Box>
+            <IconButton onClick={() => setAiModalOpen(false)} size="small">
+              <CloseIcon />
+            </IconButton>
+          </DialogTitle>
+          <DialogContent dividers sx={{ flex: 1, p: 2, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+            {aiMessages.map((msg, idx) => (
+              <Box
+                key={idx}
+                sx={{
+                  display: 'flex',
+                  justifyContent: msg.sender === 'user' ? 'flex-end' : 'flex-start',
+                }}
+              >
+                <Paper
+                  sx={{
+                    p: 1.8,
+                    borderRadius: 3,
+                    maxWidth: '82%',
+                    bgcolor: msg.sender === 'user' ? 'primary.main' : 'action.hover',
+                    color: msg.sender === 'user' ? 'primary.contrastText' : 'text.primary',
+                    borderBottomRightRadius: msg.sender === 'user' ? 2 : 12,
+                    borderBottomLeftRadius: msg.sender === 'ai' ? 2 : 12,
+                  }}
+                >
+                  <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>
+                    {msg.text}
+                  </Typography>
+                </Paper>
+              </Box>
+            ))}
+            {aiLoading && (
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, color: 'text.secondary', p: 1 }}>
+                <CircularProgress size={18} />
+                <Typography variant="caption">AI Concierge is thinking and checking tools...</Typography>
+              </Box>
+            )}
+          </DialogContent>
+
+          {/* Quick Prompts */}
+          <Box sx={{ px: 2, pt: 1, display: 'flex', gap: 0.8, overflowX: 'auto', flexShrink: 0 }}>
+            {[
+              "What's the guest Wi-Fi password?",
+              "Where are the restrooms?",
+              "I have a meeting with an employee",
+            ].map((promptText, i) => (
+              <Chip
+                key={i}
+                label={promptText}
+                size="small"
+                onClick={() => handleSendAiMessage(promptText)}
+                sx={{ cursor: 'pointer', fontSize: '0.75rem' }}
+              />
+            ))}
+          </Box>
+
+          <DialogActions sx={{ p: 2, borderTop: '1px solid', borderColor: 'divider' }}>
+            <Box
+              component="form"
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleSendAiMessage();
+              }}
+              sx={{ width: '100%', display: 'flex', gap: 1 }}
+            >
+              <TextField
+                fullWidth
+                size="small"
+                placeholder="Ask Wi-Fi, direction, or state who you are visiting..."
+                value={aiInput}
+                onChange={(e) => setAiInput(e.target.value)}
+                disabled={aiLoading}
+              />
+              <Button
+                variant="contained"
+                type="submit"
+                disabled={!aiInput.trim() || aiLoading}
+                startIcon={<SendIcon />}
+                sx={{ px: 2.5 }}
+              >
+                Send
+              </Button>
+            </Box>
+          </DialogActions>
+        </Dialog>
+
+        {/* AI ID / Business Card Scanner Modal (Multimodal Vision) */}
+        <Dialog open={scanModalOpen} onClose={() => setScanModalOpen(false)} maxWidth="sm" fullWidth>
+          <DialogTitle sx={{ fontWeight: 800 }}>Scan ID or Business Card (AI Vision)</DialogTitle>
+          <DialogContent dividers sx={{ textAlign: 'center' }}>
+            {scanSuccessMsg ? (
+              <Alert severity="success" sx={{ mb: 2 }}>
+                {scanSuccessMsg}
+              </Alert>
+            ) : (
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                Hold your driver's license, government ID, or business card up to the camera. Our vision AI will extract your details and autofill the form.
+              </Typography>
+            )}
+
+            <Box sx={{ borderRadius: 2, overflow: 'hidden', bgcolor: '#000', mb: 2 }}>
+              <Webcam
+                audio={false}
+                ref={cardCamRef}
+                screenshotFormat="image/jpeg"
+                style={{ width: '100%', maxHeight: 300, objectFit: 'cover' }}
+                videoConstraints={{ facingMode: 'user' }}
+              />
+            </Box>
+          </DialogContent>
+          <DialogActions sx={{ p: 2, justifyContent: 'space-between' }}>
+            <Button onClick={() => setScanModalOpen(false)} disabled={scanLoading}>
+              Cancel
+            </Button>
+            <Button
+              variant="contained"
+              color="secondary"
+              startIcon={scanLoading ? <CircularProgress size={18} color="inherit" /> : <ScanCardIcon />}
+              onClick={handleCaptureCardScan}
+              disabled={scanLoading}
+            >
+              {scanLoading ? 'Parsing with AI Vision...' : 'Extract & Auto-Fill'}
             </Button>
           </DialogActions>
         </Dialog>
