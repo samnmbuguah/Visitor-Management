@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "mobile-host",
+    "name": "Visitor Host",
     "slug": "mobile-host",
     "scheme": "visitormanagement-host",
     "version": "1.0.0",
@@ -16,15 +16,22 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.visitormanagement.host"
     },
     "android": {
+      "package": "com.visitormanagement.host",
+      "versionCode": 1,
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
+      "permissions": [
+        "INTERNET",
+        "NOTIFICATIONS"
+      ],
       "predictiveBackGestureEnabled": false
     },
     "web": {

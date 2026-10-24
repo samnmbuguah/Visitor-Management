@@ -57,3 +57,8 @@ backend/db.sqlite3
 Vizmo Visitors.pdf
 .antigravityignore
 backend/logs/*.log
+build-artifacts/
+*.aab
+*.keystore
+*.jks
+
