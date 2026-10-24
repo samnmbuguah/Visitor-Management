@@ -48,6 +48,11 @@ from .views import (
     StripeWebhookView,
     TenantViewSet,
 )
+from .views.ai_views import (
+    KioskAgentChatView,
+    FrontDeskCopilotChatView,
+    CardExtractionView,
+)
 
 router = DefaultRouter()
 router.register(r'visitors', VisitorViewSet)
@@ -111,4 +116,9 @@ urlpatterns = [
     path('billing/invoices/', InvoicesView.as_view(), name='invoices'),
     path('billing/usage/', UsageMetricsView.as_view(), name='usage_metrics'),
     path('billing/webhook/stripe/', StripeWebhookView.as_view(), name='stripe_webhook'),
+
+    # AI & LangGraph Agent endpoints
+    path('ai/kiosk-chat/', KioskAgentChatView.as_view(), name='ai_kiosk_chat'),
+    path('ai/copilot-chat/', FrontDeskCopilotChatView.as_view(), name='ai_copilot_chat'),
+    path('ai/scan-card/', CardExtractionView.as_view(), name='ai_scan_card'),
 ]

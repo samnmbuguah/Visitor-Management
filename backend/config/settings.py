@@ -299,3 +299,12 @@ LOGGING = {
         },
     },
 }
+
+# AI, LLM & LangGraph Settings
+NVIDIA_API_KEY = env('NVIDIA_API_KEY', default='')
+OPENROUTER_API_KEY = env('OPENROUTER_API_KEY', default='')
+AI_MODEL_PROVIDER = env('AI_MODEL_PROVIDER', default='openrouter')
+AI_DEFAULT_MODEL = env('AI_DEFAULT_MODEL', default='google/gemini-2.0-flash-001')
+NVIDIA_DEFAULT_MODEL = env('NVIDIA_DEFAULT_MODEL', default='meta/llama-3.3-70b-instruct')
+NVIDIA_VISION_MODEL = env('NVIDIA_VISION_MODEL', default='meta/llama-3.2-11b-vision-instruct')
+
