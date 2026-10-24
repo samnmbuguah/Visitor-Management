@@ -261,6 +261,16 @@ export class AIAgentAPI {
     const response = await api.post('/ai/scan-card/', { image: imageBase64 });
     return response.data;
   }
+
+  static async faceVerify(imageBase64: string) {
+    const response = await api.post('/ai/face-verify/', { image: imageBase64 });
+    return response.data;
+  }
+
+  static async getVisitorBriefing(visitorId: number) {
+    const response = await api.post('/ai/visitor-briefing/', { visitor_id: visitorId });
+    return response.data;
+  }
 }
 
 // Central API Service export

@@ -226,6 +226,8 @@ export interface Visitor {
     expected_duration?: number;
     nda_accepted?: boolean;
     signature?: string;
+    ai_briefing?: string;
+    face_embedding?: string;
 }
 
 export interface VisitorCreate {
@@ -366,5 +368,9 @@ export const aiChatCopilot = (message: string, sessionId?: string) =>
   api.post('/ai/copilot-chat/', { message, session_id: sessionId });
 export const aiScanCard = (imageBase64: string) =>
   api.post('/ai/scan-card/', { image: imageBase64 });
+export const aiFaceVerify = (imageBase64: string) =>
+  api.post('/ai/face-verify/', { image: imageBase64 });
+export const aiVisitorBriefing = (visitorId: number) =>
+  api.post('/ai/visitor-briefing/', { visitor_id: visitorId });
 
 export default api;

@@ -54,6 +54,7 @@ import {
   Send as SendIcon,
   QrCode as QrCodeIcon,
   Close as CloseIcon,
+  AutoAwesome as AutoAwesomeIcon,
 } from '@mui/icons-material';
 import { HostPage as HostPageWrapper } from '@/components/ProtectedPage';
 
@@ -305,6 +306,19 @@ function HostPageContent() {
                     </Box>
                     <Chip label="Awaiting Approval" color="warning" size="small" />
                   </Box>
+
+                  {/* AI Visitor Intelligence Briefing */}
+                  {visitor.ai_briefing && (
+                    <Box sx={{ mt: 1.5, p: 1.5, bgcolor: 'action.hover', borderRadius: 2, borderLeft: '3px solid', borderColor: 'primary.main' }}>
+                      <Typography variant="caption" sx={{ fontWeight: 800, color: 'primary.main', display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                        <AutoAwesomeIcon sx={{ fontSize: 15 }} /> AI Executive Visitor Briefing:
+                      </Typography>
+                      <Typography variant="body2" sx={{ fontSize: '0.85rem', color: 'text.secondary', mt: 0.5, lineHeight: 1.4 }}>
+                        {visitor.ai_briefing}
+                      </Typography>
+                    </Box>
+                  )}
+
                   <Stack direction="row" spacing={1} sx={{ mt: 2 }}>
                     <Button
                       fullWidth
@@ -369,6 +383,11 @@ function HostPageContent() {
                       <Typography variant="caption" color="text.secondary">
                         {v.email} • {v.phone}
                       </Typography>
+                      {v.ai_briefing && (
+                        <Typography variant="caption" sx={{ display: 'block', color: 'primary.main', fontSize: '0.72rem', fontStyle: 'italic', mt: 0.3 }}>
+                          AI Brief: {v.ai_briefing}
+                        </Typography>
+                      )}
                     </TableCell>
                     <TableCell>{v.company || '—'}</TableCell>
                     <TableCell>

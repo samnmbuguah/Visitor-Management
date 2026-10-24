@@ -46,6 +46,11 @@ import {
   SmartToy as AiIcon,
   DocumentScanner as ScanCardIcon,
   Send as SendIcon,
+  Mic as MicIcon,
+  MicOff as MicOffIcon,
+  VolumeUp as VolumeUpIcon,
+  VolumeOff as VolumeOffIcon,
+  Face as FaceIcon,
 } from '@mui/icons-material';
 import {
   createVisitor,
@@ -55,6 +60,7 @@ import {
   searchVisitor,
   aiChatKiosk,
   aiScanCard,
+  aiFaceVerify,
   Host,
   Location,
 } from '@/lib/api';
@@ -105,17 +111,78 @@ export default function CheckInPage() {
   const [aiMessages, setAiMessages] = useState<Array<{ sender: 'ai' | 'user'; text: string }>>([
     {
       sender: 'ai',
-      text: 'Hello! I am your AI Kiosk Concierge powered by LangGraph. I can check you in, look up your invite, or answer questions about guest Wi-Fi and amenities. How may I assist you today?',
+      text: 'Hello! I am your AI Kiosk Concierge powered by LangGraph. You can speak or type to check in, look up an invite, or ask about guest Wi-Fi and amenities. How may I assist you today?',
     },
   ]);
   const [aiInput, setAiInput] = useState('');
   const [aiLoading, setAiLoading] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const [speechEnabled, setSpeechEnabled] = useState(true);
+  const recognitionRef = useRef<any>(null);
+
+  // AI Facial Verification State
+  const [faceModalOpen, setFaceModalOpen] = useState(false);
+  const [faceLoading, setFaceLoading] = useState(false);
+  const [faceMatchMsg, setFaceMatchMsg] = useState('');
+  const faceCamRef = useRef<Webcam>(null);
 
   // AI ID/Business Card Scanner State (Multimodal Vision)
   const [scanModalOpen, setScanModalOpen] = useState(false);
   const [scanLoading, setScanLoading] = useState(false);
   const [scanSuccessMsg, setScanSuccessMsg] = useState('');
   const cardCamRef = useRef<Webcam>(null);
+
+  const speakText = (text: string) => {
+    if (!speechEnabled || typeof window === 'undefined' || !('speechSynthesis' in window)) return;
+    try {
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.rate = 1.0;
+      utterance.pitch = 1.0;
+      window.speechSynthesis.speak(utterance);
+    } catch {
+      // Audio not permitted without user interaction
+    }
+  };
+
+  const toggleSpeechRecognition = () => {
+    if (typeof window === 'undefined') return;
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert('Speech recognition is not supported in this browser. Please use Chrome or Edge.');
+      return;
+    }
+
+    if (isListening) {
+      recognitionRef.current?.stop();
+      setIsListening(false);
+      return;
+    }
+
+    try {
+      const recognition = new SpeechRecognition();
+      recognition.lang = 'en-US';
+      recognition.interimResults = false;
+      recognition.maxAlternatives = 1;
+
+      recognition.onstart = () => setIsListening(true);
+      recognition.onend = () => setIsListening(false);
+      recognition.onerror = () => setIsListening(false);
+      recognition.onresult = (event: any) => {
+        const transcript = event.results?.[0]?.[0]?.transcript;
+        if (transcript) {
+          setAiInput(transcript);
+          handleSendAiMessage(transcript);
+        }
+      };
+
+      recognitionRef.current = recognition;
+      recognition.start();
+    } catch (err) {
+      console.error('Speech recognition error:', err);
+      setIsListening(false);
+    }
+  };
 
   const handleSendAiMessage = async (textToSend?: string) => {
     const msg = textToSend || aiInput;
@@ -130,6 +197,7 @@ export default function CheckInPage() {
       const res = await aiChatKiosk(userText, aiSessionId);
       if (res.data?.reply) {
         setAiMessages((prev) => [...prev, { sender: 'ai', text: res.data.reply }]);
+        speakText(res.data.reply);
       }
     } catch {
       setAiMessages((prev) => [
@@ -138,6 +206,40 @@ export default function CheckInPage() {
       ]);
     } finally {
       setAiLoading(false);
+    }
+  };
+
+  const handleCaptureFaceVerification = async () => {
+    const imageSrc = faceCamRef.current?.getScreenshot();
+    if (!imageSrc) return;
+
+    setFaceLoading(true);
+    setFaceMatchMsg('');
+    try {
+      const res = await aiFaceVerify(imageSrc);
+      if (res.data?.matched && res.data?.visitor) {
+        const v = res.data.visitor;
+        setFormData((prev) => ({
+          ...prev,
+          name: v.name || prev.name,
+          email: v.email || prev.email,
+          phone: v.phone || prev.phone,
+          company: v.company || prev.company,
+          host: v.host_id || prev.host,
+          location: v.location_id || prev.location,
+        }));
+        setFaceMatchMsg(`Verified: Welcome back, ${v.name}! Match confidence: ${(res.data.confidence * 100).toFixed(0)}%.`);
+        setTimeout(() => {
+          setFaceModalOpen(false);
+          setFaceMatchMsg('');
+        }, 1500);
+      } else {
+        alert(res.data?.message || 'No facial match found. Please proceed with standard check-in.');
+      }
+    } catch {
+      alert('Facial verification service temporarily unavailable.');
+    } finally {
+      setFaceLoading(false);
     }
   };
 
@@ -310,7 +412,7 @@ export default function CheckInPage() {
 
         {/* Quick Start Buttons */}
         <Grid container spacing={2} sx={{ mb: 3 }}>
-          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+          <Grid size={{ xs: 12, sm: 6, md: 2.4 }}>
             <Button
               fullWidth
               variant="outlined"
@@ -322,7 +424,7 @@ export default function CheckInPage() {
               QR Pass / Invite
             </Button>
           </Grid>
-          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+          <Grid size={{ xs: 12, sm: 6, md: 2.4 }}>
             <Button
               fullWidth
               variant="outlined"
@@ -334,7 +436,25 @@ export default function CheckInPage() {
               Returning Lookup
             </Button>
           </Grid>
-          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+          <Grid size={{ xs: 12, sm: 6, md: 2.4 }}>
+            <Button
+              fullWidth
+              variant="contained"
+              size="large"
+              startIcon={<FaceIcon />}
+              onClick={() => setFaceModalOpen(true)}
+              sx={{
+                py: 1.6,
+                borderRadius: 3,
+                fontWeight: 700,
+                background: 'linear-gradient(135deg, #059669 0%, #10b981 100%)',
+                boxShadow: '0 4px 14px rgba(16, 185, 129, 0.4)',
+              }}
+            >
+              Face Check-In
+            </Button>
+          </Grid>
+          <Grid size={{ xs: 12, sm: 6, md: 2.4 }}>
             <Button
               fullWidth
               variant="contained"
@@ -349,10 +469,10 @@ export default function CheckInPage() {
                 boxShadow: '0 4px 14px rgba(79, 70, 229, 0.4)',
               }}
             >
-              AI Concierge (Chat)
+              AI Concierge (Voice)
             </Button>
           </Grid>
-          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+          <Grid size={{ xs: 12, sm: 6, md: 2.4 }}>
             <Button
               fullWidth
               variant="outlined"
@@ -698,16 +818,25 @@ export default function CheckInPage() {
               </Avatar>
               <Box>
                 <Typography variant="subtitle1" sx={{ fontWeight: 800, lineHeight: 1.2 }}>
-                  AI Kiosk Concierge
+                  AI Voice & Chat Concierge
                 </Typography>
                 <Typography variant="caption" color="text.secondary">
-                  Powered by LangGraph Agent & OpenRouter
+                  LangGraph Agent with Voice Recognition
                 </Typography>
               </Box>
             </Box>
-            <IconButton onClick={() => setAiModalOpen(false)} size="small">
-              <CloseIcon />
-            </IconButton>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+              <IconButton
+                onClick={() => setSpeechEnabled(!speechEnabled)}
+                size="small"
+                title={speechEnabled ? "Mute Voice Responses" : "Enable Voice Responses"}
+              >
+                {speechEnabled ? <VolumeUpIcon fontSize="small" color="primary" /> : <VolumeOffIcon fontSize="small" color="action" />}
+              </IconButton>
+              <IconButton onClick={() => setAiModalOpen(false)} size="small">
+                <CloseIcon />
+              </IconButton>
+            </Box>
           </DialogTitle>
           <DialogContent dividers sx={{ flex: 1, p: 2, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 1.5 }}>
             {aiMessages.map((msg, idx) => (
@@ -772,11 +901,22 @@ export default function CheckInPage() {
               <TextField
                 fullWidth
                 size="small"
-                placeholder="Ask Wi-Fi, direction, or state who you are visiting..."
+                placeholder={isListening ? "Listening... Speak now..." : "Ask Wi-Fi, directions, or state who you are visiting..."}
                 value={aiInput}
                 onChange={(e) => setAiInput(e.target.value)}
                 disabled={aiLoading}
               />
+              <IconButton
+                onClick={toggleSpeechRecognition}
+                color={isListening ? "error" : "primary"}
+                sx={{
+                  bgcolor: isListening ? 'error.light' : 'action.hover',
+                  animation: isListening ? 'pulse 1.5s infinite' : 'none',
+                }}
+                title={isListening ? "Stop Listening" : "Speak to Concierge"}
+              >
+                {isListening ? <MicOffIcon /> : <MicIcon />}
+              </IconButton>
               <Button
                 variant="contained"
                 type="submit"
@@ -826,6 +966,46 @@ export default function CheckInPage() {
               disabled={scanLoading}
             >
               {scanLoading ? 'Parsing with AI Vision...' : 'Extract & Auto-Fill'}
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* Biometric Face Verification Check-In Modal */}
+        <Dialog open={faceModalOpen} onClose={() => setFaceModalOpen(false)} maxWidth="sm" fullWidth>
+          <DialogTitle sx={{ fontWeight: 800 }}>1-Second Biometric Face Check-In</DialogTitle>
+          <DialogContent dividers sx={{ textAlign: 'center' }}>
+            {faceMatchMsg ? (
+              <Alert severity="success" sx={{ mb: 2 }}>
+                {faceMatchMsg}
+              </Alert>
+            ) : (
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                Look directly into the camera. Our biometric engine will recognize your face and instantly load your visitor profile.
+              </Typography>
+            )}
+
+            <Box sx={{ borderRadius: 2, overflow: 'hidden', bgcolor: '#000', mb: 2 }}>
+              <Webcam
+                audio={false}
+                ref={faceCamRef}
+                screenshotFormat="image/jpeg"
+                style={{ width: '100%', maxHeight: 300, objectFit: 'cover' }}
+                videoConstraints={{ facingMode: 'user' }}
+              />
+            </Box>
+          </DialogContent>
+          <DialogActions sx={{ p: 2, justifyContent: 'space-between' }}>
+            <Button onClick={() => setFaceModalOpen(false)} disabled={faceLoading}>
+              Cancel
+            </Button>
+            <Button
+              variant="contained"
+              color="success"
+              startIcon={faceLoading ? <CircularProgress size={18} color="inherit" /> : <FaceIcon />}
+              onClick={handleCaptureFaceVerification}
+              disabled={faceLoading}
+            >
+              {faceLoading ? 'Verifying Biometrics...' : 'Verify & Fast Check-In'}
             </Button>
           </DialogActions>
         </Dialog>
