@@ -52,6 +52,8 @@ from .views.ai_views import (
     KioskAgentChatView,
     FrontDeskCopilotChatView,
     CardExtractionView,
+    FaceVerificationView,
+    VisitorBriefingView,
 )
 
 router = DefaultRouter()
@@ -121,4 +123,6 @@ urlpatterns = [
     path('ai/kiosk-chat/', KioskAgentChatView.as_view(), name='ai_kiosk_chat'),
     path('ai/copilot-chat/', FrontDeskCopilotChatView.as_view(), name='ai_copilot_chat'),
     path('ai/scan-card/', CardExtractionView.as_view(), name='ai_scan_card'),
+    path('ai/face-verify/', FaceVerificationView.as_view(), name='ai_face_verify'),
+    path('ai/visitor-briefing/', VisitorBriefingView.as_view(), name='ai_visitor_briefing'),
 ]

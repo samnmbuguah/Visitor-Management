@@ -5,9 +5,12 @@ from rest_framework import status
 import uuid
 import logging
 
+from visitors.models import Visitor
 from visitors.ai.kiosk_agent import run_kiosk_agent
 from visitors.ai.copilot_agent import run_copilot_agent
 from visitors.ai.vision_agent import extract_visitor_card_info
+from visitors.ai.briefing_agent import generate_host_briefing
+from visitors.ai.face_verification import identify_visitor_by_face
 
 logger = logging.getLogger(__name__)
 
@@ -71,3 +74,53 @@ class CardExtractionView(APIView):
 
         result = extract_visitor_card_info(image_data)
         return Response(result, status=status.HTTP_200_OK if result.get('success') else status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class FaceVerificationView(APIView):
+    """
+    Biometric face recognition check-in for returning visitors.
+    """
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        image_data = request.data.get('image', '').strip()
+
+        if not image_data:
+            return Response(
+                {"error": "Live face image data is required."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        result = identify_visitor_by_face(image_data)
+        return Response(result, status=status.HTTP_200_OK)
+
+
+class VisitorBriefingView(APIView):
+    """
+    Generates or retrieves the AI executive briefing for an arriving visitor.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        visitor_id = request.data.get('visitor_id')
+        if not visitor_id:
+            return Response(
+                {"error": "visitor_id is required."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            visitor = Visitor.objects.get(id=visitor_id)
+            briefing = visitor.ai_briefing
+            if not briefing:
+                briefing = generate_host_briefing(visitor)
+
+            return Response(
+                {"visitor_id": visitor.id, "briefing": briefing},
+                status=status.HTTP_200_OK
+            )
+        except Visitor.DoesNotExist:
+            return Response(
+                {"error": "Visitor not found."},
+                status=status.HTTP_404_NOT_FOUND
+            )

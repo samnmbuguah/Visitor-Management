@@ -177,6 +177,10 @@ class Visitor(models.Model):
     approved_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='approved_visitors')
     approved_at = models.DateTimeField(null=True, blank=True)
 
+    # AI Agents & Biometrics
+    ai_briefing = models.TextField(blank=True, default="", help_text="AI-generated executive briefing for the host")
+    face_embedding = models.TextField(blank=True, default="", help_text="Biometric face encoding descriptor")
+
 
     def __str__(self):
         return f"{self.name} - {self.checkin_time.date()}"

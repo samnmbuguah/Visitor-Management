@@ -139,7 +139,7 @@ class VisitorSerializer(serializers.ModelSerializer):
         model = Visitor
         fields = ['id', 'name', 'email', 'phone', 'company', 'number_plate', 'host', 'host_name',
                   'visitor_type', 'visitor_type_name', 'purpose', 'photo', 'location', 'location_name', 'kiosk', 'kiosk_name',
-                  'checkin_time', 'checkout_time', 'expected_duration', 'status', 'badge_number']
+                  'checkin_time', 'checkout_time', 'expected_duration', 'status', 'badge_number', 'ai_briefing', 'face_embedding']
         read_only_fields = ['id', 'checkin_time', 'status', 'badge_number']
 
 
@@ -153,7 +153,7 @@ class VisitorCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Visitor
         fields = ['id', 'name', 'email', 'phone', 'company', 'number_plate', 'host', 'host_name', 'visitor_type', 'visitor_type_name', 'purpose', 'expected_duration', 'photo',
-                  'location', 'location_name', 'kiosk', 'status', 'nda_accepted', 'signature', 'token']
+                  'location', 'location_name', 'kiosk', 'status', 'nda_accepted', 'signature', 'token', 'ai_briefing', 'face_embedding']
         read_only_fields = ['id']
         extra_kwargs = {
             'name': {'required': False},

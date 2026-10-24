@@ -153,6 +153,13 @@ class VisitorViewSet(viewsets.ModelViewSet):
         visitor = serializer.save(status=status_val)
         logger.info("Created visitor %s with status %s by %s", visitor.id, visitor.status, self.request.user)
 
+        # Generate AI executive briefing for host
+        try:
+            from ..ai.briefing_agent import generate_host_briefing
+            generate_host_briefing(visitor)
+        except Exception as err:
+            logger.warning("Could not generate AI briefing for visitor %s: %s", visitor.id, err)
+
         if status_val == 'REJECTED':
              logger.warning("Visitor %s rejected due to watchlist", visitor.id)
              return Response(serializer.data, status=status.HTTP_201_CREATED)
