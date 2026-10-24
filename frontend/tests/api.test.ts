@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { AuthAPI, PropertyManagementAPI, VisitorsAPI } from "@/services/api";
+import { AuthAPI, VisitorsAPI, InvitesAPI, LocationsAPI, HostsAPI } from "@/services/api";
 
 vi.mock("@/lib/api", () => {
   const mockPost = vi.fn();
@@ -55,44 +55,82 @@ describe("AuthAPI", () => {
   });
 });
 
-describe("PropertyManagementAPI", () => {
+describe("VisitorsAPI", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it("getMaintenanceRequests calls with params", async () => {
-    mockGet.mockResolvedValue({ data: { results: [] } });
-    await PropertyManagementAPI.getMaintenanceRequests({ status: "OPEN" });
-    expect(mockGet).toHaveBeenCalledWith("/property-management/requests/", { params: { status: "OPEN" } });
-  });
-
-  it("getAssets returns results or data", async () => {
-    mockGet.mockResolvedValue({ data: { results: [{ id: 1 }] } });
-    const result = await PropertyManagementAPI.getAssets();
-    expect(result).toEqual([{ id: 1 }]);
-  });
-
-  it("getLeases returns results", async () => {
-    mockGet.mockResolvedValue({ data: { results: [{ id: 1, unit_number: "A1" }] } });
-    const result = await PropertyManagementAPI.getLeases();
+  it("getVisitors calls /visitors/", async () => {
+    mockGet.mockResolvedValue({ data: { results: [{ id: 1, name: "Alice" }] } });
+    const result = await VisitorsAPI.getVisitors();
+    expect(mockGet).toHaveBeenCalledWith("/visitors/", { params: undefined });
     expect(result).toHaveLength(1);
+  });
+
+  it("createVisitor posts to /visitors/", async () => {
+    mockPost.mockResolvedValue({ data: { id: 1, name: "Bob" } });
+    const result = await VisitorsAPI.createVisitor({ name: "Bob" });
+    expect(mockPost).toHaveBeenCalledWith("/visitors/", { name: "Bob" });
+    expect(result.name).toBe("Bob");
+  });
+
+  it("checkInVisitor posts to /visitors/1/checkin/", async () => {
+    mockPost.mockResolvedValue({ data: { status: "CHECKED_IN" } });
+    const result = await VisitorsAPI.checkInVisitor(1);
+    expect(mockPost).toHaveBeenCalledWith("/visitors/1/checkin/");
+    expect(result.status).toBe("CHECKED_IN");
+  });
+
+  it("approveVisitor posts to /visitors/1/approve/", async () => {
+    mockPost.mockResolvedValue({ data: { status: "CHECKED_IN" } });
+    const result = await VisitorsAPI.approveVisitor(1);
+    expect(mockPost).toHaveBeenCalledWith("/visitors/1/approve/");
+    expect(result.status).toBe("CHECKED_IN");
   });
 });
 
-describe("VisitorsAPI", () => {
+describe("InvitesAPI", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("getInvites calls /pre-registrations/", async () => {
+    mockGet.mockResolvedValue({ data: { results: [{ id: 1, visitor_name: "Charlie" }] } });
+    const result = await InvitesAPI.getInvites();
+    expect(mockGet).toHaveBeenCalledWith("/pre-registrations/", { params: undefined });
+    expect(result).toHaveLength(1);
+  });
+
+  it("scanInviteToken posts to /pre-registrations/scan/", async () => {
+    mockPost.mockResolvedValue({ data: { valid: true } });
+    const result = await InvitesAPI.scanInviteToken("test-token");
+    expect(mockPost).toHaveBeenCalledWith("/pre-registrations/scan/", { token: "test-token" });
+    expect(result.valid).toBe(true);
+  });
+});
+
+describe("LocationsAPI", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
   it("getLocations returns results", async () => {
     mockGet.mockResolvedValue({ data: { results: [{ id: 1, name: "Main Office" }] } });
-    const result = await VisitorsAPI.getLocations();
+    const result = await LocationsAPI.getLocations();
+    expect(mockGet).toHaveBeenCalledWith("/locations/", { params: undefined });
     expect(result).toHaveLength(1);
+  });
+});
+
+describe("HostsAPI", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
   });
 
   it("getHosts returns results", async () => {
-    mockGet.mockResolvedValue({ data: { results: [{ id: 1, name: "John" }] } });
-    const result = await VisitorsAPI.getHosts();
+    mockGet.mockResolvedValue({ data: { results: [{ id: 1, name: "John Host" }] } });
+    const result = await HostsAPI.getHosts();
+    expect(mockGet).toHaveBeenCalledWith("/hosts/", { params: undefined });
     expect(result).toHaveLength(1);
   });
 });

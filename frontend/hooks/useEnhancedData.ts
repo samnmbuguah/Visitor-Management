@@ -34,7 +34,6 @@ export function useEnhancedQuery<T>(
   }
 ) {
   const offlineMode = useAppStore((state) => state.offlineMode);
-  const lastSyncTime = useAppStore((state) => state.lastSyncTime);
 
   return useQuery({
     queryKey,
@@ -69,17 +68,14 @@ export function useEnhancedMutation<T, V>(
   return useMutation({
     mutationFn,
     onMutate: async (variables) => {
-      // Cancel any outgoing refetches
       const previousQueries: QueryKey[] = [];
       
       if (options?.optimisticUpdate) {
         await queryClient.cancelQueries({ queryKey: options.optimisticUpdate.queryKey });
         previousQueries.push(options.optimisticUpdate.queryKey);
         
-        // Snapshot the previous value
         const previousData = queryClient.getQueryData(options.optimisticUpdate.queryKey);
         
-        // Optimistically update to the new value
         queryClient.setQueryData(
           options.optimisticUpdate.queryKey,
           (old: any) => options.optimisticUpdate!.updateFn(old, variables)
@@ -93,20 +89,17 @@ export function useEnhancedMutation<T, V>(
     onSuccess: (data, variables, context) => {
       options?.onSuccess?.(data, variables);
       
-      // Invalidate related queries
       if (options?.invalidateQueries) {
-        options.invalidateQueries.forEach(queryKey => {
+        options.invalidateQueries.forEach((queryKey) => {
           queryClient.invalidateQueries({ queryKey });
         });
       }
       
-      // Update sync time
       setLastSyncTime(Date.now());
     },
     onError: (error, variables, context) => {
       options?.onError?.(error, variables);
       
-      // Rollback optimistic update
       if (context && typeof context === 'object' && 'previousData' in context) {
         const { previousData, previousQueries } = context as any;
         previousQueries.forEach((queryKey: QueryKey) => {
@@ -120,117 +113,35 @@ export function useEnhancedMutation<T, V>(
   });
 }
 
-// Property Management Hooks with Enhanced Caching
-export function useEnhancedMaintenanceRequests(locationId?: number) {
+// Visitor Management Hooks with Enhanced Caching
+export function useEnhancedLocations() {
   return useEnhancedQuery(
-    ['maintenance-requests', locationId],
-    () => APIService.propertyManagement.getMaintenanceRequests(locationId),
+    ['locations'],
+    () => APIService.locations.getLocations(),
     {
-      staleTime: 2 * 60 * 1000, // 2 minutes for real-time data
+      staleTime: 30 * 60 * 1000,
+      gcTime: 60 * 60 * 1000,
+    }
+  );
+}
+
+export function useEnhancedVisitors(locationId?: number) {
+  return useEnhancedQuery(
+    ['visitors', locationId],
+    () => APIService.visitors.getVisitors(locationId ? { location: locationId } : {}),
+    {
+      staleTime: 30 * 1000, // 30 seconds for real-time visitor lists
       refetchOnWindowFocus: true,
     }
   );
 }
 
-export function useEnhancedMaintenanceCategories() {
-  return useEnhancedQuery(
-    ['maintenance-categories'],
-    () => APIService.propertyManagement.getMaintenanceCategories(),
-    {
-      staleTime: 30 * 60 * 1000, // 30 minutes - categories rarely change
-      gcTime: 60 * 60 * 1000, // 1 hour cache
-    }
-  );
-}
-
-export function useEnhancedAssets(locationId?: number) {
-  return useEnhancedQuery(
-    ['assets', locationId],
-    () => APIService.propertyManagement.getAssets(locationId),
-    {
-      staleTime: 5 * 60 * 1000, // 5 minutes
-      refetchOnWindowFocus: false,
-    }
-  );
-}
-
-export function useEnhancedLocations() {
-  return useEnhancedQuery(
-    ['locations'],
-    () => APIService.visitors.getLocations(),
-    {
-      staleTime: 30 * 60 * 1000, // 30 minutes - locations change rarely
-      gcTime: 60 * 60 * 1000, // 1 hour cache
-    }
-  );
-}
-
-// Enhanced mutation hooks
-export function useEnhancedCreateMaintenanceRequest() {
-  return useEnhancedMutation(
-    APIService.propertyManagement.createMaintenanceRequest,
-    {
-      onSuccess: () => {
-        logger.debug('Maintenance request created successfully');
-      },
-      invalidateQueries: [['maintenance-requests']],
-      optimisticUpdate: {
-        queryKey: ['maintenance-requests'],
-        updateFn: (oldData: any, variables) => {
-          return oldData ? [...oldData, { ...variables, id: Date.now(), status: 'PENDING' }] : [variables];
-        },
-      },
-    }
-  );
-}
-
-export function useEnhancedUpdateMaintenanceRequestStatus() {
-  return useEnhancedMutation(
-    ({ id, status }: { id: number; status: string }) => 
-      APIService.propertyManagement.updateMaintenanceRequestStatus(id, status),
-    {
-      onSuccess: () => {
-        logger.debug('Maintenance request status updated successfully');
-      },
-      invalidateQueries: [['maintenance-requests']],
-      optimisticUpdate: {
-        queryKey: ['maintenance-requests'],
-        updateFn: (oldData: any, variables) => {
-          if (!Array.isArray(oldData)) return oldData;
-          return oldData.map((item: any) => 
-            item.id === variables.id ? { ...item, status: variables.status } : item
-          );
-        },
-      },
-    }
-  );
-}
-
-export function useEnhancedCreateAsset() {
-  return useEnhancedMutation(
-    APIService.propertyManagement.createAsset,
-    {
-      onSuccess: () => {
-        logger.debug('Asset created successfully');
-      },
-      invalidateQueries: [['assets']],
-      optimisticUpdate: {
-        queryKey: ['assets'],
-        updateFn: (oldData: any, variables) => {
-          return oldData ? [...oldData, { ...variables, id: Date.now, status: 'ACTIVE' }] : [variables];
-        },
-      },
-    }
-  );
-}
-
-// Visitors Hooks with Enhanced Caching
 export function useEnhancedInvites() {
   return useEnhancedQuery(
     ['invites'],
-    () => APIService.visitors.getInvites(),
+    () => APIService.invites.getInvites(),
     {
-      staleTime: 3 * 60 * 1000, // 3 minutes
+      staleTime: 3 * 60 * 1000,
       refetchOnWindowFocus: true,
     }
   );
@@ -239,9 +150,9 @@ export function useEnhancedInvites() {
 export function useEnhancedHosts(locationId?: number) {
   return useEnhancedQuery(
     ['hosts', locationId],
-    () => APIService.visitors.getHosts(locationId),
+    () => APIService.hosts.getHosts(locationId),
     {
-      staleTime: 15 * 60 * 1000, // 15 minutes
+      staleTime: 15 * 60 * 1000,
       gcTime: 30 * 60 * 1000,
     }
   );
@@ -254,7 +165,7 @@ export function useBatchOperations() {
 
   const prefetchMultiple = async (queryKeys: QueryKey[]) => {
     await Promise.all(
-      queryKeys.map(queryKey => 
+      queryKeys.map((queryKey) => 
         queryClient.prefetchQuery({ 
           queryKey, 
           staleTime: DEFAULT_QUERY_CONFIG.staleTime 
@@ -265,7 +176,7 @@ export function useBatchOperations() {
 
   const invalidateMultiple = async (queryKeys: QueryKey[]) => {
     await Promise.all(
-      queryKeys.map(queryKey => 
+      queryKeys.map((queryKey) => 
         queryClient.invalidateQueries({ queryKey })
       )
     );
@@ -274,7 +185,7 @@ export function useBatchOperations() {
 
   const resetMultiple = async (queryKeys: QueryKey[]) => {
     await Promise.all(
-      queryKeys.map(queryKey => 
+      queryKeys.map((queryKey) => 
         queryClient.resetQueries({ queryKey })
       )
     );
@@ -288,7 +199,7 @@ export function useBatchOperations() {
 }
 
 // Real-time data synchronization
-export function useRealTimeSync(interval: number = 30000) { // 30 seconds
+export function useRealTimeSync(interval: number = 30000) {
   const queryClient = useQueryClient();
   const { offlineMode, needsSync } = useAppStore((state) => ({
     offlineMode: state.offlineMode,
@@ -299,11 +210,10 @@ export function useRealTimeSync(interval: number = 30000) { // 30 seconds
     if (offlineMode) return;
 
     const syncInterval = setInterval(() => {
-      // Refetch active queries that need fresh data
       queryClient.invalidateQueries({
         predicate: (query) => {
           const queryKey = query.queryKey[0] as string;
-          return ['maintenance-requests', 'visitors', 'invites'].includes(queryKey);
+          return ['visitors', 'invites', 'watchlist', 'analytics'].includes(queryKey);
         },
       });
     }, interval);
@@ -328,11 +238,11 @@ export function useDataValidation() {
 
   const sanitizeData = (data: any): any => {
     if (Array.isArray(data)) {
-      return data.map(item => sanitizeData(item));
+      return data.map((item) => sanitizeData(item));
     }
     if (data && typeof data === 'object') {
       const sanitized: any = {};
-      Object.keys(data).forEach(key => {
+      Object.keys(data).forEach((key) => {
         if (data[key] !== null && data[key] !== undefined) {
           sanitized[key] = sanitizeData(data[key]);
         }

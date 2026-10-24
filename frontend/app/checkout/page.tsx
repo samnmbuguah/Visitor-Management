@@ -1,164 +1,229 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { getVisitors, checkoutVisitor, Visitor } from '@/lib/api';
-import { UserMinus, Search, History, Clock, ArrowLeft, CheckCircle2, User, RefreshCw } from 'lucide-react';
+import {
+  Box,
+  Container,
+  Typography,
+  Card,
+  CardContent,
+  Button,
+  TextField,
+  InputAdornment,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  Chip,
+  Avatar,
+  CircularProgress,
+  Alert,
+} from '@mui/material';
+import {
+  Search as SearchIcon,
+  Logout as LogoutIcon,
+  CheckCircle as CheckCircleIcon,
+  ArrowBack as ArrowBackIcon,
+  AccessTime as AccessTimeIcon,
+} from '@mui/icons-material';
+import { getVisitors, checkoutVisitor } from '@/lib/api';
 
 export default function CheckOutPage() {
-    const router = useRouter();
-    const [visitors, setVisitors] = useState<Visitor[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [checkingOut, setCheckingOut] = useState<number | null>(null);
-    const [success, setSuccess] = useState(false);
-    const [searchQuery, setSearchQuery] = useState('');
+  const router = useRouter();
+  const [visitors, setVisitors] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [checkingOutId, setCheckingOutId] = useState<number | null>(null);
+  const [success, setSuccess] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
-    useEffect(() => {
-        loadVisitors();
-    }, []);
+  useEffect(() => {
+    loadVisitors();
+  }, []);
 
-    const loadVisitors = async () => {
-        try {
-            const response = await getVisitors();
-            const data = Array.isArray(response.data) ? response.data : response.data.results || [];
-            const activeVisitors = data.filter((v: any) => v.status === 'CHECKED_IN');
-            setVisitors(activeVisitors);
-        } catch (err) {
-            console.error('Failed to load visitors:', err);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const handleCheckout = async (id: number) => {
-        setCheckingOut(id);
-        try {
-            await checkoutVisitor(id);
-            setSuccess(true);
-            setTimeout(() => {
-                router.push('/');
-            }, 3000);
-        } catch (err) {
-            console.error('Failed to checkout:', err);
-            setCheckingOut(null);
-        }
-    };
-
-    const filteredVisitors = visitors.filter(v =>
-        v.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        v.email.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-
-    if (success) {
-        return (
-            <main className="min-h-screen flex items-center justify-center p-8 bg-background">
-                <div className="animated-bg" />
-                <div className="glass-card p-12 max-w-lg w-full text-center scale-up">
-                    <div className="mb-8 bg-indigo-500/10 p-6 rounded-full inline-block ring-2 ring-indigo-500/20">
-                        <History size={64} className="text-indigo-400" />
-                    </div>
-                    <h1 className="text-5xl font-black mb-4 text-foreground tracking-tight">Goodbye!</h1>
-                    <p className="text-muted-foreground text-xl mb-2 font-medium">You have successfully checked out.</p>
-                    <p className="text-primary text-sm font-bold uppercase tracking-widest mt-6 animate-pulse">Safely on your way...</p>
-                </div>
-            </main>
-        );
+  const loadVisitors = async () => {
+    try {
+      const response = await getVisitors();
+      const data = Array.isArray(response.data) ? response.data : response.data?.results || [];
+      const activeVisitors = data.filter((v: any) => v.status === 'CHECKED_IN');
+      setVisitors(activeVisitors);
+    } catch (err) {
+      console.error('Failed to load visitors:', err);
+    } finally {
+      setLoading(false);
     }
+  };
 
+  const handleCheckout = async (id: number) => {
+    setCheckingOutId(id);
+    try {
+      await checkoutVisitor(id);
+      setSuccess(true);
+      setTimeout(() => {
+        router.push('/');
+      }, 3000);
+    } catch (err) {
+      console.error('Failed to checkout:', err);
+      setCheckingOutId(null);
+    }
+  };
+
+  const filteredVisitors = visitors.filter(
+    (v) =>
+      (v.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (v.email || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (v.badge_number || '').toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  if (success) {
     return (
-        <main className="min-h-screen flex items-center justify-center p-6 bg-background relative overflow-hidden">
-            <div className="animated-bg" />
-
-            <Link href="/" className="absolute top-8 left-8 flex items-center gap-2 text-muted-foreground hover:text-foreground transition-all group">
-                <div className="p-2 rounded-xl bg-white/5 border border-white/10 group-hover:bg-white/10">
-                    <ArrowLeft size={20} />
-                </div>
-                <span className="font-bold uppercase tracking-widest text-xs">Exit Kiosk</span>
-            </Link>
-
-            <div className="glass-card p-10 max-w-2xl w-full border-white/5 shadow-2xl backdrop-blur-3xl">
-                <div className="mb-10 text-center md:text-left flex flex-col md:flex-row md:items-end justify-between gap-4">
-                    <div>
-                        <h1 className="text-4xl font-extrabold mb-2 bg-gradient-to-r from-foreground to-muted-foreground bg-clip-text text-transparent">
-                            Self Check-Out
-                        </h1>
-                        <p className="text-muted-foreground font-medium">Please locate your name to sign out</p>
-                    </div>
-                    <div className="p-4 bg-indigo-500/10 rounded-2xl text-indigo-400 ring-1 ring-indigo-500/20 hidden md:block">
-                        <UserMinus size={32} />
-                    </div>
-                </div>
-
-                <div className="relative mb-8">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={20} />
-                    <input
-                        type="text"
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="premium-input pl-12"
-                        placeholder="Search your name..."
-                    />
-                </div>
-
-                <div className="space-y-4 max-h-[50vh] overflow-y-auto pr-2 custom-scrollbar">
-                    {loading ? (
-                        <div className="text-center py-20 flex flex-col items-center gap-4">
-                            <RefreshCw className="animate-spin text-primary" size={32} />
-                            <p className="text-muted-foreground font-bold uppercase tracking-widest text-xs">Accessing Visitor Log...</p>
-                        </div>
-                    ) : filteredVisitors.length === 0 ? (
-                        <div className="text-center py-20 bg-white/5 rounded-3xl border border-dashed border-white/10">
-                            <p className="text-muted-foreground font-medium italic">
-                                {searchQuery ? "We couldn't find a visitor by that name." : "No visitors are currently checked in."}
-                            </p>
-                        </div>
-                    ) : (
-                        filteredVisitors.map(visitor => (
-                            <div
-                                key={visitor.id}
-                                className="p-5 rounded-2xl bg-white/5 border border-white/5 flex items-center justify-between hover:bg-white/10 transition-all group"
-                            >
-                                <div className="flex items-center gap-4">
-                                    <div className="h-12 w-12 rounded-2xl bg-white/5 flex items-center justify-center text-muted-foreground font-bold transition-all group-hover:bg-primary/10 group-hover:text-primary">
-                                        {visitor.photo ? (
-                                            <img src={visitor.photo} alt="" className="h-full w-full object-cover rounded-2xl" />
-                                        ) : <User size={24} />}
-                                    </div>
-                                    <div>
-                                        <h3 className="font-bold text-foreground group-hover:text-primary transition-colors">{visitor.name}</h3>
-                                        <div className="flex items-center gap-3 mt-1">
-                                            <div className="flex items-center gap-1 text-[10px] font-black uppercase text-muted-foreground tracking-widest">
-                                                <Clock size={10} />
-                                                {new Date(visitor.checkin_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <button
-                                    onClick={() => handleCheckout(visitor.id)}
-                                    disabled={checkingOut === visitor.id}
-                                    className="px-6 py-3 rounded-xl bg-primary text-primary-foreground font-bold hover:brightness-110 active:scale-95 transition-all flex items-center gap-2 shadow-lg shadow-primary/20"
-                                >
-                                    {checkingOut === visitor.id ? (
-                                        <RefreshCw className="animate-spin" size={18} />
-                                    ) : (
-                                        <>Finalize <ArrowLeft size={18} className="rotate-180" /></>
-                                    )}
-                                </button>
-                            </div>
-                        ))
-                    )}
-                </div>
-
-                <div className="mt-10 pt-8 border-t border-white/5">
-                    <Link href="/" className="block">
-                        <button className="btn-secondary">
-                            Return to Welcome Screen
-                        </button>
-                    </Link>
-                </div>
-            </div>
-        </main>
+      <Box
+        sx={{
+          minHeight: '100vh',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          bgcolor: 'background.default',
+          p: 3,
+        }}
+      >
+        <Card sx={{ maxWidth: 480, width: '100%', p: 4, textAlign: 'center', borderRadius: 4, boxShadow: '0 8px 32px rgba(0,0,0,0.08)' }}>
+          <CheckCircleIcon sx={{ fontSize: 72, color: 'success.main', mb: 2 }} />
+          <Typography variant="h4" gutterBottom sx={{fontWeight: 800}}>
+            Checked Out!
+          </Typography>
+          <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
+            Thank you for visiting. Your badge has been deactivated.
+          </Typography>
+          <Typography variant="caption" color="text.disabled">
+            Redirecting to home screen...
+          </Typography>
+        </Card>
+      </Box>
     );
+  }
+
+  return (
+    <Box sx={{ minHeight: '100vh', py: 6, bgcolor: 'background.default' }}>
+      <Container maxWidth="lg">
+        <Box sx={{ mb: 4, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Link href="/" passHref style={{ textDecoration: 'none' }}>
+              <Button variant="outlined" startIcon={<ArrowBackIcon />}>
+                Back
+              </Button>
+            </Link>
+            <Box>
+              <Typography variant="h4" color="text.primary" sx={{fontWeight: 800}}>
+                Visitor Check-Out
+              </Typography>
+              <Typography variant="body1" color="text.secondary">
+                Locate your name or badge number to quickly check out of the building
+              </Typography>
+            </Box>
+          </Box>
+        </Box>
+
+        <Card sx={{ borderRadius: 3, p: 3, boxShadow: '0 4px 20px rgba(0,0,0,0.05)' }}>
+          <CardContent>
+            <Box sx={{ mb: 3 }}>
+              <TextField
+                fullWidth
+                placeholder="Search active visitors by name, email, or badge number..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                slotProps={{ input: {
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchIcon color="action" />
+                    </InputAdornment>
+                  ),
+                } }}
+              />
+            </Box>
+
+            {loading ? (
+              <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
+                <CircularProgress />
+              </Box>
+            ) : filteredVisitors.length === 0 ? (
+              <Paper sx={{ p: 6, textAlign: 'center', bgcolor: 'action.hover', borderRadius: 2 }}>
+                <Typography variant="h6" color="text.secondary">
+                  {visitors.length === 0
+                    ? 'No visitors currently checked in.'
+                    : 'No visitors found matching your search.'}
+                </Typography>
+              </Paper>
+            ) : (
+              <TableContainer component={Paper} elevation={0} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
+                <Table>
+                  <TableHead sx={{ bgcolor: 'action.hover' }}>
+                    <TableRow>
+                      <TableCell sx={{ fontWeight: 700 }}>Visitor</TableCell>
+                      <TableCell sx={{ fontWeight: 700 }}>Host</TableCell>
+                      <TableCell sx={{ fontWeight: 700 }}>Badge #</TableCell>
+                      <TableCell sx={{ fontWeight: 700 }}>Checked In At</TableCell>
+                      <TableCell align="right" sx={{ fontWeight: 700 }}>Action</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {filteredVisitors.map((visitor) => (
+                      <TableRow key={visitor.id} hover>
+                        <TableCell>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                            <Avatar sx={{ bgcolor: 'primary.light', width: 36, height: 36 }}>
+                              {visitor.name ? visitor.name.charAt(0).toUpperCase() : 'V'}
+                            </Avatar>
+                            <Box>
+                              <Typography variant="subtitle2" sx={{fontWeight: 700}}>
+                                {visitor.name}
+                              </Typography>
+                              <Typography variant="caption" color="text.secondary">
+                                {visitor.company || visitor.email}
+                              </Typography>
+                            </Box>
+                          </Box>
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant="body2">{visitor.host_name || 'Designated Host'}</Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant="body2" sx={{fontWeight: 600, fontFamily: 'monospace'}}>
+                            {visitor.badge_number || '—'}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant="body2">
+                            {visitor.check_in_time
+                              ? new Date(visitor.check_in_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                              : 'Earlier today'}
+                          </Typography>
+                        </TableCell>
+                        <TableCell align="right">
+                          <Button
+                            variant="contained"
+                            color="error"
+                            size="small"
+                            startIcon={<LogoutIcon />}
+                            disabled={checkingOutId === visitor.id}
+                            onClick={() => handleCheckout(visitor.id)}
+                          >
+                            {checkingOutId === visitor.id ? 'Checking out...' : 'Check Out'}
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            )}
+          </CardContent>
+        </Card>
+      </Container>
+    </Box>
+  );
 }

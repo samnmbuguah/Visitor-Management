@@ -5,6 +5,7 @@ import { AuthProvider } from '@/context/AuthContext';
 import { Toaster } from 'react-hot-toast';
 import { StateProvider } from './StateProvider';
 import { useThemeManagement } from '@/store';
+import MuiThemeRegistry from './MuiThemeRegistry';
 
 function ThemeWrapper({ children }: { children: React.ReactNode }) {
     const { theme, setTheme } = useThemeManagement();
@@ -14,16 +15,11 @@ function ThemeWrapper({ children }: { children: React.ReactNode }) {
     }, [theme]);
 
     return (
-        <div className="min-h-screen transition-colors duration-300">
-            {children}
-            <button
-                onClick={() => setTheme(theme === 'light' ? 'dark' : theme === 'dark' ? 'system' : 'light')}
-                className="fixed bottom-6 right-6 p-4 glass-card hover:bg-white/20 transition-all z-50 text-foreground"
-                aria-label="Toggle Theme"
-            >
-                {theme === 'light' ? '🌙' : theme === 'dark' ? '🔄' : '☀️'}
-            </button>
-        </div>
+        <MuiThemeRegistry>
+            <div className="min-h-screen transition-colors duration-300">
+                {children}
+            </div>
+        </MuiThemeRegistry>
     );
 }
 

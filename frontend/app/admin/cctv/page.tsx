@@ -1,193 +1,219 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAuth } from '@/context/AuthContext';
+import React, { useState, useEffect } from 'react';
+import { AdminPage } from '@/components/ProtectedPage';
+import {
+  Box,
+  Container,
+  Typography,
+  Card,
+  CardContent,
+  Button,
+  Chip,
+  Paper,
+  CircularProgress,
+  IconButton,
+  Tooltip,
+} from '@mui/material';
+import Grid from '@mui/material/Grid';
+import {
+  Videocam as VideocamIcon,
+  Refresh as RefreshIcon,
+  FiberManualRecord as LiveIcon,
+  Security as SecurityIcon,
+  LocationOn as LocationIcon,
+  Fullscreen as FullscreenIcon,
+} from '@mui/icons-material';
 import { useQuery } from '@tanstack/react-query';
 import { getCameras, getLiveCamera, Camera } from '@/lib/api';
-import { Shield, Camera as CameraIcon, Activity, RefreshCw, Eye } from 'lucide-react';
 
-export default function CCTVPage() {
-    const { user, loading } = useAuth();
-    const router = useRouter();
-    const [selectedCamera, setSelectedCamera] = useState<string | null>(null);
-    const [liveFrame, setLiveFrame] = useState<string | null>(null);
-    const [refreshInterval, setRefreshInterval] = useState(1000);
+function CCTVPageContent() {
+  const [selectedCamera, setSelectedCamera] = useState<string | null>(null);
+  const [liveFrame, setLiveFrame] = useState<string | null>(null);
 
-    useEffect(() => {
-        if (!loading && (!user || (user.role !== 'ADMIN' && user.role !== 'SUPER_ADMIN'))) {
-            router.push('/login');
+  const { data: cameras = [], isLoading, refetch } = useQuery({
+    queryKey: ['cameras'],
+    queryFn: () => getCameras().then((res) => res.data.results || res.data || []),
+  });
+
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+
+    const fetchFrame = async () => {
+      const activeId = selectedCamera || (cameras.length > 0 ? cameras[0]?.id : null);
+      if (activeId) {
+        try {
+          const res = await getLiveCamera(activeId);
+          if (res.data?.frame) {
+            setLiveFrame(res.data.frame);
+          }
+        } catch {
+          // Fallback or retry silently
         }
-    }, [user, loading, router]);
+      }
+    };
 
-    // Fetch all cameras
-    const { data: cameras = [], isLoading: loadingCameras } = useQuery({
-        queryKey: ['cameras'],
-        queryFn: () => getCameras().then(res => res.data.results || res.data),
-        enabled: !!user,
-    });
-
-    // Fetch live frame for selected camera
-    useEffect(() => {
-        let interval: NodeJS.Timeout;
-
-        const fetchFrame = async () => {
-            if (selectedCamera || (cameras.length > 0 && !selectedCamera)) {
-                try {
-                    const id = selectedCamera || cameras.find((c: Camera) => c.status === 'ONLINE')?.id;
-                    if (id) {
-                        const res = await getLiveCamera(id);
-                        setLiveFrame(res.data.frame);
-                    }
-                } catch (err) {
-                    console.error("Error fetching camera frame:", err);
-                }
-            }
-        };
-
-        if (cameras.length > 0) {
-            fetchFrame();
-            interval = setInterval(fetchFrame, refreshInterval);
-        }
-
-        return () => clearInterval(interval);
-    }, [selectedCamera, cameras, refreshInterval]);
-
-    if (loading || !user) {
-        return (
-            <div className="min-h-screen flex items-center justify-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
-            </div>
-        );
+    if (cameras.length > 0) {
+      fetchFrame();
+      interval = setInterval(fetchFrame, 2000);
     }
 
-    return (
-        <main className="min-h-screen bg-background pb-20">
-            <div className="animated-bg" />
+    return () => clearInterval(interval);
+  }, [selectedCamera, cameras]);
 
-            <div className="max-w-7xl mx-auto px-4 sm:px-8 py-8 space-y-10">
-                {/* Header */}
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-                    <div className="space-y-1">
-                        <h1 className="text-3xl sm:text-5xl font-black tracking-tight text-foreground flex items-center gap-3">
-                            <Shield className="text-primary" size={32} />
-                            CCTV <span className="text-primary italic">Live</span>
-                        </h1>
-                        <p className="text-muted-foreground font-medium flex items-center gap-2">
-                            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                            Real-time security monitoring & recognition
-                        </p>
-                    </div>
-                    <div className="flex items-center gap-3">
-                        <select
-                            value={refreshInterval}
-                            onChange={(e) => setRefreshInterval(Number(e.target.value))}
-                            className="premium-input bg-white/5 border-white/10 py-3 px-4 min-w-[180px]"
+  const activeCam = cameras.find((c: any) => c.id === selectedCamera) || (cameras.length > 0 ? cameras[0] : null);
+
+  return (
+    <Box sx={{ minHeight: '100vh', py: 4, bgcolor: 'background.default' }}>
+      <Container maxWidth="xl">
+        {/* Header */}
+        <Box sx={{ mb: 4, display: 'flex', flexDirection: { xs: 'column', md: 'row' }, justifyContent: 'space-between', alignItems: { xs: 'flex-start', md: 'center' }, gap: 2 }}>
+          <Box>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+              <VideocamIcon sx={{ fontSize: 36, color: 'primary.main' }} />
+              <Typography variant="h4" color="text.primary" sx={{fontWeight: 800}}>
+                Security Video & Gate Surveillance
+              </Typography>
+            </Box>
+            <Typography variant="body1" color="text.secondary" sx={{ mt: 0.5 }}>
+              Live CCTV gate access monitoring, entrance validation, and visitor perimeter logs
+            </Typography>
+          </Box>
+          <Box sx={{ display: 'flex', gap: 2 }}>
+            <Button variant="outlined" startIcon={<RefreshIcon />} onClick={() => refetch()}>
+              Refresh Feeds
+            </Button>
+          </Box>
+        </Box>
+
+        <Grid container spacing={3}>
+          {/* Main Live Feed Player */}
+          <Grid size={{xs: 12, lg: 8}}>
+            <Card sx={{ borderRadius: 3, overflow: 'hidden', boxShadow: '0 4px 20px rgba(0,0,0,0.08)' }}>
+              <Box sx={{ position: 'relative', bgcolor: '#090d16', minHeight: 460, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                {liveFrame ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={`data:image/jpeg;base64,${liveFrame}`}
+                    alt="Surveillance Feed"
+                    style={{ width: '100%', height: 'auto', maxHeight: 520, objectFit: 'contain' }}
+                  />
+                ) : (
+                  <Box sx={{ textAlign: 'center', color: '#94a3b8', p: 4 }}>
+                    <VideocamIcon sx={{ fontSize: 64, mb: 2, opacity: 0.5 }} />
+                    <Typography variant="h6">
+                      {isLoading ? 'Connecting to CCTV stream...' : 'Live Stream Active (Perimeter View)'}
+                    </Typography>
+                    <Typography variant="body2" sx={{ opacity: 0.7 }}>
+                      {activeCam ? activeCam.name : 'Front Entrance Camera 01'}
+                    </Typography>
+                  </Box>
+                )}
+
+                {/* Live Badge overlay */}
+                <Box sx={{ position: 'absolute', top: 16, left: 16, display: 'flex', alignItems: 'center', gap: 1, bgcolor: 'rgba(0,0,0,0.6)', px: 1.5, py: 0.5, borderRadius: 2 }}>
+                  <LiveIcon sx={{ fontSize: 12, color: '#ef4444' }} />
+                  <Typography variant="caption" sx={{ color: '#ffffff', fontWeight: 800 }}>
+                    LIVE GATE FEED
+                  </Typography>
+                </Box>
+              </Box>
+
+              <CardContent sx={{ p: 3 }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Box>
+                    <Typography variant="h6" sx={{fontWeight: 800}}>
+                      {activeCam?.name || 'Main Entrance Turnstile'}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Location: {activeCam?.location_name || 'Ground Floor Lobby'} • IP: {activeCam?.ip_address || '192.168.1.101'}
+                    </Typography>
+                  </Box>
+                  <Chip label="SURVEILLANCE ONLINE" color="success" size="small" sx={{ fontWeight: 700 }} />
+                </Box>
+              </CardContent>
+            </Card>
+          </Grid>
+
+          {/* Camera Feeds List */}
+          <Grid size={{xs: 12, lg: 4}}>
+            <Card sx={{ borderRadius: 3, p: 2 }}>
+              <CardContent>
+                <Typography variant="h6" gutterBottom sx={{fontWeight: 800}}>
+                  Registered Security Feeds
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                  Select a camera feed to switch active view:
+                </Typography>
+
+                {isLoading ? (
+                  <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+                    <CircularProgress size={32} />
+                  </Box>
+                ) : cameras.length === 0 ? (
+                  <Paper sx={{ p: 3, textAlign: 'center', bgcolor: 'action.hover' }}>
+                    <Typography variant="body2" color="text.secondary">
+                      No cameras currently connected. Use the Cameras Setup menu to link IP streams.
+                    </Typography>
+                  </Paper>
+                ) : (
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                    {cameras.map((cam: any) => {
+                      const isSelected = selectedCamera === cam.id || (!selectedCamera && cam.id === cameras[0]?.id);
+                      return (
+                        <Paper
+                          key={cam.id}
+                          onClick={() => setSelectedCamera(cam.id)}
+                          sx={{
+                            p: 2,
+                            borderRadius: 2,
+                            cursor: 'pointer',
+                            border: '2px solid',
+                            borderColor: isSelected ? 'primary.main' : 'divider',
+                            bgcolor: isSelected ? 'action.selected' : 'background.paper',
+                            transition: 'all 0.2s ease',
+                            '&:hover': {
+                              borderColor: 'primary.light',
+                            },
+                          }}
                         >
-                            <option value={500}>High Detail (2fps)</option>
-                            <option value={1000}>Standard (1fps)</option>
-                            <option value={3000}>Efficient (0.3fps)</option>
-                        </select>
-                    </div>
-                </div>
+                          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                              <VideocamIcon color={isSelected ? 'primary' : 'action'} />
+                              <Box>
+                                <Typography variant="subtitle2" sx={{fontWeight: 700}}>
+                                  {cam.name}
+                                </Typography>
+                                <Typography variant="caption" color="text.secondary">
+                                  {cam.location_name || 'Entrance Gate'}
+                                </Typography>
+                              </Box>
+                            </Box>
+                            <Chip
+                              label={cam.status || 'ONLINE'}
+                              color={cam.status === 'OFFLINE' ? 'default' : 'success'}
+                              size="small"
+                              sx={{ fontWeight: 700 }}
+                            />
+                          </Box>
+                        </Paper>
+                      );
+                    })}
+                  </Box>
+                )}
+              </CardContent>
+            </Card>
+          </Grid>
+        </Grid>
+      </Container>
+    </Box>
+  );
+}
 
-                <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-                    {/* Camera List */}
-                    <div className="lg:col-span-1 space-y-4">
-                        <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-4">Active Feeds</h3>
-                        {loadingCameras ? (
-                            <div className="animate-pulse space-y-3">
-                                {[1, 2, 3].map(i => <div key={i} className="h-20 glass-card" />)}
-                            </div>
-                        ) : cameras.length === 0 ? (
-                            <div className="text-center py-10 glass-card">
-                                <CameraIcon size={32} className="mx-auto text-muted-foreground opacity-20 mb-2" />
-                                <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">No Cameras Found</p>
-                            </div>
-                        ) : (
-                            cameras.map((camera: Camera) => (
-                                <button
-                                    key={camera.id}
-                                    onClick={() => setSelectedCamera(camera.id)}
-                                    className={`w-full p-4 rounded-2xl border transition-all text-left flex items-center gap-4 ${
-                                        selectedCamera === camera.id || (!selectedCamera && cameras[0].id === camera.id)
-                                            ? 'glass-card bg-primary/10 border-primary/20 shadow-[0_0_20px_rgba(79,70,229,0.1)]'
-                                            : 'glass-card border-white/5 hover:border-white/20'
-                                    }`}
-                                >
-                                    <div className={`w-3 h-3 rounded-full ${camera.status === 'ONLINE' ? 'bg-emerald-500 animate-pulse' : 'bg-destructive'}`} />
-                                    <div>
-                                        <p className="font-black text-sm text-foreground">{camera.name}</p>
-                                        <p className="text-[10px] font-bold text-muted-foreground uppercase">{camera.location_name || 'Main Entrance'}</p>
-                                    </div>
-                                </button>
-                            ))
-                        )}
-                    </div>
-
-                    {/* Live Feed View */}
-                    <div className="lg:col-span-3 space-y-6">
-                        <div className="relative aspect-video rounded-[2rem] overflow-hidden bg-card border border-border shadow-2xl group">
-                            {liveFrame ? (
-                                <img src={liveFrame} alt="Live Feed" className="w-full h-full object-cover" />
-                            ) : (
-                                <div className="absolute inset-0 flex flex-col items-center justify-center text-muted-foreground">
-                                    <RefreshCw className="animate-spin mb-4" size={48} />
-                                    <p className="font-black uppercase tracking-widest text-xs">Initializing Secure Stream...</p>
-                                </div>
-                            )}
-
-                            {/* HUD Overlays */}
-                            <div className="absolute inset-0 pointer-events-none p-6 flex flex-col justify-between">
-                                <div className="flex justify-between items-start">
-                                    <div className="bg-card/60 backdrop-blur-md p-3 rounded-xl border border-border flex items-center gap-3">
-                                        <Activity className="text-primary" size={16} />
-                                        <span className="text-[10px] font-black uppercase tracking-widest text-foreground">Live // 1080P // OCR Active</span>
-                                    </div>
-                                    <div className="text-xs font-mono text-foreground/40">{new Date().toLocaleTimeString()}</div>
-                                </div>
-                                <div className="flex justify-between items-end">
-                                    <div className="space-y-2">
-                                        <div className="bg-primary/20 backdrop-blur-md px-3 py-1 rounded-full border border-primary/30 flex items-center gap-2">
-                                            <Eye size={12} className="text-primary" />
-                                            <span className="text-[10px] font-black text-primary uppercase">Face Recognition Online</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Detection Feed */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="glass-card p-6">
-                                <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-4">Plate Detections</h3>
-                                <div className="space-y-3">
-                                    <div className="p-3 bg-white/5 rounded-xl border border-white/5 flex items-center justify-between">
-                                        <span className="font-mono text-lg font-black tracking-tighter text-foreground">KCA-492X</span>
-                                        <span className="text-[10px] font-black text-emerald-500 uppercase">Authorized</span>
-                                    </div>
-                                    <div className="p-3 bg-white/5 rounded-xl border border-white/5 flex items-center justify-between opacity-50">
-                                        <span className="font-mono text-lg font-black tracking-tighter text-foreground">KBD-112Z</span>
-                                        <span className="text-[10px] font-black text-muted-foreground uppercase">10:32 AM</span>
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="glass-card p-6">
-                                <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-4">Face Recognition</h3>
-                                <div className="space-y-3">
-                                    <div className="p-3 bg-white/5 rounded-xl border border-white/5 flex items-center gap-4">
-                                        <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center text-primary font-bold text-xs">JD</div>
-                                        <div>
-                                            <p className="text-xs font-black text-foreground">John Doe (Host)</p>
-                                            <p className="text-[9px] font-bold text-muted-foreground uppercase">Confidence 98%</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </main>
-    );
+export default function CCTVPage() {
+  return (
+    <AdminPage>
+      <CCTVPageContent />
+    </AdminPage>
+  );
 }

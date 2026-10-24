@@ -23,121 +23,212 @@ export class AuthAPI {
   }
 }
 
-// Property Management API Service
-export class PropertyManagementAPI {
-  // Maintenance Requests
-  static async getMaintenanceRequests(params?: any) {
-    const response = await api.get('/property-management/requests/', { params });
-    return response.data.results || response.data;
-  }
-
-  static async createMaintenanceRequest(data: any) {
-    const response = await api.post('/property-management/requests/', data);
-    return response.data;
-  }
-
-  static async updateMaintenanceRequestStatus(id: number, status: string) {
-    const response = await api.post(`/property-management/requests/${id}/update_status/`, {
-      status,
-    });
-    return response.data;
-  }
-
-  // Categories
-  static async getMaintenanceCategories(params?: any) {
-    const response = await api.get('/property-management/categories/', { params });
-    return response.data.results || response.data;
-  }
-
-  // Assets
-  static async getAssets(params?: any) {
-    const response = await api.get('/property-management/assets/', { params });
-    return response.data.results || response.data;
-  }
-
-  static async createAsset(data: any) {
-    const response = await api.post('/property-management/assets/', data);
-    return response.data;
-  }
-
-  static async generateAssetQRCode(id: number) {
-    const response = await api.get(`/property-management/assets/${id}/qr_code/`);
-    return response.data;
-  }
-
-  static async checkoutAsset(id: number, data: any) {
-    const response = await api.post(`/property-management/assets/${id}/checkout/`, data);
-    return response.data;
-  }
-
-  // Asset Types
-  static async getAssetTypes(params?: any) {
-    const response = await api.get('/property-management/asset-types/', { params });
-    return response.data.results || response.data;
-  }
-
-  // Vendors
-  static async getVendors(params?: any) {
-    const response = await api.get('/property-management/vendors/', { params });
-    return response.data.results || response.data;
-  }
-
-  // Work Orders
-  static async getWorkOrders(params?: any) {
-    const response = await api.get('/property-management/work-orders/', { params });
-    return response.data.results || response.data;
-  }
-
-  // Cost Centers
-  static async getCostCenters(params?: any) {
-    const response = await api.get('/property-management/cost-centers/', { params });
-    return response.data.results || response.data;
-  }
-
-  // Leases
-  static async getLeases(params?: any) {
-    const response = await api.get('/property-management/leases/', { params });
-    return response.data.results || response.data;
-  }
-
-  static async createLease(data: any) {
-    const response = await api.post('/property-management/leases/', data);
-    return response.data;
-  }
-
-  static async updateLease(id: number, data: any) {
-    const response = await api.patch(`/property-management/leases/${id}/`, data);
-    return response.data;
-  }
-
-  static async deleteLease(id: number) {
-    const response = await api.delete(`/property-management/leases/${id}/`);
-    return response.data;
-  }
-}
-
-// Visitors API Service (for locations)
+// Visitors API Service
 export class VisitorsAPI {
-  static async getLocations(params?: any) {
-    const response = await api.get('/locations/', { params });
-    return response.data.results || response.data;
-  }
-
-  static async getHosts(params?: any) {
-    const response = await api.get('/hosts/', { params });
-    return response.data.results || response.data;
-  }
-
   static async getVisitors(params?: any) {
     const response = await api.get('/visitors/', { params });
     return response.data.results || response.data;
   }
 
+  static async getVisitor(id: number) {
+    const response = await api.get(`/visitors/${id}/`);
+    return response.data;
+  }
+
+  static async createVisitor(data: any) {
+    const response = await api.post('/visitors/', data);
+    return response.data;
+  }
+
+  static async checkInVisitor(id: number) {
+    const response = await api.post(`/visitors/${id}/checkin/`);
+    return response.data;
+  }
+
+  static async checkOutVisitor(id: number) {
+    const response = await api.post(`/visitors/${id}/checkout/`);
+    return response.data;
+  }
+
+  static async approveVisitor(id: number) {
+    const response = await api.post(`/visitors/${id}/approve/`);
+    return response.data;
+  }
+
+  static async rejectVisitor(id: number) {
+    const response = await api.post(`/visitors/${id}/reject/`);
+    return response.data;
+  }
+
+  static async searchReturningVisitor(query: string) {
+    const response = await api.get('/visitors/search/', { params: { query } });
+    return response.data;
+  }
+}
+
+// Pre-Registration & Digital Invites API Service
+export class InvitesAPI {
   static async getInvites(params?: any) {
     const response = await api.get('/pre-registrations/', { params });
     return response.data.results || response.data;
   }
 
+  static async createInvite(data: any) {
+    const response = await api.post('/pre-registrations/', data);
+    return response.data;
+  }
+
+  static async scanInviteToken(token: string) {
+    const response = await api.post('/pre-registrations/scan/', { token });
+    return response.data;
+  }
+
+  static async bulkUploadInvites(formData: FormData) {
+    const response = await api.post('/pre-registrations/bulk_upload/', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data;
+  }
+
+  static async cancelInvite(id: number) {
+    const response = await api.post(`/pre-registrations/${id}/cancel/`);
+    return response.data;
+  }
+}
+
+// Locations & Kiosks API Service
+export class LocationsAPI {
+  static async getLocations(params?: any) {
+    const response = await api.get('/locations/', { params });
+    return response.data.results || response.data;
+  }
+
+  static async createLocation(data: any) {
+    const response = await api.post('/locations/', data);
+    return response.data;
+  }
+
+  static async updateLocation(id: number, data: any) {
+    const response = await api.patch(`/locations/${id}/`, data);
+    return response.data;
+  }
+
+  static async deleteLocation(id: number) {
+    const response = await api.delete(`/locations/${id}/`);
+    return response.data;
+  }
+
+  static async getKiosks(params?: any) {
+    const response = await api.get('/kiosks/', { params });
+    return response.data.results || response.data;
+  }
+
+  static async createKiosk(data: any) {
+    const response = await api.post('/kiosks/', data);
+    return response.data;
+  }
+}
+
+// Hosts API Service
+export class HostsAPI {
+  static async getHosts(params?: any) {
+    const response = await api.get('/hosts/', { params });
+    return response.data.results || response.data;
+  }
+
+  static async createHost(data: any) {
+    const response = await api.post('/hosts/', data);
+    return response.data;
+  }
+
+  static async getHostVisitors(id: number) {
+    const response = await api.get(`/hosts/${id}/visitors/`);
+    return response.data.results || response.data;
+  }
+}
+
+// Watchlist / Blocklist API Service
+export class WatchlistAPI {
+  static async getEntries(params?: any) {
+    const response = await api.get('/watchlist/', { params });
+    return response.data.results || response.data;
+  }
+
+  static async createEntry(data: any) {
+    const response = await api.post('/watchlist/', data);
+    return response.data;
+  }
+
+  static async updateEntry(id: number, data: any) {
+    const response = await api.patch(`/watchlist/${id}/`, data);
+    return response.data;
+  }
+
+  static async deleteEntry(id: number) {
+    const response = await api.delete(`/watchlist/${id}/`);
+    return response.data;
+  }
+}
+
+// Notifications API Service
+export class NotificationsAPI {
+  static async getTemplates() {
+    const response = await api.get('/notification-templates/');
+    return response.data.results || response.data;
+  }
+
+  static async createTemplate(data: any) {
+    const response = await api.post('/notification-templates/', data);
+    return response.data;
+  }
+
+  static async updateTemplate(id: number, data: any) {
+    const response = await api.patch(`/notification-templates/${id}/`, data);
+    return response.data;
+  }
+
+  static async deleteTemplate(id: number) {
+    const response = await api.delete(`/notification-templates/${id}/`);
+    return response.data;
+  }
+
+  static async getLogs() {
+    const response = await api.get('/notification-logs/');
+    return response.data.results || response.data;
+  }
+
+  static async sendTestNotification(data: any) {
+    const response = await api.post('/notifications/test/', data);
+    return response.data;
+  }
+}
+
+// Analytics API Service
+export class AnalyticsAPI {
+  static async getDashboardStats(locationId?: number) {
+    const response = await api.get('/analytics/dashboard/', {
+      params: locationId ? { location: locationId } : {},
+    });
+    return response.data;
+  }
+
+  static async getVisitorTrends(days?: number) {
+    const response = await api.get('/analytics/visitors/', {
+      params: days ? { days } : {},
+    });
+    return response.data;
+  }
+
+  static async getPeakHours(locationId?: number) {
+    const response = await api.get('/analytics/peak-hours/', {
+      params: locationId ? { location: locationId } : {},
+    });
+    return response.data;
+  }
+}
+
+// Tenants API Service
+export class TenantsAPI {
   static async getTenants(params?: any) {
     const response = await api.get('/tenants/', { params });
     return response.data.results || response.data;
@@ -148,20 +239,23 @@ export class VisitorsAPI {
     return response.data;
   }
 
-  static async createInvite(data: any) {
-    const response = await api.post('/pre-registrations/', data);
-    return response.data;
-  }
-
-  static async cancelPreRegistration(id: number) {
-    const response = await api.post(`/pre-registrations/${id}/cancel/`);
+  static async updateTenant(id: number, data: any) {
+    const response = await api.patch(`/tenants/${id}/`, data);
     return response.data;
   }
 }
 
-// Combined API Service
+// Central API Service export
 export const APIService = {
   auth: AuthAPI,
-  propertyManagement: PropertyManagementAPI,
   visitors: VisitorsAPI,
+  invites: InvitesAPI,
+  locations: LocationsAPI,
+  hosts: HostsAPI,
+  watchlist: WatchlistAPI,
+  notifications: NotificationsAPI,
+  analytics: AnalyticsAPI,
+  tenants: TenantsAPI,
 };
+
+export default APIService;

@@ -1,140 +1,157 @@
 'use client';
 
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { APIService } from '@/services/api';
-import { Lock, User, Eye, EyeOff, Loader2, ShieldCheck } from 'lucide-react';
+import {
+  Box,
+  Container,
+  Card,
+  CardContent,
+  Typography,
+  TextField,
+  Button,
+  Alert,
+  CircularProgress,
+  InputAdornment,
+  IconButton,
+  Avatar,
+} from '@mui/material';
+import {
+  LockOutlined as LockIcon,
+  Person as PersonIcon,
+  Visibility as VisibilityIcon,
+  VisibilityOff as VisibilityOffIcon,
+  Security as SecurityIcon,
+} from '@mui/icons-material';
 
 export default function LoginPage() {
-    const [credentials, setCredentials] = useState({ username: '', password: '' });
-    const [showPassword, setShowPassword] = useState(false);
-    const [isLoading, setIsLoading] = useState(false);
-    const [error, setError] = useState('');
-    const { login } = useAuth();
+  const [credentials, setCredentials] = useState({ username: '', password: '' });
+  const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+  const { login } = useAuth();
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setError('');
-        setIsLoading(true);
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setIsLoading(true);
 
-        try {
-            const res = await APIService.auth.login(credentials.username, credentials.password);
-            login(res.access);
-        } catch (err: any) {
-            setError(err.response?.data?.detail || err.response?.data?.message || 'Invalid username or password');
-        } finally {
-            setIsLoading(false);
-        }
-    };
+    try {
+      const res = await APIService.auth.login(credentials.username, credentials.password);
+      login(res.access);
+    } catch (err: any) {
+      setError(err.response?.data?.detail || err.response?.data?.message || 'Invalid username or password');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setCredentials(prev => ({ ...prev, [e.target.name]: e.target.value }));
-    };
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setCredentials((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+  };
 
-    return (
-        <main className="min-h-screen flex items-center justify-center p-6 bg-background">
-            <div className="animated-bg" />
+  return (
+    <Box
+      sx={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        bgcolor: 'background.default',
+        py: 6,
+        px: 2,
+      }}
+    >
+      <Container maxWidth="xs">
+        <Box sx={{ textAlign: 'center', mb: 4 }}>
+          <Avatar
+            sx={{
+              mx: 'auto',
+              mb: 2,
+              bgcolor: 'primary.main',
+              width: 56,
+              height: 56,
+              boxShadow: '0 4px 12px rgba(79, 70, 229, 0.3)',
+            }}
+          >
+            <SecurityIcon sx={{ fontSize: 32 }} />
+          </Avatar>
+          <Typography variant="h4" color="text.primary" sx={{fontWeight: 800}}>
+            Welcome Back
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+            Visitor Management Security & Portal Access
+          </Typography>
+        </Box>
 
-            <div className="w-full max-w-md">
-                <div className="text-center mb-10">
-                    <div className="inline-flex p-4 bg-primary/10 rounded-3xl mb-6 text-primary ring-1 ring-primary/20">
-                        <ShieldCheck size={40} />
-                    </div>
-                    <h1 className="text-4xl font-extrabold text-foreground mb-3 tracking-tight">Welcome Back</h1>
-                    <p className="text-muted-foreground text-lg">Secure Access to Property Management</p>
-                </div>
+        <Card sx={{ borderRadius: 4, p: 2, boxShadow: '0 8px 32px rgba(0,0,0,0.08)' }}>
+          <CardContent sx={{ p: 2 }}>
+            <form onSubmit={handleSubmit}>
+              {error && (
+                <Alert severity="error" sx={{ mb: 3 }}>
+                  {error}
+                </Alert>
+              )}
 
-                <div className="glass-card p-10 border-white/5 bg-white/5 backdrop-blur-3xl shadow-2xl">
-                    <form onSubmit={handleSubmit} className="space-y-6">
-                        {error && (
-                            <div className="p-4 rounded-2xl bg-destructive/10 border border-destructive/20 text-destructive text-sm font-medium animate-shake">
-                                {error}
-                            </div>
-                        )}
+              <TextField
+                required
+                fullWidth
+                label="Username"
+                name="username"
+                autoComplete="username"
+                value={credentials.username}
+                onChange={handleChange}
+                sx={{ mb: 2.5 }}
+                slotProps={{ input: {
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <PersonIcon color="action" />
+                    </InputAdornment>
+                  ),
+                } }}
+              />
 
-                        <div className="space-y-2">
-                            <label className="text-sm font-semibold text-foreground/80 px-1">Username</label>
-                            <div className="relative">
-                                <User className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={20} />
-                                <input
-                                    type="text"
-                                    name="username"
-                                    value={credentials.username}
-                                    onChange={handleChange}
-                                    className="premium-input pl-12"
-                                    placeholder="Enter your username"
-                                    autoComplete="username"
-                                    required
-                                />
-                            </div>
-                        </div>
+              <TextField
+                required
+                fullWidth
+                label="Password"
+                name="password"
+                type={showPassword ? 'text' : 'password'}
+                autoComplete="current-password"
+                value={credentials.password}
+                onChange={handleChange}
+                sx={{ mb: 3 }}
+                slotProps={{ input: {
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <LockIcon color="action" />
+                    </InputAdornment>
+                  ),
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton onClick={() => setShowPassword(!showPassword)} edge="end">
+                        {showPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                } }}
+              />
 
-                        <div className="space-y-2">
-                            <label className="text-sm font-semibold text-foreground/80 px-1">Password</label>
-                            <div className="relative">
-                                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={20} />
-                                <input
-                                    type={showPassword ? 'text' : 'password'}
-                                    name="password"
-                                    value={credentials.password}
-                                    onChange={handleChange}
-                                    className="premium-input pl-12 pr-12"
-                                    placeholder="••••••••"
-                                    autoComplete="current-password"
-                                    required
-                                />
-                                <button
-                                    type="button"
-                                    onClick={() => setShowPassword(!showPassword)}
-                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                                >
-                                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                                </button>
-                            </div>
-                        </div>
-
-                        <div className="pt-2">
-                            <button
-                                type="submit"
-                                className="btn-primary group"
-                                disabled={isLoading}
-                            >
-                                {isLoading ? (
-                                    <Loader2 className="animate-spin" size={20} />
-                                ) : (
-                                    <>
-                                        Sign In
-                                        <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
-                                    </>
-                                )}
-                            </button>
-                        </div>
-                    </form>
-
-                    <div className="mt-8 pt-8 border-t border-white/5 text-center">
-                        <p className="text-muted-foreground text-sm">
-                            Only authorized personnel can access the dashboard.
-                            <span className="block mt-1">Need help? Contact system administrator.</span>
-                        </p>
-                    </div>
-                </div>
-
-                <div className="mt-12 flex items-center justify-center gap-6">
-                    <span className="h-px bg-white/5 flex-1"></span>
-                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em]">Secure Session</span>
-                    <span className="h-px bg-white/5 flex-1"></span>
-                </div>
-
-                <div className="mt-6 text-center">
-                    <a
-                        href="/demo-guide.pdf"
-                        target="_blank"
-                        className="text-xs text-muted-foreground hover:text-primary transition-colors underline underline-offset-2"
-                    >
-                        Download Demo Guide (PDF)
-                    </a>
-                </div>
-            </div>
-        </main>
-    );
+              <Button
+                type="submit"
+                fullWidth
+                variant="contained"
+                size="large"
+                disabled={isLoading}
+                sx={{ py: 1.5, fontSize: 16, fontWeight: 700 }}
+              >
+                {isLoading ? <CircularProgress size={24} color="inherit" /> : 'Sign In'}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      </Container>
+    </Box>
+  );
 }

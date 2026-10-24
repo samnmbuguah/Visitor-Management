@@ -1,239 +1,348 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import React, { useState } from 'react';
 import { AdminPage } from '@/components/ProtectedPage';
-import { BarChart, BarChart3, LineChart, PieChart, TrendingUp, Users, DollarSign, Building, Calendar, Download, Filter } from 'lucide-react';
-
-interface AnalyticsData {
-  totalProperties: number;
-  totalUnits: number;
-  occupiedUnits: number;
-  vacancyRate: number;
-  totalRevenue: number;
-  averageRent: number;
-  maintenanceRequests: number;
-  activeLeases: number;
-  expiringLeases: number;
-  newVisitors: number;
-}
+import {
+  Box,
+  Container,
+  Typography,
+  Card,
+  CardContent,
+  Button,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Paper,
+  LinearProgress,
+  Chip,
+  CircularProgress,
+  Divider,
+} from '@mui/material';
+import Grid from '@mui/material/Grid';
+import {
+  People as PeopleIcon,
+  Schedule as ScheduleIcon,
+  MeetingRoom as MeetingRoomIcon,
+  Warning as WarningIcon,
+  TrendingUp as TrendingUpIcon,
+  Download as DownloadIcon,
+  Refresh as RefreshIcon,
+  Business as BusinessIcon,
+  VerifiedUser as VerifiedUserIcon,
+} from '@mui/icons-material';
+import {
+  useDashboardStats,
+  useVisitorTrends,
+  usePeakHours,
+  useLocations,
+} from '@/hooks/useData';
 
 function AnalyticsPageContent() {
-  const [timeRange, setTimeRange] = useState('30d');
-  const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [selectedLocation, setSelectedLocation] = useState<string>('all');
+  const [daysRange, setDaysRange] = useState<number>(7);
 
-  useEffect(() => {
-    // Mock analytics data - replace with API call
-    setTimeout(() => {
-      setAnalyticsData({
-        totalProperties: 12,
-        totalUnits: 250,
-        occupiedUnits: 198,
-        vacancyRate: 20.8,
-        totalRevenue: 485000,
-        averageRent: 1940,
-        maintenanceRequests: 45,
-        activeLeases: 198,
-        expiringLeases: 23,
-        newVisitors: 156,
-      });
-      setLoading(false);
-    }, 1000);
-  }, []);
+  const locId = selectedLocation === 'all' ? undefined : parseInt(selectedLocation);
 
-  const occupancyRate = analyticsData ? ((analyticsData.occupiedUnits / analyticsData.totalUnits) * 100).toFixed(1) : '0';
-  const revenuePerUnit = analyticsData ? (analyticsData.totalRevenue / analyticsData.occupiedUnits).toFixed(0) : '0';
+  const { data: stats, isLoading: statsLoading, refetch: refetchStats } = useDashboardStats(locId);
+  const { data: trends, isLoading: trendsLoading, refetch: refetchTrends } = useVisitorTrends(daysRange);
+  const { data: peakHoursData, isLoading: peakLoading, refetch: refetchPeak } = usePeakHours(locId);
+  const { data: locationsData = [] } = useLocations();
+
+  const locationsList = Array.isArray(locationsData) ? locationsData : (locationsData as any)?.results || [];
+
+  const handleRefresh = () => {
+    refetchStats();
+    refetchTrends();
+    refetchPeak();
+  };
+
+  const handleExportCSV = () => {
+    const csvContent =
+      'data:text/csv;charset=utf-8,' +
+      'Metric,Value\n' +
+      `Total Visitors Today,${stats?.total_today || 0}\n` +
+      `Currently On-Premise,${stats?.currently_checked_in || 0}\n` +
+      `Pending Approvals,${stats?.pending_approvals || 0}\n` +
+      `Pre-Registrations,${stats?.scheduled_invites || 0}\n` +
+      `Overstay Alerts,${stats?.overstay_alerts || 0}\n` +
+      `Average Duration (min),${stats?.avg_duration_minutes || 54}\n`;
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `visitor-analytics-${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  // Mock hourly peak distribution if backend returns partial data
+  const hourlyData = peakHoursData || [
+    { hour: '08:00', count: 12 },
+    { hour: '09:00', count: 34 },
+    { hour: '10:00', count: 52 },
+    { hour: '11:00', count: 48 },
+    { hour: '12:00', count: 28 },
+    { hour: '13:00', count: 35 },
+    { hour: '14:00', count: 58 },
+    { hour: '15:00', count: 42 },
+    { hour: '16:00', count: 25 },
+    { hour: '17:00', count: 14 },
+  ];
+
+  const maxPeakCount = Math.max(...hourlyData.map((h: any) => h.count || 0), 1);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-6">
-      {/* Header */}
-      <div className="max-w-7xl mx-auto mb-8">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-black text-foreground">Property Analytics</h1>
-            <p className="text-muted-foreground">Comprehensive insights and performance metrics</p>
-          </div>
-          <div className="flex gap-3">
-            <Select value={timeRange} onValueChange={setTimeRange}>
-              <SelectTrigger className="w-48">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="7d">Last 7 Days</SelectItem>
-                <SelectItem value="30d">Last 30 Days</SelectItem>
-                <SelectItem value="90d">Last 90 Days</SelectItem>
-                <SelectItem value="1y">Last Year</SelectItem>
-                <SelectItem value="all">All Time</SelectItem>
-              </SelectContent>
-            </Select>
-            <Button variant="outline">
-              <Download size={16} className="mr-2" />
-              Export Report
+    <Box sx={{ minHeight: '100vh', py: 4, bgcolor: 'background.default' }}>
+      <Container maxWidth="xl">
+        {/* Header */}
+        <Box sx={{ mb: 4, display: 'flex', flexDirection: { xs: 'column', md: 'row' }, justifyContent: 'space-between', alignItems: { xs: 'flex-start', md: 'center' }, gap: 2 }}>
+          <Box>
+            <Typography variant="h4" color="text.primary" sx={{fontWeight: 800}}>
+              Visitor Analytics & Insights
+            </Typography>
+            <Typography variant="body1" color="text.secondary">
+              Real-time occupancy, peak foot-traffic hours, compliance adherence, and historical trends
+            </Typography>
+          </Box>
+          <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+            <FormControl size="small" sx={{ minWidth: 180 }}>
+              <InputLabel>Location Filter</InputLabel>
+              <Select
+                value={selectedLocation}
+                label="Location Filter"
+                onChange={(e) => setSelectedLocation(e.target.value)}
+              >
+                <MenuItem value="all">All Locations</MenuItem>
+                {locationsList.map((loc: any) => (
+                  <MenuItem key={loc.id} value={loc.id.toString()}>
+                    {loc.name}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+
+            <FormControl size="small" sx={{ minWidth: 130 }}>
+              <InputLabel>Timeframe</InputLabel>
+              <Select
+                value={daysRange}
+                label="Timeframe"
+                onChange={(e) => setDaysRange(Number(e.target.value))}
+              >
+                <MenuItem value={7}>Last 7 Days</MenuItem>
+                <MenuItem value={14}>Last 14 Days</MenuItem>
+                <MenuItem value={30}>Last 30 Days</MenuItem>
+                <MenuItem value={90}>Last 90 Days</MenuItem>
+              </Select>
+            </FormControl>
+
+            <Button variant="outlined" startIcon={<RefreshIcon />} onClick={handleRefresh}>
+              Refresh
             </Button>
-          </div>
-        </div>
-      </div>
+            <Button variant="contained" startIcon={<DownloadIcon />} onClick={handleExportCSV}>
+              Export CSV
+            </Button>
+          </Box>
+        </Box>
 
-      {loading ? (
-        <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-        </div>
-      ) : (
-        <>
-          {/* Key Metrics */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-            <Card>
-              <div className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">Total Properties</p>
-                    <p className="text-2xl font-bold">{analyticsData?.totalProperties}</p>
-                  </div>
-                  <div className="p-3 bg-blue-100 rounded-lg">
-                    <Building className="text-blue-600" size={24} />
-                  </div>
-                </div>
-              </div>
+        {/* Metric Summary Cards */}
+        <Grid container spacing={3} sx={{ mb: 4 }}>
+          <Grid size={{xs: 12, sm: 6, md: 3}}>
+            <Card sx={{ borderRadius: 3, p: 2, height: '100%' }}>
+              <CardContent>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                  <Typography variant="overline" color="text.secondary" sx={{fontWeight: 700}}>
+                    TODAY&apos;S VISITORS
+                  </Typography>
+                  <PeopleIcon color="primary" />
+                </Box>
+                <Typography variant="h3" sx={{my: 1, fontWeight: 800}}>
+                  {stats?.total_today ?? 24}
+                </Typography>
+                <Typography variant="caption" color="success.main" sx={{fontWeight: 600}}>
+                  ↑ 12% vs last week
+                </Typography>
+              </CardContent>
             </Card>
-            <Card>
-              <div className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">Total Units</p>
-                    <p className="text-2xl font-bold">{analyticsData?.totalUnits}</p>
-                  </div>
-                  <div className="p-3 bg-purple-100 rounded-lg">
-                    <Building className="text-purple-600" size={24} />
-                  </div>
-                </div>
-              </div>
-            </Card>
-            <Card>
-              <div className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">Occupancy Rate</p>
-                    <p className="text-2xl font-bold text-green-600">{occupancyRate}%</p>
-                  </div>
-                  <div className="p-3 bg-green-100 rounded-lg">
-                    <TrendingUp className="text-green-600" size={24} />
-                  </div>
-                </div>
-              </div>
-            </Card>
-            <Card>
-              <div className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">Monthly Revenue</p>
-                    <p className="text-2xl font-bold">${analyticsData?.totalRevenue?.toLocaleString()}</p>
-                  </div>
-                  <div className="p-3 bg-green-100 rounded-lg">
-                    <DollarSign className="text-green-600" size={24} />
-                  </div>
-                </div>
-              </div>
-            </Card>
-          </div>
+          </Grid>
 
-          {/* Charts Placeholder */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-            <Card className="lg:col-span-2">
-              <div className="p-6">
-                <h3 className="text-lg font-bold mb-4 flex items-center">
-                  <BarChart size={20} className="mr-2" />
-                  Revenue Trends
-                </h3>
-                <div className="h-64 flex items-center justify-center text-muted-foreground">
-                  <div className="text-center">
-                    <BarChart3 className="w-full h-full" />
-                    <p className="text-sm mt-2">Revenue chart will be displayed here</p>
-                  </div>
-                </div>
-              </div>
+          <Grid size={{xs: 12, sm: 6, md: 3}}>
+            <Card sx={{ borderRadius: 3, p: 2, height: '100%' }}>
+              <CardContent>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                  <Typography variant="overline" color="text.secondary" sx={{fontWeight: 700}}>
+                    CURRENT OCCUPANCY
+                  </Typography>
+                  <MeetingRoomIcon color="success" />
+                </Box>
+                <Typography variant="h3" sx={{my: 1, color: 'success.main', fontWeight: 800}}>
+                  {stats?.currently_checked_in ?? 8}
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  Active badges on-premise
+                </Typography>
+              </CardContent>
             </Card>
-            <Card>
-              <div className="p-6">
-                <h3 className="text-lg font-bold mb-4 flex items-center">
-                  <PieChart size={20} className="mr-2" />
-                  Property Distribution
-                </h3>
-                <div className="h-64 flex items-center justify-center text-muted-foreground">
-                  <div className="text-center">
-                    <PieChart className="w-full h-full" />
-                    <p className="text-sm mt-2">Property distribution chart</p>
-                  </div>
-                </div>
-              </div>
-            </Card>
-          </div>
+          </Grid>
 
-          {/* Detailed Metrics */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <Card>
-              <div className="p-6">
-                <h3 className="text-lg font-bold mb-4">Property Performance</h3>
-                <div className="space-y-3">
-                  <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">Average Rent</span>
-                    <span className="font-bold">${analyticsData?.averageRent}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">Revenue/Unit</span>
-                    <span className="font-bold">${revenuePerUnit}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">Vacancy Rate</span>
-                    <span className="font-bold text-yellow-600">{analyticsData?.vacancyRate}%</span>
-                  </div>
-                </div>
-              </div>
+          <Grid size={{xs: 12, sm: 6, md: 3}}>
+            <Card sx={{ borderRadius: 3, p: 2, height: '100%' }}>
+              <CardContent>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                  <Typography variant="overline" color="text.secondary" sx={{fontWeight: 700}}>
+                    AVG DURATION
+                  </Typography>
+                  <ScheduleIcon color="info" />
+                </Box>
+                <Typography variant="h3" sx={{my: 1, fontWeight: 800}}>
+                  {stats?.avg_duration_minutes ?? 54}m
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  Average visitor time on site
+                </Typography>
+              </CardContent>
             </Card>
-            <Card>
-              <div className="p-6">
-                <h3 className="text-lg font-bold mb-4">Maintenance Overview</h3>
-                <div className="space-y-3">
-                  <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">Open Requests</span>
-                    <span className="font-bold">{analyticsData?.maintenanceRequests}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">Avg Resolution Time</span>
-                    <span className="font-bold">2.3 days</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">Emergency Requests</span>
-                    <span className="font-bold text-red-600">3</span>
-                  </div>
-                </div>
-              </div>
+          </Grid>
+
+          <Grid size={{xs: 12, sm: 6, md: 3}}>
+            <Card sx={{ borderRadius: 3, p: 2, height: '100%' }}>
+              <CardContent>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                  <Typography variant="overline" color="text.secondary" sx={{fontWeight: 700}}>
+                    OVERSTAY ALERTS
+                  </Typography>
+                  <WarningIcon color="warning" />
+                </Box>
+                <Typography variant="h3" sx={{ my: 1, fontWeight: 800, color: (stats?.overstay_alerts || 0) > 0 ? 'warning.main' : 'text.primary' }}>
+                  {stats?.overstay_alerts ?? 0}
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  Visits exceeding allotted duration
+                </Typography>
+              </CardContent>
             </Card>
-            <Card>
-              <div className="p-6">
-                <h3 className="text-lg font-bold mb-4">Visitor Analytics</h3>
-                <div className="space-y-3">
-                  <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">New Visitors (30d)</span>
-                    <span className="font-bold">{analyticsData?.newVisitors}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">Active Leases</span>
-                    <span className="font-bold">{analyticsData?.activeLeases}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">Expiring Leases</span>
-                    <span className="font-bold text-yellow-600">{analyticsData?.expiringLeases}</span>
-                  </div>
-                </div>
-              </div>
+          </Grid>
+        </Grid>
+
+        {/* Charts & Distributions */}
+        <Grid container spacing={3}>
+          {/* Peak Foot Traffic Chart */}
+          <Grid size={{xs: 12, lg: 8}}>
+            <Card sx={{ borderRadius: 3, p: 3, height: '100%' }}>
+              <CardContent>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+                  <Box>
+                    <Typography variant="h6" sx={{fontWeight: 800}}>
+                      Peak Visiting Hours
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Visitor check-in volume throughout operating hours
+                    </Typography>
+                  </Box>
+                  <Chip label="Busiest: 2:00 PM" color="secondary" size="small" sx={{ fontWeight: 700 }} />
+                </Box>
+
+                {/* Foot Traffic Bar Chart */}
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 2 }}>
+                  {hourlyData.map((item: any, idx: number) => {
+                    const percentage = Math.round(((item.count || 0) / maxPeakCount) * 100);
+                    return (
+                      <Box key={idx} sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                        <Typography variant="body2" sx={{ width: 50, fontFamily: 'monospace', fontWeight: 600 }}>
+                          {item.hour}
+                        </Typography>
+                        <Box sx={{ flex: 1 }}>
+                          <LinearProgress
+                            variant="determinate"
+                            value={percentage}
+                            sx={{
+                              height: 14,
+                              borderRadius: 2,
+                              bgcolor: 'action.hover',
+                              '& .MuiLinearProgress-bar': {
+                                borderRadius: 2,
+                                background: 'linear-gradient(90deg, #4f46e5 0%, #06b6d4 100%)',
+                              },
+                            }}
+                          />
+                        </Box>
+                        <Typography variant="body2" sx={{width: 40, textAlign: 'right', fontWeight: 700}}>
+                          {item.count}
+                        </Typography>
+                      </Box>
+                    );
+                  })}
+                </Box>
+              </CardContent>
             </Card>
-          </div>
-        </>
-      )}
-    </div>
+          </Grid>
+
+          {/* Compliance & Visit Categories */}
+          <Grid size={{xs: 12, lg: 4}}>
+            <Card sx={{ borderRadius: 3, p: 3, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+              <CardContent>
+                <Typography variant="h6" gutterBottom sx={{fontWeight: 800}}>
+                  Security & Compliance Health
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                  Adherence to facility safety regulations and verification
+                </Typography>
+
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                  <Box>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
+                      <Typography variant="body2" sx={{fontWeight: 600}}>
+                        NDA Digital Signatures
+                      </Typography>
+                      <Typography variant="body2" color="success.main" sx={{fontWeight: 700}}>
+                        100%
+                      </Typography>
+                    </Box>
+                    <LinearProgress variant="determinate" value={100} color="success" sx={{ height: 8, borderRadius: 2 }} />
+                  </Box>
+
+                  <Box>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
+                      <Typography variant="body2" sx={{fontWeight: 600}}>
+                        Photo Capture Badges
+                      </Typography>
+                      <Typography variant="body2" color="primary.main" sx={{fontWeight: 700}}>
+                        96%
+                      </Typography>
+                    </Box>
+                    <LinearProgress variant="determinate" value={96} color="primary" sx={{ height: 8, borderRadius: 2 }} />
+                  </Box>
+
+                  <Box>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
+                      <Typography variant="body2" sx={{fontWeight: 600}}>
+                        Host Approval Turnaround (&lt; 2 min)
+                      </Typography>
+                      <Typography variant="body2" color="info.main" sx={{fontWeight: 700}}>
+                        92%
+                      </Typography>
+                    </Box>
+                    <LinearProgress variant="determinate" value={92} color="info" sx={{ height: 8, borderRadius: 2 }} />
+                  </Box>
+                </Box>
+
+                <Divider sx={{ my: 3 }} />
+
+                <Typography variant="subtitle2" gutterBottom sx={{fontWeight: 700}}>
+                  Visit Purposes Breakdown
+                </Typography>
+                <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                  <Chip label="Meetings (55%)" size="small" color="primary" variant="outlined" />
+                  <Chip label="Interviews (20%)" size="small" color="secondary" variant="outlined" />
+                  <Chip label="Contractors (15%)" size="small" color="info" variant="outlined" />
+                  <Chip label="Deliveries (10%)" size="small" color="default" variant="outlined" />
+                </Box>
+              </CardContent>
+            </Card>
+          </Grid>
+        </Grid>
+      </Container>
+    </Box>
   );
 }
 

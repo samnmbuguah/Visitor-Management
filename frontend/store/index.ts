@@ -34,31 +34,31 @@ interface AppState {
 const PERMISSION_MATRIX = {
   SUPER_ADMIN: [
     'dashboard.view', 'users.manage', 'locations.manage', 'settings.manage',
-    'maintenance.manage', 'assets.manage', 'invites.manage', 'reports.view'
+    'visitors.manage', 'invites.manage', 'watchlist.manage', 'notifications.manage',
+    'analytics.view', 'cameras.manage', 'tenants.manage'
   ],
   ADMIN: [
-    'dashboard.view', 'locations.manage', 'maintenance.manage', 
-    'assets.manage', 'invites.manage', 'reports.view'
+    'dashboard.view', 'locations.manage', 'visitors.manage', 'invites.manage',
+    'watchlist.manage', 'notifications.manage', 'analytics.view', 'cameras.manage'
   ],
   HOST: [
-    'visitors.view', 'visitors.checkin', 'visitors.checkout', 'notifications.view'
+    'visitors.view', 'visitors.approve', 'invites.manage', 'notifications.view'
   ],
   RECEPTIONIST: [
-    'visitors.checkin', 'visitors.checkout', 'visitors.search'
+    'visitors.view', 'visitors.checkin', 'visitors.checkout', 'visitors.search', 'badges.print'
   ],
-  MANAGER: [
-    'dashboard.view', 'locations.view', 'leases.view',
-    'maintenance.view', 'assets.view', 'reports.view'
+  STAFF: [
+    'visitors.view', 'invites.manage'
   ]
 } as const;
 
 // Feature Access Matrix
 const FEATURE_ACCESS = {
-  SUPER_ADMIN: ['admin', 'maintenance', 'assets', 'invites', 'users', 'settings', 'reports'],
-  ADMIN: ['admin', 'maintenance', 'assets', 'invites', 'reports'],
-  HOST: ['host', 'visitors', 'notifications'],
-  RECEPTIONIST: ['receptionist', 'checkin', 'checkout'],
-  MANAGER: ['admin', 'analytics', 'reports', 'leases']
+  SUPER_ADMIN: ['admin', 'visitors', 'invites', 'watchlist', 'locations', 'notifications', 'analytics', 'cameras', 'tenants', 'settings'],
+  ADMIN: ['admin', 'visitors', 'invites', 'watchlist', 'locations', 'notifications', 'analytics', 'cameras', 'tenants'],
+  HOST: ['host', 'visitors', 'invites', 'notifications'],
+  RECEPTIONIST: ['receptionist', 'checkin', 'checkout', 'visitors'],
+  STAFF: ['visitors', 'invites']
 } as const;
 
 // Create the store

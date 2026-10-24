@@ -1,26 +1,46 @@
 'use client';
 
+import React from 'react';
 import Link from 'next/link';
+import {
+  Box,
+  Container,
+  Card,
+  Typography,
+  Button,
+} from '@mui/material';
+import {
+  CheckCircle as CheckCircleIcon,
+  Home as HomeIcon,
+} from '@mui/icons-material';
 
 export default function SuccessPage() {
-    return (
-        <main className="min-h-screen flex items-center justify-center p-8">
-            <div className="animated-bg" />
-            <div className="glass-card p-12 max-w-lg w-full text-center">
-                <div className="success-checkmark mx-auto mb-6">
-                    <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                    </svg>
-                </div>
-                <h1 className="text-3xl font-bold mb-3 text-white">Welcome!</h1>
-                <p className="text-gray-400 text-lg mb-8">You have successfully checked in.</p>
+  return (
+    <Box
+      sx={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        bgcolor: 'background.default',
+        p: 3,
+      }}
+    >
+      <Card sx={{ maxWidth: 480, width: '100%', p: 5, textAlign: 'center', borderRadius: 4, boxShadow: '0 8px 32px rgba(0,0,0,0.08)' }}>
+        <CheckCircleIcon sx={{ fontSize: 80, color: 'success.main', mb: 2 }} />
+        <Typography variant="h3" gutterBottom sx={{fontWeight: 800}}>
+          Welcome!
+        </Typography>
+        <Typography variant="body1" color="text.secondary" sx={{ mb: 4, fontSize: 18 }}>
+          You have successfully checked in. Your host has been notified and will receive you shortly.
+        </Typography>
 
-                <Link href="/">
-                    <button className="px-8 py-3 bg-white/10 hover:bg-white/20 rounded-full transition-colors text-white font-medium">
-                        Back to Home
-                    </button>
-                </Link>
-            </div>
-        </main>
-    );
+        <Link href="/" passHref style={{ textDecoration: 'none' }}>
+          <Button variant="contained" size="large" startIcon={<HomeIcon />} sx={{ px: 4, py: 1.5, fontWeight: 700 }}>
+            Back to Home
+          </Button>
+        </Link>
+      </Card>
+    </Box>
+  );
 }

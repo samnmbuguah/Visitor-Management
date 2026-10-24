@@ -212,13 +212,20 @@ export interface Visitor {
     name: string;
     email: string;
     phone: string;
+    company?: string;
+    badge_number?: string;
     purpose: string;
     status: 'PENDING' | 'CHECKED_IN' | 'CHECKED_OUT' | 'REJECTED';
     photo?: string;
     checkin_time: string;
     checkout_time?: string;
+    host?: any;
+    location?: any;
     host_name?: string;
     location_name?: string;
+    expected_duration?: number;
+    nda_accepted?: boolean;
+    signature?: string;
 }
 
 export interface VisitorCreate {
@@ -338,18 +345,6 @@ export const createNotificationTemplate = (data: any) => api.post('/notification
 export const updateNotificationTemplate = (id: number, data: any) => api.put(`/notification-templates/${id}/`, data);
 export const deleteNotificationTemplate = (id: number) => api.delete(`/notification-templates/${id}/`);
 export const getNotificationLogs = (location?: number) => api.get('/notification-logs/', { params: { location } });
-
-// Property Management
-export const getAssets = (params?: any) => api.get('/property-management/assets/', { params });
-export const createAsset = (data: any) => api.post('/property-management/assets/', data);
-export const getAssetTypes = () => api.get('/property-management/asset-types/');
-export const getMaintenanceRequests = (params?: any) => api.get('/property-management/requests/', { params });
-export const createMaintenanceRequest = (data: any) => api.post('/property-management/requests/', data);
-export const getVendors = (params?: any) => api.get('/property-management/vendors/', { params });
-export const createVendor = (data: any) => api.post('/property-management/vendors/', data);
-export const getMaintenanceCategories = () => api.get('/property-management/categories/');
-export const getMaintenanceSchedules = (params?: any) => api.get('/property-management/schedules/', { params });
-export const getWorkOrders = (params?: any) => api.get('/property-management/work-orders/', { params });
 
 // Security & Cameras
 export const getSecurityDashboard = (params?: any) => api.get('/security/dashboard/', { params });

@@ -1,139 +1,282 @@
 'use client';
 
-import { useState } from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
-import { LogOut, LayoutDashboard, UserCheck, Settings, Bell, ShieldCheck, Mail, Menu, X, User, Wrench, Building, Users, Shield, Camera } from 'lucide-react';
+import {
+  AppBar,
+  Toolbar,
+  Typography,
+  Button,
+  IconButton,
+  Box,
+  Drawer,
+  List,
+  ListItem,
+  ListItemButton,
+  ListItemIcon,
+  ListItemText,
+  Chip,
+  Avatar,
+  Menu,
+  MenuItem,
+  Divider,
+  Container,
+  useTheme,
+  useMediaQuery,
+} from '@mui/material';
+import {
+  Dashboard as DashboardIcon,
+  People as PeopleIcon,
+  QrCode as QrCodeIcon,
+  Security as SecurityIcon,
+  LocationOn as LocationIcon,
+  Notifications as NotificationsIcon,
+  BarChart as BarChartIcon,
+  Business as BusinessIcon,
+  Person as PersonIcon,
+  Menu as MenuIcon,
+  Logout as LogoutIcon,
+  Badge as BadgeIcon,
+  MeetingRoom as MeetingRoomIcon,
+} from '@mui/icons-material';
 
 export default function Navigation() {
-    const { user, logout } = useAuth();
-    const pathname = usePathname();
-    const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { user, logout } = useAuth();
+  const pathname = usePathname();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
-    if (!user) return null;
+  if (!user) return null;
 
-    const navItems = [
-        { href: '/admin', label: 'Dashboard', icon: LayoutDashboard, roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER'] },
-        { href: '/admin/cctv', label: 'CCTV', icon: Shield, roles: ['SUPER_ADMIN', 'ADMIN'] },
-        { href: '/admin/cameras', label: 'Cameras', icon: Camera, roles: ['SUPER_ADMIN', 'ADMIN'] },
-        { href: '/admin/maintenance', label: 'Maintenance', icon: Wrench, roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER'] },
-        { href: '/admin/assets', label: 'Assets', icon: Building, roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER'] },
-        { href: '/admin/tenants', label: 'Tenants', icon: Users, roles: ['SUPER_ADMIN'] },
-        { href: '/admin/leases', label: 'Leases', icon: Mail, roles: ['SUPER_ADMIN', 'MANAGER'] },
-        { href: '/host', label: 'Property Manager', icon: UserCheck, roles: ['HOST'] },
-        { href: '/receptionist', label: 'Receptionist', icon: UserCheck, roles: ['RECEPTIONIST'] },
-        { href: '/profile', label: 'Profile', icon: User, roles: ['SUPER_ADMIN', 'ADMIN', 'HOST', 'RECEPTIONIST', 'MANAGER'] },
-    ];
+  const handleDrawerToggle = () => {
+    setMobileOpen(!mobileOpen);
+  };
 
-    const filteredItems = navItems.filter(item => item.roles.includes(user.role));
+  const handleUserMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
+    setAnchorEl(event.currentTarget);
+  };
 
-    return (
-        <>
-            <nav className="nav-blur">
-                <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-                    <div className="flex items-center gap-8">
-                        <Link href="/" className="text-xl font-black bg-gradient-to-r from-primary to-indigo-400 bg-clip-text text-transparent flex items-center gap-2">
-                            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-white text-xs">PM</div>
-                            <span className="hidden sm:inline">Property Management</span>
-                        </Link>
+  const handleUserMenuClose = () => {
+    setAnchorEl(null);
+  };
 
-                        <div className="hidden md:flex items-center gap-2">
-                            {filteredItems.map(item => {
-                                const Icon = item.icon;
-                                const isActive = pathname === item.href;
-                                return (
-                                    <Link
-                                        key={item.href}
-                                        href={item.href}
-                                        className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all ${isActive
-                                            ? 'bg-primary/10 text-primary border border-primary/20'
-                                            : 'text-muted-foreground hover:text-foreground hover:bg-white/5'
-                                            }`}
-                                    >
-                                        <Icon size={18} />
-                                        {item.label}
-                                    </Link>
-                                );
-                            })}
-                        </div>
-                    </div>
+  const navItems = [
+    { href: '/admin', label: 'Dashboard', icon: DashboardIcon, roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER'] },
+    { href: '/receptionist', label: 'Receptionist', icon: BadgeIcon, roles: ['SUPER_ADMIN', 'ADMIN', 'RECEPTIONIST'] },
+    { href: '/host', label: 'Host Portal', icon: PeopleIcon, roles: ['SUPER_ADMIN', 'HOST'] },
+    { href: '/admin/invites', label: 'Invites', icon: QrCodeIcon, roles: ['SUPER_ADMIN', 'ADMIN'] },
+    { href: '/admin/watchlist', label: 'Watchlist', icon: SecurityIcon, roles: ['SUPER_ADMIN', 'ADMIN'] },
+    { href: '/admin/locations', label: 'Locations', icon: LocationIcon, roles: ['SUPER_ADMIN', 'ADMIN'] },
+    { href: '/admin/analytics', label: 'Analytics', icon: BarChartIcon, roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER'] },
+    { href: '/admin/notifications', label: 'Notifications', icon: NotificationsIcon, roles: ['SUPER_ADMIN', 'ADMIN'] },
+    { href: '/admin/cctv', label: 'CCTV', icon: SecurityIcon, roles: ['SUPER_ADMIN', 'ADMIN'] },
+    { href: '/admin/tenants', label: 'Tenants', icon: BusinessIcon, roles: ['SUPER_ADMIN'] },
+    { href: '/profile', label: 'Profile', icon: PersonIcon, roles: ['SUPER_ADMIN', 'ADMIN', 'HOST', 'RECEPTIONIST', 'MANAGER'] },
+  ];
 
-                    <div className="flex items-center gap-3">
-                        <div className="hidden sm:flex flex-col items-end mr-2">
-                            <span className="text-sm font-black text-foreground">{user.username}</span>
-                            <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest opacity-60">{user.role}</span>
-                        </div>
+  const filteredItems = navItems.filter((item) => item.roles.includes(user.role));
 
-                        <button
-                            onClick={() => setIsMenuOpen(!isMenuOpen)}
-                            className="md:hidden p-3 rounded-2xl bg-white/5 border border-white/10 text-foreground active:scale-90 transition-all font-bold"
-                        >
-                            {isMenuOpen ? <X size={20} /> : <Menu size={20} />}
-                        </button>
+  const drawerContent = (
+    <Box sx={{ width: 280, p: 2 }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, px: 2, py: 2 }}>
+        <Avatar sx={{ bgcolor: 'primary.main', width: 36, height: 36, fontWeight: 700 }}>V</Avatar>
+        <Box>
+          <Typography variant="subtitle1" sx={{ lineHeight: 1.2, fontWeight: 700 }}>
+            Vizmo
+          </Typography>
+          <Typography variant="caption" color="text.secondary">
+            Visitor Management
+          </Typography>
+        </Box>
+      </Box>
+      <Divider sx={{ my: 1 }} />
+      <List>
+        {filteredItems.map((item) => {
+          const Icon = item.icon;
+          const isActive = pathname === item.href;
+          return (
+            <ListItem key={item.href} disablePadding sx={{ mb: 0.5 }}>
+              <ListItemButton
+                component={Link}
+                href={item.href}
+                onClick={() => setMobileOpen(false)}
+                selected={isActive}
+                sx={{
+                  borderRadius: 2,
+                  '&.Mui-selected': {
+                    bgcolor: 'primary.main',
+                    color: 'primary.contrastText',
+                    '&:hover': { bgcolor: 'primary.dark' },
+                    '& .MuiListItemIcon-root': { color: 'primary.contrastText' },
+                  },
+                }}
+              >
+                <ListItemIcon sx={{ minWidth: 40, color: isActive ? 'inherit' : 'text.secondary' }}>
+                  <Icon />
+                </ListItemIcon>
+                <ListItemText
+                  primary={item.label}
+                  slotProps={{
+                    primary: {
+                      sx: { fontWeight: isActive ? 700 : 500, fontSize: '0.9rem' },
+                    },
+                  }}
+                />
+              </ListItemButton>
+            </ListItem>
+          );
+        })}
+      </List>
+      <Divider sx={{ my: 2 }} />
+      <Box sx={{ p: 2 }}>
+        <Typography variant="body2" sx={{fontWeight: 600}}>
+          {user.username}
+        </Typography>
+        <Chip label={user.role} size="small" color="primary" variant="outlined" sx={{ mt: 0.5, mb: 2 }} />
+        <Button
+          fullWidth
+          variant="outlined"
+          color="error"
+          startIcon={<LogoutIcon />}
+          onClick={logout}
+          size="small"
+        >
+          Sign Out
+        </Button>
+      </Box>
+    </Box>
+  );
 
-                        <button
-                            onClick={logout}
-                            className="hidden md:flex p-3 rounded-2xl bg-destructive/10 text-destructive hover:bg-destructive/20 transition-all border border-destructive/20 active:scale-95"
-                            title="Logout"
-                        >
-                            <LogOut size={20} />
-                        </button>
-                    </div>
-                </div>
-            </nav>
+  return (
+    <>
+      <AppBar position="sticky" color="default" elevation={0} sx={{ borderBottom: 1, borderColor: 'divider', bgcolor: 'background.paper' }}>
+        <Container maxWidth="xl">
+          <Toolbar disableGutters sx={{ justifyContent: 'space-between', minHeight: 64 }}>
+            {/* Logo */}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+              <Link href="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 10 }}>
+                <Box
+                  sx={{
+                    width: 38,
+                    height: 38,
+                    borderRadius: 2.5,
+                    background: 'linear-gradient(135deg, #4f46e5 0%, #06b6d4 100%)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#fff',
+                    fontWeight: 900,
+                    fontSize: '1.1rem',
+                  }}
+                >
+                  V
+                </Box>
+                <Box>
+                  <Typography variant="h6" color="text.primary" sx={{lineHeight: 1.1, fontWeight: 800}}>
+                    Vizmo
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary" sx={{ display: { xs: 'none', sm: 'block' }, fontWeight: 600 }}>
+                    Visitor Management
+                  </Typography>
+                </Box>
+              </Link>
 
-            {/* Mobile Sidebar / Menu Overlay */}
-            {isMenuOpen && (
-                <div className="fixed inset-0 z-[60] md:hidden">
-                    <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" onClick={() => setIsMenuOpen(false)} />
-                    <div className="absolute right-0 top-0 bottom-0 w-3/4 max-w-sm glass-card rounded-none rounded-l-[3rem] p-8 border-l border-white/10 shadow-[-20px_0_50px_rgba(0,0,0,0.3)] animate-in slide-in-from-right duration-300">
-                        <div className="flex items-center justify-between mb-12">
-                            <div className="flex items-center gap-3">
-                                <div className="p-3 bg-primary/10 rounded-2xl text-primary border border-primary/20">
-                                    <User size={24} />
-                                </div>
-                                <div>
-                                    <p className="font-black text-foreground">{user.username}</p>
-                                    <p className="text-[10px] uppercase font-black tracking-widest text-muted-foreground">{user.role}</p>
-                                </div>
-                            </div>
-                            <button onClick={() => setIsMenuOpen(false)} className="p-2 text-muted-foreground"><X size={24} /></button>
-                        </div>
+              {/* Desktop Nav Items */}
+              {!isMobile && (
+                <Box sx={{ display: 'flex', gap: 0.5, ml: 2 }}>
+                  {filteredItems.map((item) => {
+                    const Icon = item.icon;
+                    const isActive = pathname === item.href;
+                    return (
+                      <Button
+                        key={item.href}
+                        component={Link}
+                        href={item.href}
+                        startIcon={<Icon fontSize="small" />}
+                        sx={{
+                          fontSize: '0.85rem',
+                          fontWeight: isActive ? 700 : 500,
+                          color: isActive ? 'primary.main' : 'text.secondary',
+                          bgcolor: isActive ? 'action.selected' : 'transparent',
+                          px: 1.5,
+                          py: 0.75,
+                          '&:hover': {
+                            bgcolor: 'action.hover',
+                            color: 'text.primary',
+                          },
+                        }}
+                      >
+                        {item.label}
+                      </Button>
+                    );
+                  })}
+                </Box>
+              )}
+            </Box>
 
-                        <div className="space-y-4">
-                            {filteredItems.map(item => {
-                                const Icon = item.icon;
-                                const isActive = pathname === item.href;
-                                return (
-                                    <Link
-                                        key={item.href}
-                                        href={item.href}
-                                        onClick={() => setIsMenuOpen(false)}
-                                        className={`flex items-center gap-4 p-5 rounded-2xl text-lg font-black transition-all ${isActive
-                                            ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/30'
-                                            : 'text-muted-foreground hover:bg-white/5'
-                                            }`}
-                                    >
-                                        <Icon size={24} />
-                                        {item.label}
-                                    </Link>
-                                );
-                            })}
-                        </div>
+            {/* User Profile & Actions */}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+              <Box sx={{ textAlign: 'right', display: { xs: 'none', sm: 'block' } }}>
+                <Typography variant="body2" color="text.primary" sx={{ lineHeight: 1.2, fontWeight: 700 }}>
+                  {user.username}
+                </Typography>
+                <Typography variant="caption" color="primary.main" sx={{fontWeight: 600, textTransform: 'uppercase'}}>
+                  {user.role}
+                </Typography>
+              </Box>
 
-                        <div className="absolute bottom-12 left-8 right-8">
-                            <button
-                                onClick={logout}
-                                className="w-full flex items-center justify-center gap-3 p-5 rounded-2xl bg-destructive/10 text-destructive font-black text-lg border border-destructive/20 active:scale-95 transition-all"
-                            >
-                                <LogOut size={24} />
-                                Logout
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-        </>
-    );
+              <IconButton onClick={handleUserMenuOpen} size="small" sx={{ p: 0.5 }}>
+                <Avatar sx={{ width: 34, height: 34, bgcolor: 'primary.light', fontSize: '0.9rem', fontWeight: 700 }}>
+                  {user.username.charAt(0).toUpperCase()}
+                </Avatar>
+              </IconButton>
+
+              <Menu
+                anchorEl={anchorEl}
+                open={Boolean(anchorEl)}
+                onClose={handleUserMenuClose}
+                transformOrigin={{ horizontal: 'right', vertical: 'top' }}
+                anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+                slotProps={{
+                  paper: {
+                    sx: { mt: 1, minWidth: 180, borderRadius: 2 },
+                  },
+                }}
+              >
+                <MenuItem component={Link} href="/profile" onClick={handleUserMenuClose}>
+                  <ListItemIcon><PersonIcon fontSize="small" /></ListItemIcon>
+                  Profile
+                </MenuItem>
+                <Divider />
+                <MenuItem onClick={() => { handleUserMenuClose(); logout(); }} sx={{ color: 'error.main' }}>
+                  <ListItemIcon sx={{ color: 'error.main' }}><LogoutIcon fontSize="small" /></ListItemIcon>
+                  Sign Out
+                </MenuItem>
+              </Menu>
+
+              {isMobile && (
+                <IconButton onClick={handleDrawerToggle} color="inherit">
+                  <MenuIcon />
+                </IconButton>
+              )}
+            </Box>
+          </Toolbar>
+        </Container>
+      </AppBar>
+
+      {/* Mobile Drawer */}
+      <Drawer
+        anchor="right"
+        open={mobileOpen}
+        onClose={handleDrawerToggle}
+        ModalProps={{ keepMounted: true }}
+      >
+        {drawerContent}
+      </Drawer>
+    </>
+  );
 }

@@ -1,11 +1,10 @@
 import { describe, it, expect } from "vitest";
 import {
   visitorSchema,
+  preRegistrationSchema,
+  watchlistSchema,
+  locationSchema,
   loginSchema,
-  leaseSchema,
-  maintenanceRequestSchema,
-  assetSchema,
-  tenantSchema,
   validate,
 } from "@/lib/validation";
 
@@ -68,51 +67,57 @@ describe("visitorSchema", () => {
   });
 });
 
-describe("leaseSchema", () => {
-  it("accepts valid lease", () => {
-    const result = leaseSchema.safeParse({
-      unit_number: "A101",
-      tenant: 1,
-      monthly_rent: 1500,
-      start_date: "2026-01-01",
-      end_date: "2027-01-01",
+describe("preRegistrationSchema", () => {
+  it("accepts valid invite", () => {
+    const result = preRegistrationSchema.safeParse({
+      visitor_name: "Jane Smith",
+      visitor_email: "jane@company.com",
+      host: 1,
+      location: 1,
+      expected_arrival: "2026-10-25T10:00:00Z",
     });
     expect(result.success).toBe(true);
   });
 
-  it("rejects negative rent", () => {
-    const result = leaseSchema.safeParse({
-      unit_number: "A101",
-      tenant: 1,
-      monthly_rent: -100,
-      start_date: "2026-01-01",
-      end_date: "2027-01-01",
+  it("rejects missing arrival", () => {
+    const result = preRegistrationSchema.safeParse({
+      visitor_name: "Jane Smith",
+      visitor_email: "jane@company.com",
+      host: 1,
+      location: 1,
+      expected_arrival: "",
     });
     expect(result.success).toBe(false);
   });
 });
 
-describe("maintenanceRequestSchema", () => {
-  it("accepts valid request", () => {
-    const result = maintenanceRequestSchema.safeParse({
-      title: "Leaky faucet",
-      description: "The kitchen faucet has been leaking for 3 days",
-      priority: "HIGH",
-      location: 1,
-      category: 1,
+describe("watchlistSchema", () => {
+  it("accepts valid watchlist entry", () => {
+    const result = watchlistSchema.safeParse({
+      name: "Restricted Individual",
+      email: "banned@example.com",
+      reason: "Security risk",
     });
     expect(result.success).toBe(true);
   });
 
-  it("rejects short description", () => {
-    const result = maintenanceRequestSchema.safeParse({
-      title: "Leak",
-      description: "Too short",
-      priority: "LOW",
-      location: 1,
-      category: 1,
+  it("rejects missing reason", () => {
+    const result = watchlistSchema.safeParse({
+      name: "Restricted Individual",
+      reason: "",
     });
     expect(result.success).toBe(false);
+  });
+});
+
+describe("locationSchema", () => {
+  it("accepts valid location", () => {
+    const result = locationSchema.safeParse({
+      name: "Headquarters",
+      address: "100 Main St",
+      floor: "3rd Floor",
+    });
+    expect(result.success).toBe(true);
   });
 });
 

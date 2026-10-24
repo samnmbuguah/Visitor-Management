@@ -1,370 +1,537 @@
 'use client';
 
-import { useState } from 'react';
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import React, { useState } from 'react';
+import { AdminPage } from '@/components/ProtectedPage';
 import {
-    getLocations,
-    getKiosks,
-    createLocation,
-    updateLocation,
-    deleteLocation,
-    createKiosk,
-    deleteKiosk,
-    Location,
-    Kiosk
-} from '@/lib/api';
+  Box,
+  Container,
+  Typography,
+  Card,
+  CardContent,
+  Button,
+  IconButton,
+  TextField,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  Chip,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  FormControlLabel,
+  Switch,
+  CircularProgress,
+  Tabs,
+  Tab,
+  Tooltip,
+} from '@mui/material';
+import Grid from '@mui/material/Grid';
+import {
+  LocationCity as BuildingIcon,
+  Devices as KioskIcon,
+  Add as AddIcon,
+  Edit as EditIcon,
+  Delete as DeleteIcon,
+  CheckCircle as ActiveIcon,
+  Policy as PolicyIcon,
+  Refresh as RefreshIcon,
+} from '@mui/icons-material';
+import {
+  useLocations,
+  useKiosks,
+  useCreateLocation,
+  useUpdateLocation,
+  useDeleteLocation,
+  useCreateKiosk,
+} from '@/hooks/useData';
+
+function LocationsPageContent() {
+  const [activeTab, setActiveTab] = useState(0);
+
+  // Modals
+  const [openLocationModal, setOpenLocationModal] = useState(false);
+  const [editingLocation, setEditingLocation] = useState<any | null>(null);
+  const [locationForm, setLocationForm] = useState({
+    name: '',
+    address: '',
+    floor: '',
+    timezone: 'UTC',
+    require_nda: true,
+    require_photo: true,
+  });
+
+  const [openKioskModal, setOpenKioskModal] = useState(false);
+  const [kioskForm, setKioskForm] = useState({
+    name: '',
+    device_id: '',
+    location_id: '',
+  });
+
+  // Queries
+  const { data: locationsData = [], isLoading: locationsLoading, refetch: refetchLocations } = useLocations();
+  const { data: kiosksData = [], isLoading: kiosksLoading, refetch: refetchKiosks } = useKiosks();
+
+  // Mutations
+  const createLocationMutation = useCreateLocation();
+  const updateLocationMutation = useUpdateLocation();
+  const deleteLocationMutation = useDeleteLocation();
+  const createKioskMutation = useCreateKiosk();
+
+  const locationsList = Array.isArray(locationsData) ? locationsData : (locationsData as any)?.results || [];
+  const kiosksList = Array.isArray(kiosksData) ? kiosksData : (kiosksData as any)?.results || [];
+
+  const handleOpenAddLocation = () => {
+    setEditingLocation(null);
+    setLocationForm({
+      name: '',
+      address: '',
+      floor: '',
+      timezone: 'UTC',
+      require_nda: true,
+      require_photo: true,
+    });
+    setOpenLocationModal(true);
+  };
+
+  const handleOpenEditLocation = (loc: any) => {
+    setEditingLocation(loc);
+    setLocationForm({
+      name: loc.name || '',
+      address: loc.address || '',
+      floor: loc.floor || '',
+      timezone: loc.timezone || 'UTC',
+      require_nda: loc.require_nda !== false,
+      require_photo: loc.require_photo !== false,
+    });
+    setOpenLocationModal(true);
+  };
+
+  const handleLocationSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!locationForm.name) {
+      alert('Location name is required.');
+      return;
+    }
+
+    try {
+      if (editingLocation) {
+        await updateLocationMutation.mutateAsync({
+          id: editingLocation.id,
+          data: locationForm,
+        });
+      } else {
+        await createLocationMutation.mutateAsync({
+          ...locationForm,
+          is_active: true,
+        });
+      }
+      setOpenLocationModal(false);
+      refetchLocations();
+    } catch (err: any) {
+      alert(err.response?.data?.error || 'Failed to save location.');
+    }
+  };
+
+  const handleDeleteLocation = async (id: number) => {
+    if (!confirm('Are you sure you want to delete this facility location?')) return;
+    try {
+      await deleteLocationMutation.mutateAsync(id);
+      refetchLocations();
+    } catch (err: any) {
+      alert('Failed to delete location.');
+    }
+  };
+
+  const handleKioskSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!kioskForm.name || !kioskForm.location_id) {
+      alert('Kiosk name and location are required.');
+      return;
+    }
+
+    try {
+      await createKioskMutation.mutateAsync({
+        name: kioskForm.name,
+        device_id: kioskForm.device_id || `KIOSK-${Date.now().toString().slice(-4)}`,
+        location: parseInt(kioskForm.location_id),
+        is_active: true,
+      });
+      setOpenKioskModal(false);
+      setKioskForm({ name: '', device_id: '', location_id: '' });
+      refetchKiosks();
+    } catch (err: any) {
+      alert(err.response?.data?.error || 'Failed to register kiosk.');
+    }
+  };
+
+  return (
+    <Box sx={{ minHeight: '100vh', py: 4, bgcolor: 'background.default' }}>
+      <Container maxWidth="xl">
+        {/* Header */}
+        <Box sx={{ mb: 4, display: 'flex', flexDirection: { xs: 'column', md: 'row' }, justifyContent: 'space-between', alignItems: { xs: 'flex-start', md: 'center' }, gap: 2 }}>
+          <Box>
+            <Typography variant="h4" color="text.primary" sx={{fontWeight: 800}}>
+              Locations & Kiosks
+            </Typography>
+            <Typography variant="body1" color="text.secondary">
+              Configure multi-building facilities, security policies, and self-service iPad/tablet kiosks
+            </Typography>
+          </Box>
+          <Box sx={{ display: 'flex', gap: 2 }}>
+            <Button
+              variant="outlined"
+              startIcon={<RefreshIcon />}
+              onClick={() => {
+                refetchLocations();
+                refetchKiosks();
+              }}
+            >
+              Refresh
+            </Button>
+            {activeTab === 0 ? (
+              <Button
+                variant="contained"
+                startIcon={<AddIcon />}
+                onClick={handleOpenAddLocation}
+              >
+                Add Location
+              </Button>
+            ) : (
+              <Button
+                variant="contained"
+                startIcon={<AddIcon />}
+                onClick={() => setOpenKioskModal(true)}
+              >
+                Add Kiosk
+              </Button>
+            )}
+          </Box>
+        </Box>
+
+        {/* Tabs */}
+        <Paper sx={{ mb: 3, borderRadius: 3 }}>
+          <Tabs
+            value={activeTab}
+            onChange={(_, val) => setActiveTab(val)}
+            indicatorColor="primary"
+            textColor="primary"
+            sx={{ px: 2 }}
+          >
+            <Tab label="Buildings & Locations" icon={<BuildingIcon />} iconPosition="start" />
+            <Tab label="Self-Service Tablet Kiosks" icon={<KioskIcon />} iconPosition="start" />
+          </Tabs>
+        </Paper>
+
+        {/* Tab 0: Locations */}
+        {activeTab === 0 && (
+          <Grid container spacing={3}>
+            {locationsLoading ? (
+              <Box sx={{ display: 'flex', justifyContent: 'center', width: '100%', py: 8 }}>
+                <CircularProgress />
+              </Box>
+            ) : locationsList.length === 0 ? (
+              <Grid size={12}>
+                <Card sx={{ p: 6, textAlign: 'center' }}>
+                  <BuildingIcon sx={{ fontSize: 48, color: 'text.disabled', mb: 2 }} />
+                  <Typography variant="h6" color="text.secondary">
+                    No locations configured yet. Add your first facility to begin checking in visitors.
+                  </Typography>
+                </Card>
+              </Grid>
+            ) : (
+              locationsList.map((loc: any) => (
+                <Grid size={{xs: 12, md: 6, lg: 4}} key={loc.id}>
+                  <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column', borderRadius: 3 }}>
+                    <CardContent sx={{ flex: 1, p: 3 }}>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                          <BuildingIcon color="primary" sx={{ fontSize: 28 }} />
+                          <Typography variant="h6" sx={{fontWeight: 800}}>
+                            {loc.name}
+                          </Typography>
+                        </Box>
+                        <Chip
+                          label={loc.is_active ? 'Active' : 'Inactive'}
+                          color={loc.is_active ? 'success' : 'default'}
+                          size="small"
+                        />
+                      </Box>
+
+                      <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                        {loc.address || 'Standard Corporate Facility'}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary" component="div" sx={{ mb: 2 }}>
+                        Floor: {loc.floor || 'Level 1'} • Timezone: {loc.timezone || 'UTC'}
+                      </Typography>
+
+                      <Paper sx={{ p: 1.5, bgcolor: 'action.hover', borderRadius: 2, mb: 2 }}>
+                        <Typography variant="caption" component="div" color="text.secondary" sx={{mb: 0.5, fontWeight: 700}}>
+                          VISITOR SECURITY REQUIREMENTS:
+                        </Typography>
+                        <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                          <Chip
+                            label={loc.require_nda !== false ? 'NDA Signature' : 'No NDA'}
+                            size="small"
+                            variant="outlined"
+                            color={loc.require_nda !== false ? 'primary' : 'default'}
+                          />
+                          <Chip
+                            label={loc.require_photo !== false ? 'Photo Capture' : 'No Photo'}
+                            size="small"
+                            variant="outlined"
+                            color={loc.require_photo !== false ? 'secondary' : 'default'}
+                          />
+                        </Box>
+                      </Paper>
+
+                      <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1, pt: 1 }}>
+                        <IconButton size="small" onClick={() => handleOpenEditLocation(loc)}>
+                          <EditIcon fontSize="small" />
+                        </IconButton>
+                        <IconButton size="small" color="error" onClick={() => handleDeleteLocation(loc.id)}>
+                          <DeleteIcon fontSize="small" />
+                        </IconButton>
+                      </Box>
+                    </CardContent>
+                  </Card>
+                </Grid>
+              ))
+            )}
+          </Grid>
+        )}
+
+        {/* Tab 1: Kiosks */}
+        {activeTab === 1 && (
+          <Card sx={{ borderRadius: 3, boxShadow: '0 4px 20px rgba(0,0,0,0.05)' }}>
+            <CardContent sx={{ p: 3 }}>
+              {kiosksLoading ? (
+                <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
+                  <CircularProgress />
+                </Box>
+              ) : (
+                <TableContainer component={Paper} elevation={0} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
+                  <Table>
+                    <TableHead sx={{ bgcolor: 'action.hover' }}>
+                      <TableRow>
+                        <TableCell sx={{ fontWeight: 700 }}>Kiosk Device</TableCell>
+                        <TableCell sx={{ fontWeight: 700 }}>Device ID</TableCell>
+                        <TableCell sx={{ fontWeight: 700 }}>Assigned Facility</TableCell>
+                        <TableCell sx={{ fontWeight: 700 }}>Device Status</TableCell>
+                        <TableCell sx={{ fontWeight: 700 }}>Last Heartbeat</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {kiosksList.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={5} align="center" sx={{ py: 6, color: 'text.secondary' }}>
+                            No self-service kiosks registered. Click &quot;Add Kiosk&quot; to connect a reception tablet.
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        kiosksList.map((kiosk: any) => (
+                          <TableRow key={kiosk.id} hover>
+                            <TableCell>
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                                <KioskIcon color="action" />
+                                <Typography variant="subtitle2" sx={{fontWeight: 700}}>
+                                  {kiosk.name}
+                                </Typography>
+                              </Box>
+                            </TableCell>
+                            <TableCell>
+                              <Chip
+                                label={kiosk.device_id || `KIOSK-${kiosk.id}`}
+                                size="small"
+                                variant="outlined"
+                                sx={{ fontFamily: 'monospace' }}
+                              />
+                            </TableCell>
+                            <TableCell>
+                              <Typography variant="body2">
+                                {kiosk.location_name || (typeof kiosk.location === 'object' ? kiosk.location?.name : `Location #${kiosk.location}`)}
+                              </Typography>
+                            </TableCell>
+                            <TableCell>
+                              <Chip
+                                label={kiosk.is_active ? 'Online' : 'Offline'}
+                                color={kiosk.is_active ? 'success' : 'default'}
+                                size="small"
+                                sx={{ fontWeight: 700 }}
+                              />
+                            </TableCell>
+                            <TableCell>
+                              <Typography variant="body2" color="text.secondary">
+                                {kiosk.last_ping ? new Date(kiosk.last_ping).toLocaleTimeString() : 'Just now'}
+                              </Typography>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Location Form Dialog */}
+        <Dialog open={openLocationModal} onClose={() => setOpenLocationModal(false)} maxWidth="sm" fullWidth>
+          <DialogTitle sx={{ fontWeight: 800 }}>
+            {editingLocation ? 'Edit Facility Location' : 'Add New Location'}
+          </DialogTitle>
+          <form onSubmit={handleLocationSubmit}>
+            <DialogContent dividers>
+              <Grid container spacing={2}>
+                <Grid size={12}>
+                  <TextField
+                    required
+                    fullWidth
+                    label="Facility / Building Name"
+                    placeholder="e.g. Headquarters - Tower A"
+                    value={locationForm.name}
+                    onChange={(e) => setLocationForm({ ...locationForm, name: e.target.value })}
+                  />
+                </Grid>
+                <Grid size={12}>
+                  <TextField
+                    fullWidth
+                    label="Full Physical Address"
+                    placeholder="123 Innovation Blvd, Suite 400"
+                    value={locationForm.address}
+                    onChange={(e) => setLocationForm({ ...locationForm, address: e.target.value })}
+                  />
+                </Grid>
+                <Grid size={{xs: 12, sm: 6}}>
+                  <TextField
+                    fullWidth
+                    label="Floor / Suite"
+                    placeholder="4th Floor"
+                    value={locationForm.floor}
+                    onChange={(e) => setLocationForm({ ...locationForm, floor: e.target.value })}
+                  />
+                </Grid>
+                <Grid size={{xs: 12, sm: 6}}>
+                  <FormControl fullWidth>
+                    <InputLabel>Timezone</InputLabel>
+                    <Select
+                      value={locationForm.timezone}
+                      label="Timezone"
+                      onChange={(e) => setLocationForm({ ...locationForm, timezone: e.target.value })}
+                    >
+                      <MenuItem value="UTC">UTC</MenuItem>
+                      <MenuItem value="America/New_York">America/New_York (EST)</MenuItem>
+                      <MenuItem value="America/Chicago">America/Chicago (CST)</MenuItem>
+                      <MenuItem value="America/Denver">America/Denver (MST)</MenuItem>
+                      <MenuItem value="America/Los_Angeles">America/Los_Angeles (PST)</MenuItem>
+                      <MenuItem value="Europe/London">Europe/London (GMT/BST)</MenuItem>
+                      <MenuItem value="Europe/Paris">Europe/Paris (CET)</MenuItem>
+                      <MenuItem value="Asia/Tokyo">Asia/Tokyo (JST)</MenuItem>
+                    </Select>
+                  </FormControl>
+                </Grid>
+                <Grid size={12}>
+                  <Typography variant="subtitle2" sx={{mt: 1, mb: 1, fontWeight: 700}}>
+                    Security Check-In Policies
+                  </Typography>
+                  <FormControlLabel
+                    control={
+                      <Switch
+                        checked={locationForm.require_nda}
+                        onChange={(e) => setLocationForm({ ...locationForm, require_nda: e.target.checked })}
+                      />
+                    }
+                    label="Require Digital NDA Signature upon Check-In"
+                  />
+                  <br />
+                  <FormControlLabel
+                    control={
+                      <Switch
+                        checked={locationForm.require_photo}
+                        onChange={(e) => setLocationForm({ ...locationForm, require_photo: e.target.checked })}
+                      />
+                    }
+                    label="Require Webcam Photo Capture for Visitor Badge"
+                  />
+                </Grid>
+              </Grid>
+            </DialogContent>
+            <DialogActions sx={{ p: 2.5 }}>
+              <Button onClick={() => setOpenLocationModal(false)}>Cancel</Button>
+              <Button
+                type="submit"
+                variant="contained"
+                disabled={createLocationMutation.isPending || updateLocationMutation.isPending}
+              >
+                Save Location
+              </Button>
+            </DialogActions>
+          </form>
+        </Dialog>
+
+        {/* Kiosk Form Dialog */}
+        <Dialog open={openKioskModal} onClose={() => setOpenKioskModal(false)} maxWidth="xs" fullWidth>
+          <DialogTitle sx={{ fontWeight: 800 }}>Register Self-Service Kiosk</DialogTitle>
+          <form onSubmit={handleKioskSubmit}>
+            <DialogContent dividers>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <TextField
+                  required
+                  fullWidth
+                  label="Kiosk Name"
+                  placeholder="e.g. Lobby iPad #1"
+                  value={kioskForm.name}
+                  onChange={(e) => setKioskForm({ ...kioskForm, name: e.target.value })}
+                />
+                <TextField
+                  fullWidth
+                  label="Device Serial / Identifier (Optional)"
+                  placeholder="e.g. IPAD-LOBBY-01"
+                  value={kioskForm.device_id}
+                  onChange={(e) => setKioskForm({ ...kioskForm, device_id: e.target.value })}
+                />
+                <FormControl fullWidth required>
+                  <InputLabel>Assigned Location</InputLabel>
+                  <Select
+                    value={kioskForm.location_id}
+                    label="Assigned Location"
+                    onChange={(e) => setKioskForm({ ...kioskForm, location_id: e.target.value })}
+                  >
+                    {locationsList.map((l: any) => (
+                      <MenuItem key={l.id} value={l.id}>
+                        {l.name}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Box>
+            </DialogContent>
+            <DialogActions sx={{ p: 2.5 }}>
+              <Button onClick={() => setOpenKioskModal(false)}>Cancel</Button>
+              <Button type="submit" variant="contained" disabled={createKioskMutation.isPending}>
+                Register Kiosk
+              </Button>
+            </DialogActions>
+          </form>
+        </Dialog>
+      </Container>
+    </Box>
+  );
+}
 
 export default function LocationsPage() {
-    const pathname = usePathname();
-    const queryClient = useQueryClient();
-    const [showAddLocation, setShowAddLocation] = useState(false);
-    const [showAddKiosk, setShowAddKiosk] = useState<number | null>(null);
-    const [editingLocation, setEditingLocation] = useState<Location | null>(null);
-    const [newLocation, setNewLocation] = useState({ name: '', address: '', floor: '', timezone: 'UTC' });
-    const [newKiosk, setNewKiosk] = useState({ name: '', location: 0 });
-
-    const navItems = [
-        { href: '/admin', label: 'Dashboard', icon: '📊' },
-        { href: '/admin/analytics', label: 'Analytics', icon: '📈' },
-        { href: '/admin/locations', label: 'Locations', icon: '🏢' },
-        { href: '/admin/users', label: 'Users', icon: '👥' },
-        { href: '/admin/notifications', label: 'Notifications', icon: '🔔' },
-    ];
-
-    const { data: locations = [], isLoading: locationsLoading } = useQuery({
-        queryKey: ['locations'],
-        queryFn: () => getLocations().then(res => res.data),
-    });
-
-    const { data: kiosks = [] } = useQuery({
-        queryKey: ['kiosks'],
-        queryFn: () => getKiosks().then(res => res.data),
-    });
-
-    const createLocationMutation = useMutation({
-        mutationFn: (data: typeof newLocation) => createLocation({ ...data, is_active: true }),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['locations'] });
-            setShowAddLocation(false);
-            setNewLocation({ name: '', address: '', floor: '', timezone: 'UTC' });
-        },
-    });
-
-    const updateLocationMutation = useMutation({
-        mutationFn: ({ id, data }: { id: number; data: Partial<Location> }) => updateLocation(id, data),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['locations'] });
-            setEditingLocation(null);
-        },
-    });
-
-    const deleteLocationMutation = useMutation({
-        mutationFn: (id: number) => deleteLocation(id),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['locations'] });
-        },
-    });
-
-    const createKioskMutation = useMutation({
-        mutationFn: (data: { name: string; location: number }) => createKiosk({ ...data, is_active: true }),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['kiosks'] });
-            setShowAddKiosk(null);
-            setNewKiosk({ name: '', location: 0 });
-        },
-    });
-
-    const deleteKioskMutation = useMutation({
-        mutationFn: (id: number) => deleteKiosk(id),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['kiosks'] });
-        },
-    });
-
-    const handleCreateLocation = (e: React.FormEvent) => {
-        e.preventDefault();
-        createLocationMutation.mutate(newLocation);
-    };
-
-    const handleUpdateLocation = (e: React.FormEvent) => {
-        e.preventDefault();
-        if (editingLocation) {
-            const data = {
-                name: editingLocation.name,
-                address: editingLocation.address,
-                floor: editingLocation.floor,
-            }
-            updateLocationMutation.mutate({
-                id: editingLocation.id,
-                data
-            });
-        }
-    };
-
-    const handleCreateKiosk = (e: React.FormEvent, locationId: number) => {
-        e.preventDefault();
-        createKioskMutation.mutate({ name: newKiosk.name, location: locationId });
-    };
-
-    const getKiosksForLocation = (locationId: number) => {
-        return kiosks.filter((k: Kiosk) => k.location === locationId);
-    };
-
-    return (
-        <main className="min-h-screen p-8">
-            <div className="animated-bg" />
-
-            <div className="max-w-7xl mx-auto">
-                {/* Header */}
-                <div className="flex items-center justify-between mb-8">
-                    <div>
-                        <h1 className="text-3xl font-bold bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">
-                            Locations
-                        </h1>
-                        <p className="text-gray-400 mt-1">Manage office locations and kiosks</p>
-                    </div>
-                    <div className="flex items-center gap-4">
-                        <button
-                            onClick={() => setShowAddLocation(true)}
-                            className="px-4 py-2 rounded-lg bg-indigo-500 text-white font-medium hover:bg-indigo-600 transition-colors"
-                        >
-                            + Add Location
-                        </button>
-                        <Link href="/">
-                            <button className="px-4 py-2 rounded-lg border border-white/20 text-white hover:bg-white/5 transition-colors">
-                                ← Back to Kiosk
-                            </button>
-                        </Link>
-                    </div>
-                </div>
-
-                {/* Navigation */}
-                <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
-                    {navItems.map(item => (
-                        <Link key={item.href} href={item.href}>
-                            <button
-                                className={`px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap flex items-center gap-2 ${pathname === item.href
-                                        ? 'bg-indigo-500 text-white'
-                                        : 'bg-white/5 text-gray-400 hover:bg-white/10'
-                                    }`}
-                            >
-                                <span>{item.icon}</span>
-                                {item.label}
-                            </button>
-                        </Link>
-                    ))}
-                </div>
-
-                {/* Add Location Modal */}
-                {showAddLocation && (
-                    <div className="glass-card p-6 mb-6">
-                        <h2 className="text-lg font-semibold text-white mb-4">Add New Location</h2>
-                        <form onSubmit={handleCreateLocation}>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <input
-                                    type="text"
-                                    placeholder="Location Name"
-                                    value={newLocation.name}
-                                    onChange={(e) => setNewLocation({ ...newLocation, name: e.target.value })}
-                                    className="premium-input"
-                                    required
-                                />
-                                <input
-                                    type="text"
-                                    placeholder="Floor (optional)"
-                                    value={newLocation.floor}
-                                    onChange={(e) => setNewLocation({ ...newLocation, floor: e.target.value })}
-                                    className="premium-input"
-                                />
-                                <input
-                                    type="text"
-                                    placeholder="Address"
-                                    value={newLocation.address}
-                                    onChange={(e) => setNewLocation({ ...newLocation, address: e.target.value })}
-                                    className="premium-input md:col-span-2"
-                                />
-                            </div>
-                            <div className="flex gap-2 mt-4">
-                                <button type="submit" className="btn-primary" disabled={createLocationMutation.isPending}>
-                                    {createLocationMutation.isPending ? 'Saving...' : 'Save Location'}
-                                </button>
-                                <button type="button" onClick={() => setShowAddLocation(false)} className="btn-secondary">
-                                    Cancel
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                )}
-
-                {/* Edit Location Modal */}
-                {editingLocation && (
-                    <div className="glass-card p-6 mb-6">
-                        <h2 className="text-lg font-semibold text-white mb-4">Edit Location</h2>
-                        <form onSubmit={handleUpdateLocation}>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <input
-                                    type="text"
-                                    placeholder="Location Name"
-                                    value={editingLocation.name}
-                                    onChange={(e) => setEditingLocation({ ...editingLocation, name: e.target.value })}
-                                    className="premium-input"
-                                    required
-                                />
-                                <input
-                                    type="text"
-                                    placeholder="Floor (optional)"
-                                    value={editingLocation.floor || ''}
-                                    onChange={(e) => setEditingLocation({ ...editingLocation, floor: e.target.value })}
-                                    className="premium-input"
-                                />
-                                <input
-                                    type="text"
-                                    placeholder="Address"
-                                    value={editingLocation.address}
-                                    onChange={(e) => setEditingLocation({ ...editingLocation, address: e.target.value })}
-                                    className="premium-input md:col-span-2"
-                                />
-                            </div>
-                            <div className="flex gap-2 mt-4">
-                                <button type="submit" className="btn-primary" disabled={updateLocationMutation.isPending}>
-                                    {updateLocationMutation.isPending ? 'Saving...' : 'Update Location'}
-                                </button>
-                                <button type="button" onClick={() => setEditingLocation(null)} className="btn-secondary">
-                                    Cancel
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                )}
-
-                {/* Locations List */}
-                {locationsLoading ? (
-                    <div className="glass-card p-12 text-center text-gray-400">Loading locations...</div>
-                ) : locations.length === 0 ? (
-                    <div className="glass-card p-12 text-center">
-                        <p className="text-gray-400 mb-4">No locations yet. Create your first location to get started.</p>
-                        <button
-                            onClick={() => setShowAddLocation(true)}
-                            className="px-6 py-3 rounded-lg bg-indigo-500 text-white font-medium hover:bg-indigo-600 transition-colors"
-                        >
-                            + Add First Location
-                        </button>
-                    </div>
-                ) : (
-                    <div className="space-y-4">
-                        {locations.map((location: Location) => {
-                            const locationKiosks = getKiosksForLocation(location.id);
-                            return (
-                                <div key={location.id} className="glass-card p-6">
-                                    <div className="flex items-start justify-between mb-4">
-                                        <div>
-                                            <h3 className="text-xl font-semibold text-white">
-                                                {location.name}
-                                                {location.floor && <span className="text-gray-400 text-sm ml-2">Floor: {location.floor}</span>}
-                                            </h3>
-                                            <p className="text-gray-400 text-sm mt-1">{location.address || 'No address'}</p>
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                            <button
-                                                onClick={() => setEditingLocation(location)}
-                                                className="px-3 py-1 rounded-lg bg-white/5 text-gray-300 text-sm hover:bg-white/10 transition-colors"
-                                            >
-                                                Edit
-                                            </button>
-                                            <button
-                                                onClick={() => {
-                                                    if (confirm('Are you sure you want to delete this location?')) {
-                                                        deleteLocationMutation.mutate(location.id);
-                                                    }
-                                                }}
-                                                className="px-3 py-1 rounded-lg bg-red-500/10 text-red-400 text-sm hover:bg-red-500/20 transition-colors"
-                                            >
-                                                Delete
-                                            </button>
-                                        </div>
-                                    </div>
-
-                                    {/* Stats */}
-                                    <div className="grid grid-cols-3 gap-4 mb-4">
-                                        <div className="bg-white/5 rounded-lg p-3">
-                                            <p className="text-xs text-gray-400">Active Visitors</p>
-                                            <p className="text-lg font-semibold text-green-400">{location.active_visitor_count}</p>
-                                        </div>
-                                        <div className="bg-white/5 rounded-lg p-3">
-                                            <p className="text-xs text-gray-400">Hosts</p>
-                                            <p className="text-lg font-semibold text-indigo-400">{location.host_count}</p>
-                                        </div>
-                                        <div className="bg-white/5 rounded-lg p-3">
-                                            <p className="text-xs text-gray-400">Kiosks</p>
-                                            <p className="text-lg font-semibold text-purple-400">{location.kiosk_count}</p>
-                                        </div>
-                                    </div>
-
-                                    {/* Kiosks */}
-                                    <div className="border-t border-white/10 pt-4">
-                                        <div className="flex items-center justify-between mb-3">
-                                            <h4 className="text-sm font-medium text-gray-300">Kiosks</h4>
-                                            <button
-                                                onClick={() => setShowAddKiosk(location.id)}
-                                                className="text-xs text-indigo-400 hover:text-indigo-300"
-                                            >
-                                                + Add Kiosk
-                                            </button>
-                                        </div>
-
-                                        {showAddKiosk === location.id && (
-                                            <form onSubmit={(e) => handleCreateKiosk(e, location.id)} className="mb-3 flex gap-2">
-                                                <input
-                                                    type="text"
-                                                    placeholder="Kiosk name (e.g., Lobby Kiosk 1)"
-                                                    value={newKiosk.name}
-                                                    onChange={(e) => setNewKiosk({ ...newKiosk, name: e.target.value })}
-                                                    className="premium-input flex-1 py-2 text-sm"
-                                                    required
-                                                />
-                                                <button type="submit" className="px-4 py-2 rounded-lg bg-indigo-500 text-white text-sm">
-                                                    Add
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setShowAddKiosk(null)}
-                                                    className="px-4 py-2 rounded-lg bg-white/5 text-gray-300 text-sm"
-                                                >
-                                                    Cancel
-                                                </button>
-                                            </form>
-                                        )}
-
-                                        {locationKiosks.length === 0 ? (
-                                            <p className="text-gray-500 text-sm">No kiosks configured</p>
-                                        ) : (
-                                            <div className="flex flex-wrap gap-2">
-                                                {locationKiosks.map((kiosk: Kiosk) => (
-                                                    <div
-                                                        key={kiosk.id}
-                                                        className="flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 text-sm"
-                                                    >
-                                                        <span className={`w-2 h-2 rounded-full ${kiosk.is_active ? 'bg-green-400' : 'bg-gray-400'}`} />
-                                                        <span className="text-gray-300">{kiosk.name}</span>
-                                                        <button
-                                                            onClick={() => deleteKioskMutation.mutate(kiosk.id)}
-                                                            className="text-gray-500 hover:text-red-400 ml-1"
-                                                        >
-                                                            ×
-                                                        </button>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            );
-                        })}
-                    </div>
-                )}
-            </div>
-        </main>
-    );
+  return (
+    <AdminPage>
+      <LocationsPageContent />
+    </AdminPage>
+  );
 }

@@ -1,219 +1,370 @@
-"use client";
+'use client';
 
-import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getWatchlist, addToWatchlist, removeFromWatchlist, WatchlistEntry } from '@/lib/api';
-import { Card } from '@/components/ui/card';
-import { ShieldAlert, Trash2, Plus, Search } from 'lucide-react';
+import React, { useState } from 'react';
+import { AdminPage } from '@/components/ProtectedPage';
+import {
+  Box,
+  Container,
+  Typography,
+  Card,
+  CardContent,
+  Button,
+  IconButton,
+  TextField,
+  InputAdornment,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  Chip,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Alert,
+  CircularProgress,
+  Tooltip,
+} from '@mui/material';
+import Grid from '@mui/material/Grid';
+import {
+  Search as SearchIcon,
+  Security as SecurityIcon,
+  Add as AddIcon,
+  Delete as DeleteIcon,
+  Warning as WarningIcon,
+  Block as BlockIcon,
+  Refresh as RefreshIcon,
+} from '@mui/icons-material';
+import {
+  useWatchlist,
+  useCreateWatchlistEntry,
+  useDeleteWatchlistEntry,
+} from '@/hooks/useData';
 
-export default function WatchlistPage() {
-    const queryClient = useQueryClient();
-    const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-    const [searchQuery, setSearchQuery] = useState('');
+function WatchlistPageContent() {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [openAddModal, setOpenAddModal] = useState(false);
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    company: '',
+    reason: '',
+    match_type: 'CONTAINS',
+  });
 
-    const { data: entries, isLoading } = useQuery({
-        queryKey: ['watchlist'],
-        queryFn: () => getWatchlist().then(res => res.data),
-    });
+  const { data: watchlistData = [], isLoading, refetch } = useWatchlist();
+  const createMutation = useCreateWatchlistEntry();
+  const deleteMutation = useDeleteWatchlistEntry();
 
-    const addMutation = useMutation({
-        mutationFn: addToWatchlist,
-        onSuccess: () => {
-            setIsAddModalOpen(false);
-            queryClient.invalidateQueries({ queryKey: ['watchlist'] });
-        },
-    });
+  const entriesList = Array.isArray(watchlistData) ? watchlistData : (watchlistData as any)?.results || [];
 
-    const removeMutation = useMutation({
-        mutationFn: removeFromWatchlist,
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['watchlist'] });
-        },
-    });
-
-    const handleRemove = (id: number) => {
-        if (confirm('Are you sure you want to remove this entry?')) {
-            removeMutation.mutate(id);
-        }
-    };
-
-    const filteredEntries = entries?.filter((entry: WatchlistEntry) =>
-        (entry.name && entry.name.toLowerCase().includes(searchQuery.toLowerCase())) ||
-        (entry.email && entry.email.toLowerCase().includes(searchQuery.toLowerCase())) ||
-        (entry.reason && entry.reason.toLowerCase().includes(searchQuery.toLowerCase()))
-    );
-
+  const filteredEntries = entriesList.filter((entry: any) => {
+    const q = searchQuery.toLowerCase();
     return (
-        <div className="space-y-6">
-            <div className="flex justify-between items-center">
-                <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-red-400 to-orange-600">
-                    Security Watchlist
-                </h1>
-                <button
-                    onClick={() => setIsAddModalOpen(true)}
-                    className="flex items-center gap-2 bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 px-4 py-2 rounded-lg transition-all shadow-lg shadow-red-500/20"
-                >
-                    <Plus size={18} />
-                    Add Entry
-                </button>
-            </div>
-
-            <div className="flex gap-4 mb-6">
-                <div className="relative flex-1 max-w-md">
-                    <Search className="absolute left-3 top-3 text-gray-500" size={18} />
-                    <input
-                        type="text"
-                        placeholder="Search watchlist..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2.5 bg-white/5 border border-white/10 rounded-xl focus:ring-2 focus:ring-red-500/50 outline-none backdrop-blur-md"
-                    />
-                </div>
-            </div>
-
-            {isLoading ? (
-                <div className="text-center py-10 text-gray-400">Loading watchlist...</div>
-            ) : (
-                <div className="grid grid-cols-1 gap-4">
-                    {filteredEntries?.map((entry: WatchlistEntry) => (
-                        <Card key={entry.id} className="p-4 flex items-center justify-between bg-white/5 border-red-500/20 hover:border-red-500/40 transition-colors">
-                            <div className="flex items-center gap-4">
-                                <div className="p-3 bg-red-500/10 rounded-full text-red-400">
-                                    <ShieldAlert size={24} />
-                                </div>
-                                <div>
-                                    <div className="font-bold text-lg flex items-center gap-2">
-                                        {entry.name || entry.email}
-                                        <span className="text-xs px-2 py-0.5 bg-white/10 rounded-full text-gray-400 font-normal">
-                                            {entry.match_type}
-                                        </span>
-                                    </div>
-                                    <div className="text-sm text-gray-400">
-                                        {entry.email && <span>{entry.email} • </span>}
-                                        {entry.phone && <span>{entry.phone} • </span>}
-                                        <span className="text-red-300">{entry.reason}</span>
-                                    </div>
-                                </div>
-                            </div>
-                            <button
-                                onClick={() => handleRemove(entry.id)}
-                                className="p-2 text-gray-500 hover:text-red-400 transition-colors"
-                            >
-                                <Trash2 size={20} />
-                            </button>
-                        </Card>
-                    ))}
-                    {filteredEntries?.length === 0 && (
-                        <div className="text-center py-10 text-gray-500">
-                            No active watchlist entries.
-                        </div>
-                    )}
-                </div>
-            )}
-
-            {isAddModalOpen && (
-                <AddWatchlistModal
-                    onClose={() => setIsAddModalOpen(false)}
-                    onSuccess={() => setIsAddModalOpen(false)}
-                    onSubmit={(data) => addMutation.mutate(data)}
-                    isLoading={addMutation.isPending}
-                />
-            )}
-        </div>
+      (entry.name || '').toLowerCase().includes(q) ||
+      (entry.email || '').toLowerCase().includes(q) ||
+      (entry.phone || '').toLowerCase().includes(q) ||
+      (entry.company || '').toLowerCase().includes(q) ||
+      (entry.reason || '').toLowerCase().includes(q)
     );
-}
+  });
 
-function AddWatchlistModal({ onClose, onSuccess, onSubmit, isLoading }: { onClose: () => void, onSuccess: () => void, onSubmit: (data: any) => void, isLoading: boolean }) {
-    const [formData, setFormData] = useState({
+  const handleAddSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formData.name && !formData.email && !formData.phone) {
+      alert('Please provide at least a name, email, or phone number to match against.');
+      return;
+    }
+    if (!formData.reason) {
+      alert('Please provide a reason for adding this entity to the watchlist.');
+      return;
+    }
+
+    try {
+      await createMutation.mutateAsync({
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone,
+        company: formData.company,
+        reason: formData.reason,
+        match_type: formData.match_type,
+        is_active: true,
+      });
+      setOpenAddModal(false);
+      setFormData({
         name: '',
         email: '',
         phone: '',
+        company: '',
         reason: '',
-        match_type: 'EXACT',
-    });
+        match_type: 'CONTAINS',
+      });
+      refetch();
+    } catch (err: any) {
+      alert(err.response?.data?.error || 'Failed to add entry to watchlist.');
+    }
+  };
 
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        onSubmit(formData);
-        // Note: mutation onSuccess handles close
-    };
+  const handleDelete = async (id: number) => {
+    if (!confirm('Are you sure you want to remove this record from the security watchlist?')) {
+      return;
+    }
+    try {
+      await deleteMutation.mutateAsync(id);
+      refetch();
+    } catch (err: any) {
+      alert('Failed to remove record.');
+    }
+  };
 
-    return (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <div className="bg-[#1a1f2e] border border-white/10 rounded-2xl w-full max-w-lg p-6 shadow-2xl">
-                <h2 className="text-xl font-bold mb-4">Add to Watchlist</h2>
-                <form onSubmit={handleSubmit} className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-1">
-                            <label className="text-sm text-gray-400">Full Name</label>
-                            <input
-                                className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 outline-none focus:border-red-500/50"
-                                value={formData.name}
-                                onChange={e => setFormData({ ...formData, name: e.target.value })}
+  return (
+    <Box sx={{ minHeight: '100vh', py: 4, bgcolor: 'background.default' }}>
+      <Container maxWidth="xl">
+        {/* Header */}
+        <Box sx={{ mb: 4, display: 'flex', flexDirection: { xs: 'column', md: 'row' }, justifyContent: 'space-between', alignItems: { xs: 'flex-start', md: 'center' }, gap: 2 }}>
+          <Box>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+              <SecurityIcon sx={{ fontSize: 36, color: 'error.main' }} />
+              <Typography variant="h4" color="text.primary" sx={{fontWeight: 800}}>
+                Security Watchlist & Blocklist
+              </Typography>
+            </Box>
+            <Typography variant="body1" color="text.secondary" sx={{ mt: 0.5 }}>
+              Automatically flag, deny, or alert security teams when restricted individuals attempt entry
+            </Typography>
+          </Box>
+          <Box sx={{ display: 'flex', gap: 2 }}>
+            <Button variant="outlined" startIcon={<RefreshIcon />} onClick={() => refetch()}>
+              Refresh
+            </Button>
+            <Button
+              variant="contained"
+              color="error"
+              startIcon={<AddIcon />}
+              onClick={() => setOpenAddModal(true)}
+            >
+              Add Restriction
+            </Button>
+          </Box>
+        </Box>
+
+        {/* Content Card */}
+        <Card sx={{ borderRadius: 3, boxShadow: '0 4px 20px rgba(0,0,0,0.05)' }}>
+          <CardContent sx={{ p: 3 }}>
+            {/* Search Bar */}
+            <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <TextField
+                size="small"
+                sx={{ width: { xs: '100%', md: 450 } }}
+                placeholder="Search watchlist by name, email, phone, or reason..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                slotProps={{ input: {
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchIcon color="action" />
+                    </InputAdornment>
+                  ),
+                } }}
+              />
+              <Typography variant="body2" color="text.secondary">
+                Restricted Entries: <strong>{filteredEntries.length}</strong>
+              </Typography>
+            </Box>
+
+            {/* Table */}
+            {isLoading ? (
+              <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
+                <CircularProgress />
+              </Box>
+            ) : (
+              <TableContainer component={Paper} elevation={0} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
+                <Table>
+                  <TableHead sx={{ bgcolor: 'action.hover' }}>
+                    <TableRow>
+                      <TableCell sx={{ fontWeight: 700 }}>Restricted Identifier</TableCell>
+                      <TableCell sx={{ fontWeight: 700 }}>Contact Info</TableCell>
+                      <TableCell sx={{ fontWeight: 700 }}>Match Rule</TableCell>
+                      <TableCell sx={{ fontWeight: 700 }}>Reason / Security Notes</TableCell>
+                      <TableCell sx={{ fontWeight: 700 }}>Status</TableCell>
+                      <TableCell align="right" sx={{ fontWeight: 700 }}>Action</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {filteredEntries.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={6} align="center" sx={{ py: 6, color: 'text.secondary' }}>
+                          <SecurityIcon sx={{ fontSize: 48, color: 'text.disabled', mb: 1, display: 'block', mx: 'auto' }} />
+                          No restricted entries found on the watchlist.
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      filteredEntries.map((entry: any) => (
+                        <TableRow key={entry.id} hover>
+                          <TableCell>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                              <BlockIcon color="error" fontSize="small" />
+                              <Typography variant="subtitle2" sx={{fontWeight: 700}}>
+                                {entry.name || 'Universal Identifier'}
+                              </Typography>
+                            </Box>
+                            {entry.company && (
+                              <Typography variant="caption" color="text.secondary" component="div">
+                                Org: {entry.company}
+                              </Typography>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            <Typography variant="body2">{entry.email || '—'}</Typography>
+                            {entry.phone && (
+                              <Typography variant="caption" color="text.secondary" component="div">
+                                Tel: {entry.phone}
+                              </Typography>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            <Chip
+                              label={entry.match_type || 'CONTAINS'}
+                              size="small"
+                              variant="outlined"
+                              sx={{ fontWeight: 600 }}
                             />
-                        </div>
-                        <div className="space-y-1">
-                            <label className="text-sm text-gray-400">Email Address</label>
-                            <input
-                                type="email"
-                                className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 outline-none focus:border-red-500/50"
-                                value={formData.email}
-                                onChange={e => setFormData({ ...formData, email: e.target.value })}
+                          </TableCell>
+                          <TableCell>
+                            <Typography variant="body2" sx={{ maxWidth: 300, color: 'error.dark', fontWeight: 500 }}>
+                              {entry.reason}
+                            </Typography>
+                          </TableCell>
+                          <TableCell>
+                            <Chip
+                              label={entry.is_active ? 'Active Enforced' : 'Inactive'}
+                              color={entry.is_active ? 'error' : 'default'}
+                              size="small"
+                              sx={{ fontWeight: 700 }}
                             />
-                        </div>
-                    </div>
+                          </TableCell>
+                          <TableCell align="right">
+                            <Tooltip title="Remove restriction">
+                              <IconButton
+                                size="small"
+                                color="error"
+                                onClick={() => handleDelete(entry.id)}
+                              >
+                                <DeleteIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            )}
+          </CardContent>
+        </Card>
 
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-1">
-                            <label className="text-sm text-gray-400">Phone Number</label>
-                            <input
-                                className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 outline-none focus:border-red-500/50"
-                                value={formData.phone}
-                                onChange={e => setFormData({ ...formData, phone: e.target.value })}
-                            />
-                        </div>
-                        <div className="space-y-1">
-                            <label className="text-sm text-gray-400">Match Type</label>
-                            <select
-                                className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 outline-none focus:border-red-500/50"
-                                value={formData.match_type}
-                                onChange={e => setFormData({ ...formData, match_type: e.target.value })}
-                            >
-                                <option value="EXACT">Exact Match</option>
-                                <option value="CONTAINS">Contains (Fuzzy)</option>
-                            </select>
-                        </div>
-                    </div>
+        {/* Add Restriction Dialog */}
+        <Dialog open={openAddModal} onClose={() => setOpenAddModal(false)} maxWidth="sm" fullWidth>
+          <DialogTitle sx={{ fontWeight: 800, color: 'error.main' }}>
+            Add Entry to Security Watchlist
+          </DialogTitle>
+          <form onSubmit={handleAddSubmit}>
+            <DialogContent dividers>
+              <Alert severity="warning" sx={{ mb: 3 }}>
+                Any visitor matching these details will be immediately flagged and blocked from unescorted check-in.
+              </Alert>
 
-                    <div className="space-y-1">
-                        <label className="text-sm text-gray-400">Reason for Block *</label>
-                        <textarea
-                            required
-                            className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 outline-none focus:border-red-500/50 min-h-[80px]"
-                            value={formData.reason}
-                            onChange={e => setFormData({ ...formData, reason: e.target.value })}
-                            placeholder="e.g. Former employee, Security risk..."
-                        />
-                    </div>
+              <Grid container spacing={2}>
+                <Grid size={{xs: 12, sm: 6}}>
+                  <TextField
+                    fullWidth
+                    label="Full Name"
+                    placeholder="e.g. John Doe"
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  />
+                </Grid>
+                <Grid size={{xs: 12, sm: 6}}>
+                  <TextField
+                    fullWidth
+                    type="email"
+                    label="Email Address"
+                    placeholder="flagged@example.com"
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  />
+                </Grid>
+                <Grid size={{xs: 12, sm: 6}}>
+                  <TextField
+                    fullWidth
+                    label="Phone Number"
+                    placeholder="+1 (555) 000-0000"
+                    value={formData.phone}
+                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  />
+                </Grid>
+                <Grid size={{xs: 12, sm: 6}}>
+                  <TextField
+                    fullWidth
+                    label="Company / Affiliation"
+                    value={formData.company}
+                    onChange={(e) => setFormData({ ...formData, company: e.target.value })}
+                  />
+                </Grid>
+                <Grid size={12}>
+                  <FormControl fullWidth>
+                    <InputLabel>Matching Algorithm</InputLabel>
+                    <Select
+                      value={formData.match_type}
+                      label="Matching Algorithm"
+                      onChange={(e) => setFormData({ ...formData, match_type: e.target.value })}
+                    >
+                      <MenuItem value="CONTAINS">CONTAINS (Partial substring match)</MenuItem>
+                      <MenuItem value="EXACT">EXACT (Exact full match)</MenuItem>
+                      <MenuItem value="FUZZY">FUZZY (Levenshtein similarity)</MenuItem>
+                    </Select>
+                  </FormControl>
+                </Grid>
+                <Grid size={12}>
+                  <TextField
+                    required
+                    fullWidth
+                    multiline
+                    rows={3}
+                    label="Reason / Security Notice"
+                    placeholder="Explain why this individual is restricted (e.g. revoked facility access, legal restraining order, terminated contractor)..."
+                    value={formData.reason}
+                    onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
+                  />
+                </Grid>
+              </Grid>
+            </DialogContent>
+            <DialogActions sx={{ p: 2.5 }}>
+              <Button onClick={() => setOpenAddModal(false)}>Cancel</Button>
+              <Button type="submit" variant="contained" color="error" disabled={createMutation.isPending}>
+                {createMutation.isPending ? 'Enforcing...' : 'Enforce Restriction'}
+              </Button>
+            </DialogActions>
+          </form>
+        </Dialog>
+      </Container>
+    </Box>
+  );
+}
 
-                    <div className="flex justify-end gap-3 pt-4">
-                        <button
-                            type="button"
-                            onClick={onClose}
-                            className="px-4 py-2 rounded-lg hover:bg-white/5 transition-colors"
-                        >
-                            Cancel
-                        </button>
-                        <button
-                            type="submit"
-                            disabled={isLoading}
-                            className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg transition-colors flex items-center gap-2"
-                        >
-                            {isLoading ? 'Saving...' : 'Add to Watchlist'}
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    );
+export default function WatchlistPage() {
+  return (
+    <AdminPage>
+      <WatchlistPageContent />
+    </AdminPage>
+  );
 }

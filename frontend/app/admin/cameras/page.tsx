@@ -1,183 +1,263 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAuth } from '@/context/AuthContext';
+import React, { useState } from 'react';
+import { AdminPage } from '@/components/ProtectedPage';
+import {
+  Box,
+  Container,
+  Typography,
+  Card,
+  CardContent,
+  Button,
+  IconButton,
+  TextField,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  Chip,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  CircularProgress,
+  Tooltip,
+} from '@mui/material';
+import Grid from '@mui/material/Grid';
+import {
+  Videocam as VideocamIcon,
+  Add as AddIcon,
+  Delete as DeleteIcon,
+  Refresh as RefreshIcon,
+  Link as LinkIcon,
+} from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getCameras, createCamera, deleteCamera, getLocations, Camera, Location } from '@/lib/api';
-import { Camera as CameraIcon, Plus, Settings2, Trash2, MapPin, Link as LinkIcon, ShieldCheck } from 'lucide-react';
+import { getCameras, createCamera, deleteCamera, getLocations } from '@/lib/api';
+
+function CameraManagementContent() {
+  const queryClient = useQueryClient();
+  const [openAddModal, setOpenAddModal] = useState(false);
+  const [cameraForm, setCameraForm] = useState({
+    name: '',
+    stream_url: '',
+    location_id: '',
+    ip_address: '',
+  });
+
+  const { data: cameras = [], isLoading: camerasLoading } = useQuery({
+    queryKey: ['cameras'],
+    queryFn: () => getCameras().then((res) => res.data.results || res.data || []),
+  });
+
+  const { data: locations = [] } = useQuery({
+    queryKey: ['locations'],
+    queryFn: () => getLocations().then((res) => res.data.results || res.data || []),
+  });
+
+  const createMutation = useMutation({
+    mutationFn: createCamera,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['cameras'] });
+      setOpenAddModal(false);
+      setCameraForm({ name: '', stream_url: '', location_id: '', ip_address: '' });
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: deleteCamera,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['cameras'] }),
+  });
+
+  const handleAddSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!cameraForm.name) {
+      alert('Camera name is required.');
+      return;
+    }
+    createMutation.mutate({
+      name: cameraForm.name,
+      stream_url: cameraForm.stream_url,
+      ip_address: cameraForm.ip_address,
+      location: cameraForm.location_id ? parseInt(cameraForm.location_id) : undefined,
+      status: 'ONLINE',
+    });
+  };
+
+  const handleDelete = (id: string | number) => {
+    if (confirm('Are you sure you want to remove this camera stream?')) {
+      deleteMutation.mutate(String(id));
+    }
+  };
+
+  return (
+    <Box sx={{ minHeight: '100vh', py: 4, bgcolor: 'background.default' }}>
+      <Container maxWidth="xl">
+        {/* Header */}
+        <Box sx={{ mb: 4, display: 'flex', flexDirection: { xs: 'column', md: 'row' }, justifyContent: 'space-between', alignItems: { xs: 'flex-start', md: 'center' }, gap: 2 }}>
+          <Box>
+            <Typography variant="h4" color="text.primary" sx={{fontWeight: 800}}>
+              Surveillance Camera Setup
+            </Typography>
+            <Typography variant="body1" color="text.secondary">
+              Connect IP cameras, RTSP streams, and turnstile monitoring for entrance security
+            </Typography>
+          </Box>
+          <Box sx={{ display: 'flex', gap: 2 }}>
+            <Button
+              variant="outlined"
+              startIcon={<RefreshIcon />}
+              onClick={() => queryClient.invalidateQueries({ queryKey: ['cameras'] })}
+            >
+              Refresh
+            </Button>
+            <Button
+              variant="contained"
+              startIcon={<AddIcon />}
+              onClick={() => setOpenAddModal(true)}
+            >
+              Add Camera
+            </Button>
+          </Box>
+        </Box>
+
+        {/* Content Card */}
+        <Card sx={{ borderRadius: 3, boxShadow: '0 4px 20px rgba(0,0,0,0.05)' }}>
+          <CardContent sx={{ p: 3 }}>
+            {camerasLoading ? (
+              <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
+                <CircularProgress />
+              </Box>
+            ) : (
+              <TableContainer component={Paper} elevation={0} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
+                <Table>
+                  <TableHead sx={{ bgcolor: 'action.hover' }}>
+                    <TableRow>
+                      <TableCell sx={{ fontWeight: 700 }}>Camera Stream Name</TableCell>
+                      <TableCell sx={{ fontWeight: 700 }}>Assigned Facility</TableCell>
+                      <TableCell sx={{ fontWeight: 700 }}>IP / RTSP Endpoint</TableCell>
+                      <TableCell sx={{ fontWeight: 700 }}>Status</TableCell>
+                      <TableCell align="right" sx={{ fontWeight: 700 }}>Action</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {cameras.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={5} align="center" sx={{ py: 6, color: 'text.secondary' }}>
+                          No surveillance cameras added yet. Click &quot;Add Camera&quot; to configure your security feeds.
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      cameras.map((cam: any) => (
+                        <TableRow key={cam.id} hover>
+                          <TableCell>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                              <VideocamIcon color="primary" />
+                              <Typography variant="subtitle2" sx={{fontWeight: 700}}>
+                                {cam.name}
+                              </Typography>
+                            </Box>
+                          </TableCell>
+                          <TableCell>
+                            <Typography variant="body2">{cam.location_name || 'Main Reception'}</Typography>
+                          </TableCell>
+                          <TableCell>
+                            <Typography variant="body2" color="text.secondary" sx={{fontFamily: 'monospace'}}>
+                              {cam.stream_url || cam.ip_address || 'rtsp://192.168.1.100/live'}
+                            </Typography>
+                          </TableCell>
+                          <TableCell>
+                            <Chip
+                              label={cam.status || 'ONLINE'}
+                              color={cam.status === 'OFFLINE' ? 'default' : 'success'}
+                              size="small"
+                              sx={{ fontWeight: 700 }}
+                            />
+                          </TableCell>
+                          <TableCell align="right">
+                            <Tooltip title="Delete camera">
+                              <IconButton size="small" color="error" onClick={() => handleDelete(cam.id)}>
+                                <DeleteIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Add Camera Dialog */}
+        <Dialog open={openAddModal} onClose={() => setOpenAddModal(false)} maxWidth="xs" fullWidth>
+          <DialogTitle sx={{ fontWeight: 800 }}>Connect Security Camera</DialogTitle>
+          <form onSubmit={handleAddSubmit}>
+            <DialogContent dividers>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <TextField
+                  required
+                  fullWidth
+                  label="Camera Display Name"
+                  placeholder="e.g. Turnstile East 01"
+                  value={cameraForm.name}
+                  onChange={(e) => setCameraForm({ ...cameraForm, name: e.target.value })}
+                />
+                <TextField
+                  fullWidth
+                  label="Stream URL / RTSP / Webhook"
+                  placeholder="rtsp://admin:pass@192.168.1.50:554/h264"
+                  value={cameraForm.stream_url}
+                  onChange={(e) => setCameraForm({ ...cameraForm, stream_url: e.target.value })}
+                />
+                <TextField
+                  fullWidth
+                  label="IP Address"
+                  placeholder="192.168.1.50"
+                  value={cameraForm.ip_address}
+                  onChange={(e) => setCameraForm({ ...cameraForm, ip_address: e.target.value })}
+                />
+                <FormControl fullWidth>
+                  <InputLabel>Assigned Location</InputLabel>
+                  <Select
+                    value={cameraForm.location_id}
+                    label="Assigned Location"
+                    onChange={(e) => setCameraForm({ ...cameraForm, location_id: e.target.value })}
+                  >
+                    {locations.map((l: any) => (
+                      <MenuItem key={l.id} value={l.id.toString()}>
+                        {l.name}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Box>
+            </DialogContent>
+            <DialogActions sx={{ p: 2.5 }}>
+              <Button onClick={() => setOpenAddModal(false)}>Cancel</Button>
+              <Button type="submit" variant="contained" disabled={createMutation.isPending}>
+                Save Camera
+              </Button>
+            </DialogActions>
+          </form>
+        </Dialog>
+      </Container>
+    </Box>
+  );
+}
 
 export default function CameraManagementPage() {
-    const { user, loading } = useAuth();
-    const router = useRouter();
-    const queryClient = useQueryClient();
-    const [isAdding, setIsAdding] = useState(false);
-
-    useEffect(() => {
-        if (!loading && (!user || (user.role !== 'ADMIN' && user.role !== 'SUPER_ADMIN'))) {
-            router.push('/login');
-        }
-    }, [user, loading, router]);
-
-    // Queries
-    const { data: cameras = [], isLoading: loadingCameras } = useQuery({
-        queryKey: ['cameras'],
-        queryFn: () => getCameras().then(res => res.data.results || res.data),
-        enabled: !!user,
-    });
-
-    const { data: locations = [] } = useQuery({
-        queryKey: ['locations'],
-        queryFn: () => getLocations().then(res => res.data.results || res.data),
-        enabled: !!user,
-    });
-
-    // Mutations
-    const createMutation = useMutation({
-        mutationFn: createCamera,
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['cameras'] });
-            setIsAdding(false);
-        }
-    });
-
-    const deleteMutation = useMutation({
-        mutationFn: deleteCamera,
-        onSuccess: () => queryClient.invalidateQueries({ queryKey: ['cameras'] })
-    });
-
-    if (loading || !user) {
-        return (
-            <div className="min-h-screen flex items-center justify-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
-            </div>
-        );
-    }
-
-    return (
-        <main className="min-h-screen bg-background pb-20">
-            <div className="animated-bg" />
-
-            <div className="max-w-6xl mx-auto px-4 sm:px-8 py-8 space-y-10">
-                {/* Header */}
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-                    <div className="space-y-1">
-                        <h1 className="text-3xl sm:text-5xl font-black tracking-tight text-foreground">
-                            Camera <span className="text-primary italic">Control</span>
-                        </h1>
-                        <p className="text-muted-foreground font-medium flex items-center gap-2">
-                            <Settings2 size={16} />
-                            Manage RTSP feeds & recognition hardware
-                        </p>
-                    </div>
-
-                    <button
-                        onClick={() => setIsAdding(true)}
-                        className="btn-primary w-auto flex items-center gap-2 px-6 py-3"
-                    >
-                        <Plus size={20} />
-                        Add New Camera
-                    </button>
-                </div>
-
-                {/* Add Form */}
-                {isAdding && (
-                    <div className="glass-card p-8 bg-primary/[0.02] border-primary/20">
-                        <h2 className="text-lg font-black mb-6 flex items-center gap-3 text-foreground">
-                            <Plus className="text-primary" size={20} />
-                            Register Hardware
-                        </h2>
-                        <form className="grid grid-cols-1 md:grid-cols-2 gap-6" onSubmit={(e) => {
-                            e.preventDefault();
-                            const formData = new FormData(e.currentTarget);
-                            createMutation.mutate(Object.fromEntries(formData));
-                        }}>
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground ml-1">Friendly Name</label>
-                                <input name="name" className="premium-input" placeholder="Main Entrance Cam 01" required />
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground ml-1">Location</label>
-                                <select name="location" className="premium-input" required>
-                                    <option value="">Select location...</option>
-                                    {locations.map((loc: Location) => (
-                                        <option key={loc.id} value={loc.id}>{loc.name}</option>
-                                    ))}
-                                </select>
-                            </div>
-                            <div className="space-y-2 md:col-span-2">
-                                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground ml-1">RTSP Stream URL</label>
-                                <div className="relative">
-                                    <LinkIcon className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
-                                    <input name="rtsp_url" className="premium-input pl-12" placeholder="rtsp://admin:pass@192.168.1.100:554/live" required />
-                                </div>
-                            </div>
-                            <div className="flex gap-3 pt-2">
-                                <button type="submit" className="btn-primary w-auto px-8" disabled={createMutation.isPending}>
-                                    {createMutation.isPending ? 'Syncing...' : 'Save Camera'}
-                                </button>
-                                <button type="button" onClick={() => setIsAdding(false)} className="btn-secondary w-auto px-8">Cancel</button>
-                            </div>
-                        </form>
-                    </div>
-                )}
-
-                {/* Camera Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {loadingCameras ? (
-                        [1, 2, 3].map(i => <div key={i} className="h-48 glass-card animate-pulse" />)
-                    ) : cameras.length === 0 ? (
-                        <div className="col-span-full py-20 text-center glass-card border-dashed border-white/10 bg-transparent">
-                            <CameraIcon size={48} className="mx-auto text-muted-foreground/30 mb-4" />
-                            <p className="font-black text-muted-foreground uppercase tracking-[0.2em] text-xs">No hardware configured</p>
-                        </div>
-                    ) : (
-                        cameras.map((camera: Camera) => (
-                            <div key={camera.id} className="glass-card p-6 hover:border-primary/20 transition-all group relative overflow-hidden">
-                                <div className="flex items-start justify-between relative z-10">
-                                    <div className={`p-4 rounded-2xl ${camera.status === 'ONLINE' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-destructive/10 text-destructive'}`}>
-                                        <CameraIcon size={24} />
-                                    </div>
-                                    <div className="flex gap-1">
-                                        <button className="p-2 text-muted-foreground hover:text-primary transition-colors">
-                                            <Settings2 size={18} />
-                                        </button>
-                                        <button
-                                            onClick={() => deleteMutation.mutate(camera.id)}
-                                            className="p-2 text-muted-foreground hover:text-destructive transition-colors"
-                                        >
-                                            <Trash2 size={18} />
-                                        </button>
-                                    </div>
-                                </div>
-
-                                <div className="mt-6 space-y-1 relative z-10">
-                                    <h3 className="text-xl font-black text-foreground">{camera.name}</h3>
-                                    <p className="text-xs font-bold text-muted-foreground flex items-center gap-2">
-                                        <MapPin size={12} className="text-primary" />
-                                        {camera.location_name || 'Main Lobby'}
-                                    </p>
-                                </div>
-
-                                <div className="mt-6 pt-6 border-t border-white/5 flex items-center justify-between relative z-10">
-                                    <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border ${
-                                        camera.status === 'ONLINE' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500' : 'bg-destructive/10 border-destructive/20 text-destructive'
-                                    }`}>
-                                        {camera.status}
-                                    </span>
-                                    <span className="text-[10px] font-black text-muted-foreground uppercase opacity-40">
-                                        {camera.total_detections || 0} detections
-                                    </span>
-                                </div>
-
-                                <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none group-hover:scale-110 transition-transform text-primary">
-                                    <ShieldCheck size={120} />
-                                </div>
-                            </div>
-                        ))
-                    )}
-                </div>
-            </div>
-        </main>
-    );
+  return (
+    <AdminPage>
+      <CameraManagementContent />
+    </AdminPage>
+  );
 }
