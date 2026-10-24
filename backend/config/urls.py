@@ -21,6 +21,5 @@ from visitors.views.health_views import HealthCheckView
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include('visitors.urls')),
-    path('api/property-management/', include('property_management.urls')),
     path('api/health/', HealthCheckView.as_view(), name='health_check'),
 ]

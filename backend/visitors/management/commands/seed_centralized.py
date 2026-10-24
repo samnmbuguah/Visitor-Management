@@ -10,11 +10,7 @@ from visitors.models import (
 from visitors.tenant_models import (
     Tenant, TenantUser, SubscriptionPlan, Subscription, TenantSettings
 )
-from property_management.models import (
-    Asset, AssetType, MaintenanceRequest, MaintenanceCategory,
-    WorkOrder, Vendor, CostCenter, Lease, MaintenanceExpense,
-    AssetCheckout, MaintenanceSchedule
-)
+
 
 User = get_user_model()
 PASSWORD = os.environ.get('SEED_USER_PASSWORD', 'changeme123!')
@@ -28,9 +24,6 @@ COURIERS = ['DHL','FedEx','UPS','USPS','Amazon Logistics']
 DEPARTMENTS = ['Engineering','Sales','Marketing','HR','Finance','Operations']
 TIERS = ['STARTER','PROFESSIONAL','ENTERPRISE']
 
-ASSET_TYPES_POOL = ['Air Conditioner','Heating Unit','Electrical Panel','Elevator','Fire Alarm',
-                    'Security Camera','Server','Printer','Coffee Machine','Water Heater']
-CATEGORIES_POOL = ['HVAC','Electrical','Plumbing','Elevator','Fire Safety','Security','Cleaning','Landscaping','IT Equipment','Appliances']
 
 TENANT_CONFIG = [
     {'name': 'Alpha Corp',   'slug': 'alpha-corp',   'tier': 'STARTER'},
@@ -219,98 +212,6 @@ class Command(BaseCommand):
                 signature_required=random.choice([True, False]),
                 collected_at=timezone.now() - timedelta(hours=random.randint(1, 48)) if status == 'COLLECTED' else None)
 
-        # Property management data
-        cats = []
-        for cat_name in random.sample(CATEGORIES_POOL, 4):
-            cat, _ = MaintenanceCategory.objects.get_or_create(tenant=tenant, name=cat_name)
-            cats.append(cat)
-        vendors = []
-        for vname in random.sample(['HVAC Pro', 'Electric Inc', 'Plumbing Co', 'Fire Safety', 'Security Plus', 'IT Support'], 3):
-            v = Vendor.objects.create(tenant=tenant, name=vname, contact_person='Contact',
-                phone=f'+1{random.randint(200,999)}{random.randint(1000000,9999999)}',
-                email=f'{vname.lower().replace(" ","")}@{cfg["slug"]}.com')
-            v.specialties.add(*random.sample(cats, min(2, len(cats))))
-            vendors.append(v)
-        for at_name in random.sample(ASSET_TYPES_POOL, 4):
-            AssetType.objects.get_or_create(tenant=tenant, name=at_name)
-        asset_types = list(AssetType.objects.filter(tenant=tenant))
-        cost_centers = []
-        for cc_name in ['General Ops', 'IT', 'Facilities', 'Security', 'Admin']:
-            code = f'{cfg["slug"][:2]}-{cc_name[:3].upper()}{idx}'
-            cc, _ = CostCenter.objects.get_or_create(code=code, tenant=tenant,
-                defaults={'name': cc_name})
-            cost_centers.append(cc)
-        assets = []
-        asset_counter = 0
-        for loc in locations:
-            for _ in range(random.randint(3, 5)):
-                asset_counter += 1
-                at = random.choice(asset_types)
-                a = Asset.objects.create(
-                    tenant=tenant, location=loc, asset_type=at,
-                    name=f'{at.name} - {loc.name}',
-                    qr_code=f'QR-{cfg["slug"][:2]}-{asset_counter}',
-                    serial_number=f'SN-{cfg["slug"][:2]}-{asset_counter}',
-                    status=random.choice(['OPERATIONAL', 'OPERATIONAL', 'OPERATIONAL', 'UNDER_MAINTENANCE']),
-                    manufacturer=random.choice(['Honeywell', 'Siemens', 'Schneider', 'Johnson Controls']),
-                    purchase_date=timezone.now().date() - timedelta(days=random.randint(100, 1000)),
-                    last_maintenance_date=timezone.now().date() - timedelta(days=random.randint(30, 200)),
-                    next_maintenance_date=timezone.now().date() + timedelta(days=random.randint(10, 120)))
-                assets.append(a)
-        requests = []
-        for loc in locations:
-            for _ in range(random.randint(5, 8)):
-                mr = MaintenanceRequest.objects.create(
-                    tenant=tenant, location=loc, title=random.choice([
-                        'General maintenance', 'AC not cooling', 'Leaky faucet', 'Lights flickering',
-                        'Door lock problem', 'Power outlet not working', 'Security camera offline',
-                        'Fire alarm test', 'Emergency exit light issue', 'Clogged drain',
-                        'Heating system noise', 'Smoke detector issue', 'Water heater issue']),
-                    description='Routine maintenance request',
-                    category=random.choice(cats),
-                    host=random.choice(hosts) if random.random() < 0.5 else None,
-                    priority=random.choice(['LOW', 'MEDIUM', 'HIGH', 'EMERGENCY']),
-                    status=random.choice(['REQUESTED', 'REQUESTED', 'IN_PROGRESS', 'COMPLETED']),
-                    assigned_to=random.choice(vendors) if random.random() < 0.5 else None,
-                    estimated_cost=random.randint(100, 5000))
-                requests.append(mr)
-        mr_cycle = iter(requests)
-        vendor_cycle = iter(vendors)
-        for mr in [r for r in requests if r.status in ('IN_PROGRESS', 'COMPLETED')]:
-            v = next(vendor_cycle, random.choice(vendors)) if random.random() < 0.7 else random.choice(vendors)
-            wo = WorkOrder.objects.create(
-                maintenance_request=mr, vendor=v,
-                work_order_number=f'WO-{timezone.now().year}-{random.randint(10000,99999)}',
-                instructions=f'Inspect and repair {mr.title.lower()}',
-                assigned_technician=random.choice(['John T.', 'Sarah M.', 'Mike R.', 'Lisa K.']),
-                estimated_duration_hours=random.uniform(1, 8),
-                labor_cost=random.randint(100, 2000),
-                material_cost=random.randint(50, 1500))
-            cc = random.choice(cost_centers)
-            for et in ['LABOR', 'MATERIALS']:
-                MaintenanceExpense.objects.create(
-                    maintenance_request=mr, cost_center=cc, expense_type=et,
-                    description=f'{et.title()} for {mr.title}',
-                    amount=random.randint(50, 2000))
-            if random.random() < 0.3:
-                AssetCheckout.objects.create(
-                    asset=random.choice(assets), checked_out_by=random.choice(hosts).user,
-                    expected_return_at=timezone.now() + timedelta(days=random.randint(1, 14)),
-                    condition_checkout='Good condition')
-
-        # Leases
-        for i in range(random.randint(3, 5)):
-            start = timezone.now().date() - timedelta(days=random.randint(30, 730))
-            end = start + timedelta(days=random.choice([180, 365, 730]))
-            status = 'ACTIVE'
-            if end < timezone.now().date(): status = 'EXPIRED'
-            elif (end - timezone.now().date()).days <= 60: status = 'EXPIRING'
-            Lease.objects.create(
-                tenant=tenant,
-                unit_number=f'{random.choice("ABCDE")}{random.randint(100, 999)}',
-                monthly_rent=random.choice([1500, 2000, 2500, 3000, 4500, 6000]),
-                start_date=start, end_date=end, status=status)
-
     def _seed_global_models(self):
         # Notification templates (one per tenant)
         templates_data = [
@@ -353,9 +254,6 @@ class Command(BaseCommand):
             ('Visitor', Visitor.objects.count()),
             ('PreRegistration', PreRegistration.objects.count()),
             ('Parcel', Parcel.objects.count()),
-            ('Asset', Asset.objects.count()),
-            ('MaintenanceRequest', MaintenanceRequest.objects.count()),
-            ('Lease', Lease.objects.count()),
         ]
         self.stdout.write('\n' + '=' * 50)
         self.stdout.write('  SEED DATA SUMMARY')

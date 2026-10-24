@@ -19,7 +19,6 @@ from visitors.models import (
     Tenant, Location, Host, Parcel, WatchlistEntry,
     NotificationTemplate, Visitor
 )
-from property_management.models import Lease, LeaseStatus
 
 
 class Command(BaseCommand):
@@ -63,26 +62,6 @@ class Command(BaseCommand):
                 }.items()}
             )
 
-        # 3. Property management data (assets, maintenance, vendors, etc.)
-        # Note: this seeder uses create() not get_or_create() for several
-        # models with unique constraints, so it cannot be re-run idempotently.
-        if self._has_data('property_management.Asset'):
-            if skip:
-                self.stdout.write('  Skipping seed_property_management_data (data exists)')
-            else:
-                self.stdout.write(self.style.MIGRATE_HEADING('\n[3/4] Seeding property management data (clearing old data first)...'))
-                call_command(
-                    'seed_property_management_data',
-                    tenants=options['tenants'],
-                    clear=True,
-                )
-        else:
-            self.stdout.write(self.style.MIGRATE_HEADING('\n[3/4] Seeding property management data...'))
-            call_command(
-                'seed_property_management_data',
-                tenants=options['tenants'],
-            )
-
         # 4. Additional models not covered by existing seeders
         self.stdout.write(self.style.MIGRATE_HEADING('\n[4/4] Seeding additional models...'))
         tenants = list(Tenant.objects.all())
@@ -93,7 +72,6 @@ class Command(BaseCommand):
             self.seed_notification_templates(tenants)
             self.seed_watchlist_entries(tenants)
             self.seed_parcels(tenants)
-            self.seed_leases(tenants)
             self.link_superusers_to_tenant(tenants[0])
 
         self.stdout.write(self.style.SUCCESS('\n=== All seeders completed successfully! ==='))
@@ -291,40 +269,6 @@ class Command(BaseCommand):
         self.stdout.write(f'    Created {created} parcels')
 
     # ------------------------------------------------------------------
-    # Leases
-    # ------------------------------------------------------------------
-    def seed_leases(self, tenants):
-        self.stdout.write('  Seeding leases...')
-
-        unit_prefixes = ['A', 'B', 'C', 'D', 'E']
-
-        created = 0
-        for tenant in tenants:
-            for i in range(random.randint(5, 8)):
-                start = date.today() - timedelta(days=random.randint(30, 730))
-                end = start + timedelta(days=random.choice([180, 365, 730]))
-                today = date.today()
-
-                if end < today:
-                    status = LeaseStatus.EXPIRED
-                elif (end - today).days <= 60:
-                    status = LeaseStatus.EXPIRING
-                else:
-                    status = random.choice([LeaseStatus.ACTIVE, LeaseStatus.ACTIVE, LeaseStatus.TERMINATED])
-
-                Lease.objects.create(
-                    tenant=tenant,
-                    unit_number=f'{random.choice(unit_prefixes)}{random.randint(100, 999)}',
-                    monthly_rent=random.choice([1500, 2000, 2500, 3000, 4500, 6000, 8500]),
-                    start_date=start,
-                    end_date=end,
-                    status=status,
-                    notes=f'Lease for unit in {tenant.name}' if random.random() > 0.5 else '',
-                )
-                created += 1
-        self.stdout.write(f'    Created {created} leases')
-
-    # ------------------------------------------------------------------
     # Helpers
     # ------------------------------------------------------------------
     def _has_data(self, model_label):
@@ -350,13 +294,6 @@ class Command(BaseCommand):
             ('visitors', 'NotificationTemplate'),
             ('visitors', 'WatchlistEntry'),
             ('visitors', 'Parcel'),
-            ('property_management', 'Asset'),
-            ('property_management', 'AssetType'),
-            ('property_management', 'MaintenanceRequest'),
-            ('property_management', 'WorkOrder'),
-            ('property_management', 'Vendor'),
-            ('property_management', 'CostCenter'),
-            ('property_management', 'Lease'),
         ]
 
         for app, model_name in models:

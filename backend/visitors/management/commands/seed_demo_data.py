@@ -47,10 +47,6 @@ class Command(BaseCommand):
         self.seed_visitors_and_invites(tenant, locations, hosts, kiosks)
         self.seed_watchlist_and_parcels(tenant, locations, hosts)
         
-        # Seed Property Management data for the demo tenant
-        self.stdout.write("Seeding Property Management data...")
-        call_command('seed_property_management_data', tenants=1, locations=2, requests=10)
-        
         # Populate advanced modules
         if HAS_SECURITY:
             self.seed_security_dashboard(tenant, locations)

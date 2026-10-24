@@ -56,7 +56,6 @@ INSTALLED_APPS = [
     'corsheaders',
     'django_filters',
     'visitors',
-    'property_management',
 ]
 
 MIDDLEWARE = [
@@ -294,11 +293,6 @@ LOGGING = {
             'level': 'INFO',
         },
         'visitors': {
-            'handlers': ['console', 'file'],
-            'level': 'INFO',
-            'propagate': False,
-        },
-        'property_management': {
             'handlers': ['console', 'file'],
             'level': 'INFO',
             'propagate': False,

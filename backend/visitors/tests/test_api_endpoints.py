@@ -177,80 +177,6 @@ class APIEndpointTests(BaseTestCase):
         response = self.client.post('/api/hosts/', host_data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
-    def test_maintenance_endpoints(self):
-        """Test maintenance request endpoints"""
-        self.client.force_authenticate(user=self.admin)
-        
-        from property_management.models import MaintenanceCategory
-        # Create category with tenant
-        category = MaintenanceCategory.objects.create(name='Plumbing Test', tenant=self.tenant)
-        
-        # Create maintenance request (use self.location which belongs to self.tenant)
-        request_data = {
-            'location': self.location.id,
-            'category': category.id,
-            'title': 'Leaking Faucet',
-            'description': 'Room 302 faucet is leaking'
-        }
-        response = self.client.post('/api/property-management/requests/', request_data)
-        if response.status_code != 201:
-            print(f"[DEBUG] test_maintenance_endpoints POST fail: {response.data}")
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        created_request = response.data
-        
-        # Get maintenance requests
-        response = self.client.get('/api/property-management/requests/')
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        # Filter for our request
-        req_results = [r for r in response.data['results'] if r['id'] == created_request['id']]
-        if not req_results:
-             print(f"[DEBUG] test_maintenance_endpoints GET fail. All IDs: {[r['id'] for r in response.data['results']]}")
-        self.assertGreater(len(req_results), 0)
-        self.assertIn('results', response.data)
-        self.assertIsInstance(response.data['results'], list)
-        
-        # Update maintenance status
-        response = self.client.post(f'/api/property-management/requests/{created_request["id"]}/update_status/', {
-            'status': 'IN_PROGRESS'
-        })
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-
-    def test_asset_endpoints(self):
-        """Test asset management endpoints"""
-        self.client.force_authenticate(user=self.admin)
-        
-        from property_management.models import AssetType
-        # Create asset
-        asset_type = AssetType.objects.create(name='ELECTRONICS', tenant=self.tenant)
-        asset_data = {
-            'name': 'Conference Room Projector',
-            'asset_type': asset_type.id,
-            'location': self.location.id,
-            'status': 'OPERATIONAL'
-        }
-        response = self.client.post('/api/property-management/assets/', asset_data)
-        if response.status_code != 201:
-             print(f"[DEBUG] test_asset_endpoints POST fail: {response.data}")
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        created_asset = response.data
-        
-        # Get assets
-        response = self.client.get('/api/property-management/assets/')
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertIn('results', response.data)
-        self.assertIsInstance(response.data['results'], list)
-        
-        # Generate QR code for asset
-        response = self.client.get(f'/api/property-management/assets/{created_asset["id"]}/')
-        if response.status_code != 200:
-             print(f"[DEBUG] test_asset_endpoints GET fail: {response.status_code} for ID {created_asset['id']}")
-             # Check if it's there at all
-             from property_management.models import Asset
-             a = Asset.objects.filter(id=created_asset['id']).first()
-             print(f"[DEBUG] Asset in DB: ID={a.id}, Tenant={a.tenant}, Location={a.location}")
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertIn('qr_code', response.data)
-
     def test_permission_enforcement(self):
         """Test that permissions are properly enforced"""
         # Test that host cannot access admin endpoints
@@ -259,11 +185,7 @@ class APIEndpointTests(BaseTestCase):
         response = self.client.get('/api/tenants/')
         self.assertIn(response.status_code, [status.HTTP_403_FORBIDDEN, status.HTTP_404_NOT_FOUND])
         
-        response = self.client.get('/api/property-management/requests/')
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        
-        response = self.client.get('/api/property-management/assets/')
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
         
         # Test that admin can access admin endpoints
         self.client.force_authenticate(user=self.admin)
@@ -271,11 +193,7 @@ class APIEndpointTests(BaseTestCase):
         response = self.client.get('/api/tenants/')
         self.assertIn(response.status_code, [status.HTTP_200_OK, status.HTTP_404_NOT_FOUND])  # 404 if endpoint doesn't exist
         
-        response = self.client.get('/api/property-management/requests/')
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        
-        response = self.client.get('/api/property-management/assets/')
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
 
     def test_data_validation(self):
         """Test data validation on endpoints"""
@@ -296,14 +214,6 @@ class APIEndpointTests(BaseTestCase):
             'purpose': 'Meeting'
         }
         response = self.client.post('/api/visitors/', invalid_visitor)
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        
-        # Test invalid maintenance request
-        invalid_maintenance = {
-            'title': '',  # Empty title
-            'priority': 'INVALID_PRIORITY'  # Invalid priority
-        }
-        response = self.client.post('/api/property-management/requests/', invalid_maintenance)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_rate_limiting(self):
