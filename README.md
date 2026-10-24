@@ -1,52 +1,55 @@
 # Visitor Management System
 
-A comprehensive visitor and property management system built with Django REST Framework backend, Next.js frontend, and React Native mobile applications.
+A comprehensive enterprise visitor management system adhering strictly to the Vizmo specifications. Built with a Django REST Framework backend, Next.js frontend styled with Material UI (MUI), and mobile applications.
 
-## 🏢 Features
+## 🏢 Features (Vizmo Specifications)
 
-### Core Visitor Management
-- **Pre-registration System**: Invite visitors in advance with QR codes
-- **Self-service Kiosk**: iPad/tablet check-in with photo capture
-- **Host Notifications**: Real-time alerts when visitors arrive
-- **NDA Support**: Digital signature capture for confidential visits
-- **Watchlist Screening**: Automatic blocking of unwanted visitors
-- **Parcel Management**: Package delivery and pickup tracking
-- **Multi-tenant Architecture**: Separate data for different organizations
+### 1. Visitor Entry & Experience
+- **Touchless Check-in / Out**: QR code scanning via mobile devices or self-service kiosks.
+- **Self-Service Kiosk**: Tablet-optimized kiosk workflow for visitor sign-in, photo capture, and NDA signing.
+- **Pre-Registration & Invites**: Host pre-registration with automated email/SMS invitations containing personalized QR access passes.
+- **Returning Visitor Recognition**: Instant lookup and autofill by mobile number or email.
+- **Bulk Pre-Registration**: CSV import for inviting corporate event attendees or large groups.
+- **Digital Signatures & NDAs**: Digital signing pad for Non-Disclosure Agreements, safety rules, and compliance forms.
 
-### Property Management Modules
-- **Maintenance & Repairs**: Request tracking, vendor assignment, work orders
-- **Asset Management**: Equipment inventory, QR codes, maintenance schedules
-- **Cost Tracking**: Labor, materials, expense management by cost center
-- **Vendor Management**: Approved contractors, insurance verification
-- **Mobile Support**: Field operations optimized for tablets/phones
+### 2. Security & Verification
+- **Host Approval Workflow**: Real-time notifications for hosts to approve or reject walk-in visitors before entry is granted.
+- **Watchlist & Blocklist Screening**: Automated real-time matching with customizable algorithms (Exact, Contains) to flag or block barred individuals.
+- **Photo Capture & Badge Printing**: Live webcam capture and instant visitor badge preview and printing.
+- **Overstay & Security Alerts**: Automated notifications when a guest exceeds their scheduled visit duration.
+- **CCTV & Gate Integration**: Camera streaming support (RTSP/IP) and gate access control.
 
-### Advanced Features
-- **Payment Integration**: Stripe subscription management
-- **Security Monitoring**: Gate access logs, incident reporting
-- **Analytics Dashboard**: Comprehensive reporting and insights
-- **Push Notifications**: Real-time mobile alerts
-- **OCR Integration**: License plate recognition
-- **Multi-platform Support**: Web, iOS, Android
+### 3. Communication & Notifications
+- **Multi-Channel Alerts**: Instant notifications via Email and SMS upon visitor arrival, host approval, or check-out.
+- **Notification Template Engine**: Customizable message templates with dynamic variable interpolation.
+- **Audit Logs**: Delivery history and real-time logs for all dispatched communications.
+
+### 4. Administration & Compliance
+- **Centralized Admin Dashboard**: Real-time visitor register, occupancy stats, and status filtering.
+- **Front Desk Receptionist Portal**: Fast lookups, badge generation, walk-in registration, and manual checkout.
+- **Host Self-Service Portal**: Quick guest approvals, upcoming visit timeline, and personal guest pre-registration.
+- **Multi-Location Management**: Multi-building facility configurations with independent security policies and tablet kiosk registers.
+- **Analytics & Reporting**: Foot-traffic charts, peak hour histograms, overstay metrics, and CSV audit exports.
+- **Multi-Tenant White-Labeling**: Custom branding with logos, theme primary colors, and subdomain routing.
 
 ## 🏗️ Architecture
 
-### Backend (Django)
+### Backend (Django REST Framework)
 - **Framework**: Django 6.0 with Django REST Framework
 - **Database**: SQLite (development), PostgreSQL (production)
-- **Authentication**: JWT tokens with role-based access
+- **Authentication**: JWT tokens with role-based access control (Super Admin, Admin, Host, Receptionist)
 - **API Documentation**: RESTful APIs with OpenAPI/Swagger
 
-### Frontend (Next.js)
+### Frontend (Next.js & MUI)
 - **Framework**: Next.js 16 with TypeScript
-- **UI**: Tailwind CSS with shadcn/ui components
-- **State Management**: React Context and hooks
-- **Authentication**: JWT token-based auth
+- **Design System**: Material UI (MUI v6 / 9.5) with custom Material 3 theme and dark mode support
+- **State & Data**: TanStack React Query, Zustand, Axios
+- **Form & Validation**: Zod v4 schemas
 
 ### Mobile Apps (React Native)
 - **Framework**: Expo with React Native
 - **Navigation**: Expo Router with stack navigation
-- **UI**: Custom components with Lucide icons
-- **Offline Support**: Local data caching
+- **Features**: Host visitor approvals, kiosk self-service mode, and admin logs
 
 ## � Documentation
 
@@ -200,15 +203,13 @@ Copy `.env.docker.example` to `.env.docker` and configure as needed.
 ### Backend Tests
 ```bash
 cd backend
-python manage.py test
-python manage.py test property_management.tests
 python manage.py test visitors.tests
 ```
 
 ### Frontend Tests
 ```bash
 cd frontend
-npm test
+pnpm test
 ```
 
 ### Mobile App Tests
@@ -226,12 +227,12 @@ npm test
 ## 📱 Mobile Applications
 
 ### Admin App
-- **Purpose**: Property management for administrators
-- **Features**: Maintenance requests, asset tracking, vendor management
-- **Access**: Role-based (Admin, Manager)
+- **Purpose**: Visitor logs and gate monitoring for security administrators
+- **Features**: Visitor pass verification, real-time alerts, parcel handoffs
+- **Access**: Role-based (Admin, Security)
 
 ### Host App
-- **Purpose**: Visitor management for employees
+- **Purpose**: Visitor approvals for employees
 - **Features**: Pre-registration, visitor notifications, check-in approval
 - **Access**: Host role
 
@@ -333,19 +334,21 @@ Authorization: Bearer <jwt-token>
 ### Code Structure
 ```
 backend/
-├── visitors/          # Core visitor management
-├── property_management/ # Property management modules
-├── config/           # Django settings
-└── requirements.txt  # Python dependencies
+├── visitors/          # Visitor management models, views, serializers, tests
+├── config/            # Django settings & URLs
+└── requirements.txt   # Python dependencies
 
 frontend/
-├── app/              # Next.js app router
-├── components/       # Reusable components
-└── public/          # Static assets
+├── app/               # Next.js App Router (MUI-based pages)
+├── components/        # Reusable MUI components & theme registry
+├── theme/             # Material UI theme & color configurations
+├── services/          # Visitor management API service
+├── hooks/             # TanStack Query & auth hooks
+└── lib/               # Types, validations, and utilities
 
-mobile-admin/         # Admin mobile app
-mobile-host/          # Host mobile app
-mobile-kiosk/         # Kiosk mobile app
+mobile-admin/          # Security & visitor logs mobile app
+mobile-host/           # Employee host mobile app
+mobile-kiosk/          # Self-service kiosk mobile app
 ```
 
 ### Contributing

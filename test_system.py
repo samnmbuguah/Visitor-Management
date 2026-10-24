@@ -74,16 +74,16 @@ def test_authentication():
     
     return results
 
-def test_property_management_endpoints(token):
-    """Test property management API endpoints"""
+def test_visitor_management_endpoints(token):
+    """Test visitor management API endpoints"""
     headers = {"Authorization": f"Bearer {token}"}
     endpoints = [
-        "/property-management/categories/",
-        "/property-management/vendors/", 
-        "/property-management/requests/",
-        "/property-management/assets/",
-        "/property-management/work-orders/",
-        "/property-management/cost-centers/"
+        "/visitors/",
+        "/locations/", 
+        "/invites/",
+        "/hosts/",
+        "/watchlist/",
+        "/analytics/dashboard/"
     ]
     
     results = {}
@@ -142,12 +142,12 @@ def test_data_integrity():
         
         # Test data counts
         endpoints = {
-            "categories": "/property-management/categories/",
-            "vendors": "/property-management/vendors/",
-            "requests": "/property-management/requests/",
-            "assets": "/property-management/assets/",
-            "work_orders": "/property-management/work-orders/",
-            "cost_centers": "/property-management/cost-centers/"
+            "visitors": "/visitors/",
+            "locations": "/locations/",
+            "invites": "/invites/",
+            "hosts": "/hosts/",
+            "watchlist": "/watchlist/",
+            "tenants": "/tenants/"
         }
         
         results = {}
@@ -202,10 +202,10 @@ def run_comprehensive_tests():
         return
     
     # Test Property Management Endpoints
-    print("\n🏢 Testing Property Management APIs...")
-    api_results = test_property_management_endpoints(admin_token)
+    print("\n🏢 Testing Visitor Management APIs...")
+    api_results = test_visitor_management_endpoints(admin_token)
     for endpoint, result in api_results.items():
-        endpoint_name = endpoint.replace("/property-management/", "").replace("/", "").title()
+        endpoint_name = endpoint.replace("/", "").replace("/", "").title()
         if result["success"]:
             print_test_result(f"{endpoint_name} API", True, f"Status: {result['status_code']}, Items: {result['data_count']}")
         else:
@@ -273,15 +273,15 @@ def run_comprehensive_tests():
     
     failed_apis = [ep for ep, result in api_results.items() if not result["success"]]
     if failed_apis:
-        print("🔧 Check property management API configuration")
-        print("   - Verify property_management app is in INSTALLED_APPS")
+        print("🔧 Check visitor management API configuration")
+        print("   - Verify visitors app is in INSTALLED_APPS")
         print("   - Check URL routing in config/urls.py")
-        print("   - Verify ViewSet registration in property_management/urls.py")
+        print("   - Verify ViewSet registration in visitors/urls.py")
     
     print_section("NEXT STEPS")
     print("1. Access frontend: http://localhost:3000")
     print("2. Login with admin/admin123")
-    print("3. Test maintenance management features")
+    print("3. Test visitor management features")
     print("4. Test mobile apps at their respective ports")
     print("5. Verify data seeding results")
 

@@ -1,4 +1,4 @@
-name: property_management
+name: visitor_management
 
 services:
   backend:
